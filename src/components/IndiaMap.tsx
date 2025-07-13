@@ -49,8 +49,8 @@ export const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
 
     const path = d3.geoPath().projection(projection);
 
-    // Create data map for quick lookup
-    const dataMap = new Map(data.map(d => [d.state.toLowerCase(), d.value]));
+    // Create data map for quick lookup (normalize state names for better matching)
+    const dataMap = new Map(data.map(d => [d.state.toLowerCase().trim(), d.value]));
 
     // Get min and max values for color scale
     const values = data.map(d => d.value);
@@ -71,11 +71,12 @@ export const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
       .append("path")
       .attr("d", path)
       .attr("fill", (d: any) => {
-        const stateName = d.properties.NAME_1?.toLowerCase() || d.properties.name?.toLowerCase();
+        // Try different possible field names for state
+        const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
-        return value !== undefined ? colorScale(value) : "#f0f0f0";
+        return value !== undefined ? colorScale(value) : "#e5e7eb";
       })
-      .attr("stroke", "#333")
+      .attr("stroke", "#374151")
       .attr("stroke-width", 0.5)
       .style("cursor", "pointer");
 
@@ -90,27 +91,38 @@ export const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
       })
       .attr("text-anchor", "middle")
       .attr("dy", "0.35em")
-      .style("font-size", "10px")
-      .style("font-weight", "bold")
-      .style("fill", "#333")
+      .style("font-family", "Arial, sans-serif")
+      .style("font-weight", "600")
+      .style("fill", "#1f2937")
       .style("pointer-events", "none")
       .each(function(d: any) {
         const text = d3.select(this);
-        const stateName = d.properties.NAME_1?.toLowerCase() || d.properties.name?.toLowerCase();
+        const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
+        const displayName = d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM;
         
-        if (value !== undefined) {
+        if (value !== undefined && displayName) {
+          // Calculate appropriate font size based on path bounds
+          const bounds = path.bounds(d);
+          const width = bounds[1][0] - bounds[0][0];
+          const height = bounds[1][1] - bounds[0][1];
+          const fontSize = Math.min(width, height) / 8;
+          const clampedFontSize = Math.max(8, Math.min(12, fontSize));
+          
+          // Add state name
           text.append("tspan")
             .attr("x", 0)
             .attr("dy", "-0.3em")
-            .style("font-size", "8px")
-            .text(d.properties.NAME_1 || d.properties.name);
+            .style("font-size", `${clampedFontSize}px`)
+            .text(displayName.length > 12 ? displayName.substring(0, 10) + "..." : displayName);
           
+          // Add value
           text.append("tspan")
             .attr("x", 0)
-            .attr("dy", "1em")
-            .style("font-size", "8px")
-            .text(value.toFixed(1));
+            .attr("dy", "1.2em")
+            .style("font-size", `${clampedFontSize * 0.9}px`)
+            .style("font-weight", "700")
+            .text(`${value.toFixed(1)}%`);
         }
       });
 
