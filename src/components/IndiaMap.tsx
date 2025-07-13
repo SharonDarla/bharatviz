@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import * as d3 from 'd3';
 
 interface MapData {
@@ -10,9 +10,70 @@ interface IndiaMapProps {
   data: MapData[];
 }
 
-export const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
+export interface IndiaMapRef {
+  exportPNG: () => void;
+  exportSVG: () => void;
+}
+
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
+
+  const exportPNG = () => {
+    if (!svgRef.current) return;
+    
+    const svg = svgRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    canvas.width = 800;
+    canvas.height = 600;
+    
+    img.onload = () => {
+      if (ctx) {
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'india-map.png';
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        });
+      }
+    };
+    
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    img.src = url;
+  };
+
+  const exportSVG = () => {
+    if (!svgRef.current) return;
+    
+    const svg = svgRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'india-map.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  useImperativeHandle(ref, () => ({
+    exportPNG,
+    exportSVG,
+  }));
 
   useEffect(() => {
     const loadMapData = async () => {
@@ -144,4 +205,4 @@ export const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
       <svg ref={svgRef} className="max-w-full h-auto border rounded-lg"></svg>
     </div>
   );
-};
+});
