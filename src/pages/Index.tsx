@@ -2,10 +2,11 @@
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background">
+      <div className="text-center p-8">
+        <h1 className="text-4xl font-bold mb-4">India Data Visualization</h1>
+        <p className="text-xl text-muted-foreground mb-8">Upload data to visualize state-wise distributions on India map</p>
+        <p className="text-sm text-muted-foreground">Using india_map_states.geojson for accurate state boundaries</p>
       </div>
     </div>
   );
