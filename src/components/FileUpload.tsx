@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Upload, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -45,6 +45,9 @@ interface FileUploadProps {
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState('');
+  const [loadingSheet, setLoadingSheet] = useState(false);
+  const [sheetError, setSheetError] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -138,6 +141,62 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
     URL.revokeObjectURL(url);
   };
 
+  // Helper to extract Google Sheet ID and GID from URL
+  function extractSheetInfo(url: string) {
+    // Typical format: https://docs.google.com/spreadsheets/d/{sheetId}/edit#gid={gid}
+    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)(?:\/.*?gid=(\d+))?/);
+    if (!match) return null;
+    return { sheetId: match[1], gid: match[2] || '0' };
+  }
+
+  const handleLoadGoogleSheet = async () => {
+    setSheetError(null);
+    setLoadingSheet(true);
+    const info = extractSheetInfo(googleSheetUrl);
+    if (!info) {
+      setSheetError('Invalid Google Sheet link.');
+      setLoadingSheet(false);
+      return;
+    }
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${info.sheetId}/gviz/tq?tqx=out:csv&gid=${info.gid}`;
+    try {
+      const response = await fetch(csvUrl);
+      if (!response.ok) throw new Error('Failed to fetch Google Sheet.');
+      const csvText = await response.text();
+      Papa.parse(csvText, {
+        header: true,
+        complete: (result) => {
+          try {
+            const data = result.data as Array<Record<string, string>>;
+            const processedData = data
+              .filter(row => row.state && row.value && !isNaN(Number(row.value)))
+              .map(row => ({
+                state: row.state.trim(),
+                value: Number(row.value)
+              }));
+            if (processedData.length === 0) {
+              setSheetError('No valid data found. Ensure your sheet has "state" and "value" columns.');
+              setLoadingSheet(false);
+              return;
+            }
+            onDataLoad(processedData);
+            setLoadingSheet(false);
+          } catch (error) {
+            setSheetError('Error processing sheet data.');
+            setLoadingSheet(false);
+          }
+        },
+        error: () => {
+          setSheetError('Error parsing CSV from Google Sheet.');
+          setLoadingSheet(false);
+        }
+      });
+    } catch (err) {
+      setSheetError('Failed to fetch or parse Google Sheet.');
+      setLoadingSheet(false);
+    }
+  };
+
   return (
     <Card className="p-6 border-dashed border-2 hover:border-primary/50 transition-colors">
       <div className="text-center">
@@ -159,6 +218,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
           <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={downloadCSVTemplate}>
             Download CSV Template
           </Button>
+        </div>
+        <div className="flex flex-col items-center mt-3 gap-2">
+          <input
+            type="text"
+            className="border rounded px-2 py-1 w-full max-w-xs"
+            placeholder="Paste link to Google Sheet"
+            value={googleSheetUrl}
+            onChange={e => setGoogleSheetUrl(e.target.value)}
+            disabled={loadingSheet}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={handleLoadGoogleSheet}
+            disabled={loadingSheet || !googleSheetUrl}
+          >
+            {loadingSheet ? 'Loading...' : 'Load from Google Sheet'}
+          </Button>
+          {sheetError && <div className="text-xs text-red-500 mt-1">{sheetError}</div>}
         </div>
         <p className="text-xs text-muted-foreground mt-3">
         </p>

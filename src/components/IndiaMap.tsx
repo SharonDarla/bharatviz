@@ -321,14 +321,40 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             fontSize = Math.max(8, fontSize * 0.7);
           }
           const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
-          const isColorDark = (color: string) => {
-            const hex = color.replace('#', '');
-            const r = parseInt(hex.substr(0, 2), 16);
-            const g = parseInt(hex.substr(2, 2), 16);
-            const b = parseInt(hex.substr(4, 2), 16);
-            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+          // Robust color parsing for luminance
+          function parseColorToRGB(color: string): {r: number, g: number, b: number} | null {
+            // Hex format
+            if (color.startsWith('#')) {
+              let hex = color.slice(1);
+              if (hex.length === 3) {
+                hex = hex.split('').map(x => x + x).join('');
+              }
+              if (hex.length === 6) {
+                const r = parseInt(hex.substr(0, 2), 16);
+                const g = parseInt(hex.substr(2, 2), 16);
+                const b = parseInt(hex.substr(4, 2), 16);
+                return { r, g, b };
+              }
+            }
+            // rgb() format
+            const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (rgbMatch) {
+              return { r: +rgbMatch[1], g: +rgbMatch[2], b: +rgbMatch[3] };
+            }
+            // rgba() format
+            const rgbaMatch = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
+            if (rgbaMatch) {
+              return { r: +rgbaMatch[1], g: +rgbaMatch[2], b: +rgbaMatch[3] };
+            }
+            return null;
+          }
+          function isColorDark(color: string) {
+            const rgb = parseColorToRGB(color);
+            if (!rgb) return false; // fallback to dark text
+            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
             return luminance < 0.5;
-          };
+          }
+          // End robust color parsing
           const textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
           const valueColor = textColor;
           const displayName = stateAbbreviations[stateName] || originalName;
