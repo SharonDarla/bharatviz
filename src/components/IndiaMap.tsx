@@ -53,7 +53,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'india-map-300dpi.png';
+            a.download = 'india-map.png';
             a.click();
             URL.revokeObjectURL(url);
           }
@@ -89,14 +89,21 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
   useEffect(() => {
     const loadMapData = async () => {
       try {
+        console.log('Attempting to fetch GeoJSON data...');
         const response = await fetch('/india_map_states.geojson');
+        console.log('Response status:', response.status, response.statusText);
+        
         if (!response.ok) {
-          throw new Error('Failed to load map data');
+          throw new Error(`Failed to load map data: ${response.status} ${response.statusText}`);
         }
+        
         const geoData = await response.json();
+        console.log('GeoJSON data loaded successfully:', geoData);
         setMapData(geoData);
       } catch (error) {
         console.error('Error loading map data:', error);
+        // Set mapData to empty object to stop loading spinner
+        setMapData({});
       }
     };
 
@@ -105,6 +112,18 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
 
   useEffect(() => {
     if (!mapData || !svgRef.current) return;
+    
+    // Check if mapData is empty object (error case)
+    if (Object.keys(mapData).length === 0) {
+      console.log('MapData is empty object, likely due to fetch error');
+      return;
+    }
+    
+    // Check if mapData has features property
+    if (!mapData.features || !Array.isArray(mapData.features)) {
+      console.error('Invalid GeoJSON data: missing features array');
+      return;
+    }
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -213,6 +232,17 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Loading map data...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Check if mapData is empty object (error case)
+  if (Object.keys(mapData).length === 0) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <p className="text-red-500">Failed to load map data. Please try refreshing the page.</p>
         </div>
       </div>
     );
