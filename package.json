@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "deploy": "npm run build && firebase deploy --only hosting",
+    "deploy": "npm run build && NODE_OPTIONS=\"--no-deprecation\" firebase deploy --only hosting",
     "deploy:preview": "npm run build && firebase hosting:channel:deploy preview --only hosting"
   },
   "dependencies": {
