@@ -22,6 +22,17 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
 
+  // Legend state
+  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 180, y: 565 });
+  const [dragging, setDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editingMin, setEditingMin] = useState(false);
+  const [editingMax, setEditingMax] = useState(false);
+  const [legendTitle, setLegendTitle] = useState('Values (%)');
+  const [legendMin, setLegendMin] = useState('');
+  const [legendMax, setLegendMax] = useState('');
+
   const exportPNG = () => {
     if (!svgRef.current) return;
     
@@ -360,24 +371,36 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   }, [mapData, data, colorScale]);
 
-  // Separate effect for legend management
+  // Legend values from data
   useEffect(() => {
-    if (!mapData || !svgRef.current || data.length === 0) return;
+    if (data.length > 0) {
+      const values = data.map(d => d.value);
+      setLegendMin(Math.min(...values).toFixed(1));
+      setLegendMax(Math.max(...values).toFixed(1));
+    } else {
+      setLegendMin('0.0');
+      setLegendMax('1.0');
+    }
+  }, [data]);
 
+  // D3 gradient for legend
+  useEffect(() => {
+    if (!svgRef.current || data.length === 0) return;
     const svg = d3.select(svgRef.current);
-    const width = 800;
-    const height = 600;
-    const margin = { top: 20, right: 20, bottom: 40, left: 20 };
-
-    // Remove existing legend
-    svg.selectAll(".legend-container").remove();
-
-    // Create color scale
+    // Remove existing gradient
+    svg.selectAll('#legend-gradient').remove();
+    let defs = svg.select('defs');
+    if (defs.empty()) defs = svg.append('defs');
+    const gradient = defs.append('linearGradient')
+      .attr('id', 'legend-gradient')
+      .attr('x1', '0%')
+      .attr('x2', '100%')
+      .attr('y1', '0%')
+      .attr('y2', '0%');
+    // Color scale
     const values = data.map(d => d.value);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-
-    // Get the appropriate D3 color interpolator
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
         blues: d3.interpolateBlues,
@@ -396,92 +419,56 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
       };
-      return interpolators[colorScale] || d3.interpolateBlues;
+      return interpolators[scale] || d3.interpolateBlues;
     };
-
     const colorScaleFunction = d3.scaleSequential(getColorInterpolator(colorScale))
       .domain([minValue, maxValue]);
-
-    const legendWidth = 200;
-    const legendHeight = 15;
-    // Move legend further to the left and down more
-    const legendX = (width - margin.left - margin.right - legendWidth) / 2 - 40;
-    // Move legend slightly further down
-    const legendY = height - margin.top - margin.bottom + 25;
-
-    // Create legend group
-    const legendGroup = svg.append("g")
-      .attr("class", "legend-container")
-      .attr("transform", `translate(${legendX}, ${legendY})`);
-
-    // Create gradient for legend
-    let legendGradient = svg.select("#legend-gradient");
-    if (legendGradient.empty()) {
-      const defs = svg.selectAll("defs").empty() ? svg.append("defs") : svg.select("defs");
-      legendGradient = defs.append("linearGradient")
-        .attr("id", "legend-gradient")
-        .attr("x1", "0%")
-        .attr("x2", "100%")
-        .attr("y1", "0%")
-        .attr("y2", "0%");
-    } else {
-      legendGradient.selectAll("stop").remove();
-    }
-
-    // Add color stops to gradient
     const numStops = 10;
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
       const value = minValue + t * (maxValue - minValue);
       const color = colorScaleFunction(value);
-
-      legendGradient.append("stop")
-        .attr("offset", `${t * 100}%`)
-        .attr("stop-color", color);
+      gradient.append('stop')
+        .attr('offset', `${t * 100}%`)
+        .attr('stop-color', color);
     }
+  }, [colorScale, data]);
 
-    // Add legend rectangle
-    legendGroup.append("rect")
-      .attr("width", legendWidth)
-      .attr("height", legendHeight)
-      .style("fill", "url(#legend-gradient)")
-      .style("stroke", "#374151")
-      .style("stroke-width", 0.5);
+  // Drag handlers
+  const handleLegendMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (svgRect) {
+      setDragOffset({
+        x: e.clientX - (svgRect.left + legendPosition.x),
+        y: e.clientY - (svgRect.top + legendPosition.y)
+      });
+    }
+  };
+  const handleLegendMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (svgRect) {
+      setLegendPosition({
+        x: e.clientX - svgRect.left - dragOffset.x,
+        y: e.clientY - svgRect.top - dragOffset.y
+      });
+    }
+  };
+  const handleLegendMouseUp = () => setDragging(false);
 
-    // Add legend labels
-    legendGroup.append("text")
-      .attr("x", 0)
-      .attr("y", legendHeight + 15)
-      .attr("text-anchor", "start")
-      .style("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif")
-      .style("font-size", "12px")
-      .style("font-weight", "500")
-      .style("fill", "#374151")
-      .text(minValue.toFixed(1));
-
-    legendGroup.append("text")
-      .attr("x", legendWidth)
-      .attr("y", legendHeight + 15)
-      .attr("text-anchor", "end")
-      .style("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif")
-      .style("font-size", "12px")
-      .style("font-weight", "500")
-      .style("fill", "#374151")
-      .text(maxValue.toFixed(1));
-
-    // Add legend title
-    legendGroup.append("text")
-      .attr("x", legendWidth / 2)
-      .attr("y", -5)
-      .attr("text-anchor", "middle")
-      .style("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif")
-      .style("font-size", "13px")
-      .style("font-weight", "600")
-      .style("fill", "#374151")
-      .text("Values (%)");
-
-  }, [mapData, data, colorScale]);
-
+  // Attach global mousemove/mouseup for drag
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMove = (e: MouseEvent) => handleLegendMouseMove(e as any);
+    const handleUp = () => setDragging(false);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, [dragging, dragOffset]);
 
   if (!mapData) {
     return (
@@ -496,8 +483,104 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   return (
     <div className="w-full flex justify-center relative">
-      <svg ref={svgRef} className="max-w-full h-auto border rounded-lg"></svg>
-      
+      <svg
+        ref={svgRef}
+        className="max-w-full h-auto border rounded-lg"
+        width={800}
+        height={600}
+        style={{ userSelect: 'none' }}
+      >
+        {/* Legend overlay (React) */}
+        {data.length > 0 && (
+          <g
+            className="legend-container"
+            transform={`translate(${legendPosition.x}, ${legendPosition.y})`}
+            onMouseDown={handleLegendMouseDown}
+            style={{ cursor: dragging ? 'grabbing' : 'grab' }}
+          >
+            <rect
+              width={200}
+              height={15}
+              fill="url(#legend-gradient)"
+              stroke="#374151"
+              strokeWidth={0.5}
+              rx={3}
+            />
+            {/* Min value */}
+            {editingMin ? (
+              <foreignObject x={-10} y={18} width={40} height={30}>
+                <input
+                  type="text"
+                  value={legendMin}
+                  autoFocus
+                  style={{ width: 38, fontSize: 12 }}
+                  onChange={e => setLegendMin(e.target.value)}
+                  onBlur={() => setEditingMin(false)}
+                  onKeyDown={e => e.key === 'Enter' && setEditingMin(false)}
+                />
+              </foreignObject>
+            ) : (
+              <text
+                x={0}
+                y={30}
+                textAnchor="start"
+                style={{ fontFamily: 'system-ui', fontSize: 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
+              >
+                {legendMin}
+              </text>
+            )}
+            {/* Max value */}
+            {editingMax ? (
+              <foreignObject x={170} y={18} width={40} height={30}>
+                <input
+                  type="text"
+                  value={legendMax}
+                  autoFocus
+                  style={{ width: 38, fontSize: 12 }}
+                  onChange={e => setLegendMax(e.target.value)}
+                  onBlur={() => setEditingMax(false)}
+                  onKeyDown={e => e.key === 'Enter' && setEditingMax(false)}
+                />
+              </foreignObject>
+            ) : (
+              <text
+                x={200}
+                y={30}
+                textAnchor="end"
+                style={{ fontFamily: 'system-ui', fontSize: 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
+              >
+                {legendMax}
+              </text>
+            )}
+            {/* Title */}
+            {editingTitle ? (
+              <foreignObject x={60} y={-25} width={90} height={30}>
+                <input
+                  type="text"
+                  value={legendTitle}
+                  autoFocus
+                  style={{ width: 88, fontSize: 13, fontWeight: 600, textAlign: 'center' }}
+                  onChange={e => setLegendTitle(e.target.value)}
+                  onBlur={() => setEditingTitle(false)}
+                  onKeyDown={e => e.key === 'Enter' && setEditingTitle(false)}
+                />
+              </foreignObject>
+            ) : (
+              <text
+                x={100}
+                y={-5}
+                textAnchor="middle"
+                style={{ fontFamily: 'system-ui', fontSize: 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
+              >
+                {legendTitle}
+              </text>
+            )}
+          </g>
+        )}
+      </svg>
     </div>
   );
 });
