@@ -78,6 +78,9 @@ const Index = () => {
           </div>
         </div>
       </div>
+      <footer className="w-full text-center text-xs text-muted-foreground mt-8 mb-2">
+        © 2025 Saket Choudhary | <a href="http://saketlab.in/" target="_blank" rel="noopener noreferrer" className="underline">Saket Lab</a>
+      </footer>
     </div>
   );
 };
