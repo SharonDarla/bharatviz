@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
 import { ColorLegend } from '@/components/ColorLegend';
@@ -9,9 +9,16 @@ interface MapData {
   value: number;
 }
 
+// Empty data - just outline map with J&K and Ladakh included
+const emptyMapData: MapData[] = [];
+
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
   const mapRef = useRef<IndiaMapRef>(null);
+
+  useEffect(() => {
+    setMapData(emptyMapData);
+  }, []);
 
   const handleDataLoad = (data: MapData[]) => {
     setMapData(data);
@@ -36,29 +43,18 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <FileUpload onDataLoad={handleDataLoad} />
-            {mapData.length > 0 && (
-              <div className="space-y-4 mt-6">
-                <ColorLegend data={mapData} />
-                <ExportOptions 
-                  onExportPNG={handleExportPNG}
-                  onExportSVG={handleExportSVG}
-                  disabled={mapData.length === 0}
-                />
-              </div>
-            )}
+            <div className="space-y-4 mt-6">
+              <ColorLegend data={mapData} />
+              <ExportOptions 
+                onExportPNG={handleExportPNG}
+                onExportSVG={handleExportSVG}
+                disabled={mapData.length === 0}
+              />
+            </div>
           </div>
           
           <div className="lg:col-span-2">
-            {mapData.length > 0 ? (
-              <IndiaMap ref={mapRef} data={mapData} />
-            ) : (
-              <div className="bg-card p-12 rounded-lg border-dashed border-2 text-center">
-                <p className="text-muted-foreground">Upload a CSV/TSV file to see the visualization</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  File should contain 'state' and 'value' columns
-                </p>
-              </div>
-            )}
+            <IndiaMap ref={mapRef} data={mapData} />
           </div>
         </div>
       </div>

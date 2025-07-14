@@ -28,21 +28,32 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
-    canvas.width = 800;
-    canvas.height = 600;
+    // High DPI settings for 300 DPI output
+    const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
+    const originalWidth = 800;
+    const originalHeight = 600;
+    
+    canvas.width = originalWidth * dpiScale;
+    canvas.height = originalHeight * dpiScale;
     
     img.onload = () => {
       if (ctx) {
+        // Scale the context to match the DPI
+        ctx.scale(dpiScale, dpiScale);
+        
+        // Fill background with white
         ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
+        ctx.fillRect(0, 0, originalWidth, originalHeight);
+        
+        // Draw the image at original size (context scaling handles the DPI)
+        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
         
         canvas.toBlob((blob) => {
           if (blob) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'india-map.png';
+            a.download = 'india-map-300dpi.png';
             a.click();
             URL.revokeObjectURL(url);
           }
@@ -93,7 +104,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
   }, []);
 
   useEffect(() => {
-    if (!mapData || !svgRef.current || data.length === 0) return;
+    if (!mapData || !svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -113,14 +124,15 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
     // Create data map for quick lookup (normalize state names for better matching)
     const dataMap = new Map(data.map(d => [d.state.toLowerCase().trim(), d.value]));
 
-    // Get min and max values for color scale
-    const values = data.map(d => d.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-
-    // Create color scale
-    const colorScale = d3.scaleSequential(d3.interpolateBlues)
-      .domain([minValue, maxValue]);
+    // Create color scale only if we have data
+    let colorScale;
+    if (data.length > 0) {
+      const values = data.map(d => d.value);
+      const minValue = Math.min(...values);
+      const maxValue = Math.max(...values);
+      colorScale = d3.scaleSequential(d3.interpolateBlues)
+        .domain([minValue, maxValue]);
+    }
 
     const g = svg.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
@@ -132,10 +144,15 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
       .append("path")
       .attr("d", path)
       .attr("fill", (d: any) => {
+        // If no data, show all states as white/transparent
+        if (data.length === 0) {
+          return "#ffffff";
+        }
+        
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
-        return value !== undefined ? colorScale(value) : "#e5e7eb";
+        return value !== undefined && colorScale ? colorScale(value) : "#e5e7eb";
       })
       .attr("stroke", "#374151")
       .attr("stroke-width", 0.5)
@@ -162,7 +179,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data }, ref) =
         const value = dataMap.get(stateName);
         const displayName = d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM;
         
-        if (value !== undefined && displayName) {
+        // Only show labels if we have data
+        if (data.length > 0 && value !== undefined && displayName) {
           // Calculate appropriate font size based on path bounds
           const bounds = path.bounds(d);
           const width = bounds[1][0] - bounds[0][0];

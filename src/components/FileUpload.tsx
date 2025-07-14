@@ -27,6 +27,7 @@ const demoData = [
   { state: 'meghalaya', value: 74.4 },
   { state: 'odisha', value: 72.9 },
   { state: 'jammu and kashmir', value: 67.2 },
+  { state: 'ladakh', value: 71.0 },
   { state: 'uttar pradesh', value: 67.7 },
   { state: 'madhya pradesh', value: 69.3 },
   { state: 'chhattisgarh', value: 70.3 },
