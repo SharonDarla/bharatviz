@@ -15,6 +15,8 @@ const emptyMapData: MapData[] = [];
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
   const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('blues');
+  const [hideStateNames, setHideStateNames] = useState(false);
+  const [hideValues, setHideValues] = useState(false);
   const mapRef = useRef<IndiaMapRef>(null);
 
   useEffect(() => {
@@ -52,6 +54,13 @@ const Index = () => {
               <ColorMapChooser 
                 selectedScale={selectedColorScale}
                 onScaleChange={setSelectedColorScale}
+                hideStateNames={hideStateNames}
+                hideValues={hideValues}
+                onHideStateNamesChange={checked => {
+                  setHideStateNames(checked);
+                  if (checked) setHideValues(true);
+                }}
+                onHideValuesChange={checked => setHideValues(checked)}
               />
               <ExportOptions 
                 onExportPNG={handleExportPNG}
@@ -62,7 +71,10 @@ const Index = () => {
           </div>
           
           <div className="lg:col-span-2">
-            <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} />
+            <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} 
+              hideStateNames={hideStateNames}
+              hideValues={hideValues}
+            />
           </div>
         </div>
       </div>

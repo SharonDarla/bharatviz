@@ -10,6 +10,8 @@ interface MapData {
 interface IndiaMapProps {
   data: MapData[];
   colorScale?: ColorScale;
+  hideStateNames?: boolean;
+  hideValues?: boolean;
 }
 
 export interface IndiaMapRef {
@@ -18,7 +20,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'blues' }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'blues', hideStateNames = false, hideValues = false }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
 
@@ -183,7 +185,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     
     // Only remove map content, not legend
     svg.selectAll(".map-content").remove();
-    svg.selectAll("defs").remove();
 
     const width = 800;
     const height = 600;
@@ -314,62 +315,58 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           const width = bounds[1][0] - bounds[0][0];
           const height = bounds[1][1] - bounds[0][1];
           const area = width * height;
-          
-          // Dynamic font sizing based on area
           let fontSize = Math.sqrt(area) / 12;
           fontSize = Math.max(7, Math.min(14, fontSize));
-          
-          // Special handling for Rajasthan to reduce font size
           if (stateName === 'rajasthan') {
             fontSize = Math.max(8, fontSize * 0.7);
           }
-          
-          // Get the background color for this state
           const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
-          
-          // Calculate if background is dark (helper function)
           const isColorDark = (color: string) => {
-            // Convert hex to RGB
             const hex = color.replace('#', '');
             const r = parseInt(hex.substr(0, 2), 16);
             const g = parseInt(hex.substr(2, 2), 16);
             const b = parseInt(hex.substr(4, 2), 16);
-            
-            // Calculate luminance
             const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
             return luminance < 0.5;
           };
-          
-          // Choose text color based on background darkness
           const textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
-          const valueColor = textColor; // Same color for both state name and percentage
-          
-          // Get abbreviated name
+          const valueColor = textColor;
           const displayName = stateAbbreviations[stateName] || originalName;
-          
-          // Add state name
-          text.append("tspan")
-            .attr("x", 0)
-            .attr("dy", "-0.4em")
-            .style("font-size", `${fontSize}px`)
-            .style("font-weight", "600")
-            .style("fill", textColor)
-            .text(displayName);
-          
-          // Add value
-          text.append("tspan")
-            .attr("x", 0)
-            .attr("dy", "1.3em")
-            .style("font-size", `${fontSize * 0.85}px`)
-            .style("font-weight", "700")
-            .style("fill", valueColor)
-            .text(`${value.toFixed(1)}%`);
+          if (!hideStateNames) {
+            // Add state name
+            text.append("tspan")
+              .attr("x", 0)
+              .attr("dy", "-0.4em")
+              .style("font-size", `${fontSize}px`)
+              .style("font-weight", "600")
+              .style("fill", textColor)
+              .text(displayName);
+          }
+          if (!hideValues && !hideStateNames) {
+            // Add value
+            text.append("tspan")
+              .attr("x", 0)
+              .attr("dy", "1.3em")
+              .style("font-size", `${fontSize * 0.85}px`)
+              .style("font-weight", "700")
+              .style("fill", valueColor)
+              .text(`${value.toFixed(1)}%`);
+          } else if (hideStateNames && !hideValues) {
+            // Only value, centered vertically
+            text.append("tspan")
+              .attr("x", 0)
+              .attr("dy", "0.4em")
+              .style("font-size", `${fontSize * 0.95}px`)
+              .style("font-weight", "700")
+              .style("fill", valueColor)
+              .text(`${value.toFixed(1)}%`);
+          }
         }
       });
 
     // Legend will be handled by separate effect
 
-  }, [mapData, data, colorScale]);
+  }, [mapData, data, colorScale, hideStateNames, hideValues]);
 
   // Legend values from data
   useEffect(() => {
