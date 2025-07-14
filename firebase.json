@@ -7,6 +7,17 @@
       "**/.*",
       "**/node_modules/**"
     ],
+    "headers": [
+      {
+        "source": "**/*.geojson",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/geo+json"
+          }
+        ]
+      }
+    ],
     "rewrites": [
       {
         "source": "**",

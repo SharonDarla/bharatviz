@@ -26,7 +26,7 @@ const demoData = [
   { state: 'assam', value: 72.2 },
   { state: 'meghalaya', value: 74.4 },
   { state: 'odisha', value: 72.9 },
-  { state: 'jammu and kashmir', value: 67.2 },
+  { state: 'jammu & kashmir', value: 67.2 },
   { state: 'ladakh', value: 71.0 },
   { state: 'uttar pradesh', value: 67.7 },
   { state: 'madhya pradesh', value: 69.3 },
@@ -34,6 +34,7 @@ const demoData = [
   { state: 'rajasthan', value: 66.1 },
   { state: 'jharkhand', value: 66.4 },
   { state: 'andhra pradesh', value: 67.4 },
+  { state: 'telangana', value: 66.5 },
   { state: 'bihar', value: 61.8 },
   { state: 'arunachal pradesh', value: 65.4 }
 ];
@@ -87,6 +88,56 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
     fileInputRef.current?.click();
   };
 
+  const downloadCSVTemplate = () => {
+    const stateNames = [
+      'A & N Islands',
+      'Andhra Pradesh', 
+      'Arunachal Pradesh',
+      'Assam',
+      'Bihar',
+      'Chandigarh',
+      'Chhattisgarh',
+      'Delhi',
+      'DNHDD',
+      'Goa',
+      'Gujarat',
+      'Haryana',
+      'Himachal Pradesh',
+      'Jammu & Kashmir',
+      'Jharkhand',
+      'Karnataka',
+      'Kerala',
+      'Ladakh',
+      'Lakshadweep',
+      'Madhya Pradesh',
+      'Maharashtra',
+      'Manipur',
+      'Meghalaya',
+      'Mizoram',
+      'Nagaland',
+      'Odisha',
+      'Puducherry',
+      'Punjab',
+      'Rajasthan',
+      'Sikkim',
+      'Tamil Nadu',
+      'Telangana',
+      'Tripura',
+      'Uttar Pradesh',
+      'Uttarakhand',
+      'West Bengal'
+    ];
+
+    const csvContent = 'state,value\n' + stateNames.map(state => `${state},NA`).join('\n');
+    const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(csvBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'india-states-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card className="p-6 border-dashed border-2 hover:border-primary/50 transition-colors">
       <div className="text-center">
@@ -102,6 +153,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
           <Button variant="outline" onClick={handleLoadDemo} className="flex items-center gap-2">
             <Play className="h-4 w-4" />
             Load Demo
+          </Button>
+        </div>
+        <div className="flex justify-center mt-3">
+          <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={downloadCSVTemplate}>
+            Download CSV Template
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-3">

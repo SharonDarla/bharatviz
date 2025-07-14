@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
-import { ColorLegend } from '@/components/ColorLegend';
 import { ExportOptions } from '@/components/ExportOptions';
+import { ColorMapChooser, type ColorScale } from '@/components/ColorMapChooser';
 
 interface MapData {
   state: string;
@@ -14,6 +14,7 @@ const emptyMapData: MapData[] = [];
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
+  const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('blues');
   const mapRef = useRef<IndiaMapRef>(null);
 
   useEffect(() => {
@@ -32,6 +33,10 @@ const Index = () => {
     mapRef.current?.exportSVG();
   };
 
+  const handleDownloadCSVTemplate = () => {
+    mapRef.current?.downloadCSVTemplate();
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
@@ -44,7 +49,10 @@ const Index = () => {
           <div className="lg:col-span-1">
             <FileUpload onDataLoad={handleDataLoad} />
             <div className="space-y-4 mt-6">
-              <ColorLegend data={mapData} />
+              <ColorMapChooser 
+                selectedScale={selectedColorScale}
+                onScaleChange={setSelectedColorScale}
+              />
               <ExportOptions 
                 onExportPNG={handleExportPNG}
                 onExportSVG={handleExportSVG}
@@ -54,7 +62,7 @@ const Index = () => {
           </div>
           
           <div className="lg:col-span-2">
-            <IndiaMap ref={mapRef} data={mapData} />
+            <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} />
           </div>
         </div>
       </div>
