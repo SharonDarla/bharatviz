@@ -105,7 +105,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          Demo shows literacy rates across Indian states
         </p>
         <input
           ref={fileInputRef}
