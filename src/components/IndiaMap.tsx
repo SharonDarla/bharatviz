@@ -21,7 +21,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'blues', hideStateNames = false, hideValues = false }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', hideStateNames = false, hideValues = false }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
 
@@ -216,6 +216,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         reds: d3.interpolateReds,
         oranges: d3.interpolateOranges,
         purples: d3.interpolatePurples,
+        pinks: d3.interpolatePinks,
         viridis: d3.interpolateViridis,
         plasma: d3.interpolatePlasma,
         inferno: d3.interpolateInferno,
@@ -438,6 +439,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         reds: d3.interpolateReds,
         oranges: d3.interpolateOranges,
         purples: d3.interpolatePurples,
+        pinks: d3.interpolatePinks,
         viridis: d3.interpolateViridis,
         plasma: d3.interpolatePlasma,
         inferno: d3.interpolateInferno,

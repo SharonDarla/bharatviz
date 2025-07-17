@@ -14,7 +14,7 @@ const emptyMapData: MapData[] = [];
 
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
-  const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('blues');
+  const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('spectral');
   const [hideStateNames, setHideStateNames] = useState(false);
   const [hideValues, setHideValues] = useState(false);
   const mapRef = useRef<IndiaMapRef>(null);

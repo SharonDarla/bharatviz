@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
+export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
 
 interface ColorMapChooserProps {
   selectedScale: ColorScale;
@@ -21,6 +21,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   reds: { name: 'Reds', type: 'sequential' },
   oranges: { name: 'Oranges', type: 'sequential' },
   purples: { name: 'Purples', type: 'sequential' },
+  pinks: { name: 'Pinks', type: 'sequential' },
   viridis: { name: 'Viridis', type: 'sequential' },
   plasma: { name: 'Plasma', type: 'sequential' },
   inferno: { name: 'Inferno', type: 'sequential' },
@@ -121,6 +122,7 @@ function getPreviewColor(scale: ColorScale, t: number): string {
     reds: ['#fff5f0', '#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15', '#67000d'],
     oranges: ['#fff5eb', '#fee6ce', '#fdd0a2', '#fdae6b', '#fd8d3c', '#f16913', '#d94801', '#a63603', '#7f2704'],
     purples: ['#fcfbfd', '#efedf5', '#dadaeb', '#bcbddc', '#9e9ac8', '#807dba', '#6a51a3', '#54278f', '#3f007d'],
+    pinks: ['#fff7f3', '#fde0dd', '#fcc5c0', '#fa9fb5', '#f768a1', '#dd3497', '#ae017e', '#7a0177', '#49006a'],
     viridis: ['#440154', '#482777', '#3f4a8a', '#31678e', '#26838f', '#1f9d8a', '#6cce5a', '#b6de2b', '#fee825'],
     plasma: ['#0d0887', '#4b0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#f7d03c', '#fcffa4'],
     inferno: ['#000004', '#1b0c41', '#4a0c6b', '#781c6d', '#a52c60', '#cf4446', '#ed6925', '#fb9b06', '#fcffa4'],
