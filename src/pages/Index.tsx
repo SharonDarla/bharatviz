@@ -40,15 +40,22 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4">India Data Visualization</h1>
-          <p className="text-xl text-muted-foreground">Upload data to visualize state-wise distributions on India map</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">India Data Visualization</h1>
+          <p className="text-lg sm:text-xl text-muted-foreground">Upload data to visualize state-wide distributions on India map</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1">
+        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 order-2 lg:order-2">
+            <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} 
+              hideStateNames={hideStateNames}
+              hideValues={hideValues}
+            />
+          </div>
+          
+          <div className="lg:col-span-1 order-1 lg:order-1">
             <FileUpload onDataLoad={handleDataLoad} />
             <div className="space-y-4 mt-6">
               <ColorMapChooser 
@@ -68,13 +75,6 @@ const Index = () => {
                 disabled={mapData.length === 0}
               />
             </div>
-          </div>
-          
-          <div className="lg:col-span-2">
-            <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} 
-              hideStateNames={hideStateNames}
-              hideValues={hideValues}
-            />
           </div>
         </div>
       </div>

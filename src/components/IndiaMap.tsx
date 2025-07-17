@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { ColorScale } from './ColorMapChooser';
 
@@ -25,15 +26,21 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [mapData, setMapData] = useState<any>(null);
 
   // Legend state
-  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 180, y: 565 });
+  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 220, y: 565 });
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingMin, setEditingMin] = useState(false);
   const [editingMax, setEditingMax] = useState(false);
-  const [legendTitle, setLegendTitle] = useState('Values (%)');
+  const [legendTitle, setLegendTitle] = useState('Values (EDIT ME) %');
   const [legendMin, setLegendMin] = useState('');
   const [legendMax, setLegendMax] = useState('');
+  const isMobile = useIsMobile();
+
+  // Update legend position when mobile state changes
+  useEffect(() => {
+    setLegendPosition(isMobile ? { x: 100, y: 240 } : { x: 220, y: 565 });
+  }, [isMobile]);
 
   const exportPNG = () => {
     if (!svgRef.current) return;
@@ -46,8 +53,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     
     // High DPI settings for 300 DPI output
     const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
-    const originalWidth = 800;
-    const originalHeight = 600;
+    const originalWidth = isMobile ? 350 : 800;
+    const originalHeight = isMobile ? 280 : 600;
     
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
@@ -186,8 +193,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Only remove map content, not legend
     svg.selectAll(".map-content").remove();
 
-    const width = 800;
-    const height = 600;
+    const width = isMobile ? 350 : 800;
+    const height = isMobile ? 280 : 600;
     const margin = { top: 20, right: 20, bottom: 40, left: 20 };
 
     svg.attr("width", width).attr("height", height);
@@ -315,8 +322,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           const width = bounds[1][0] - bounds[0][0];
           const height = bounds[1][1] - bounds[0][1];
           const area = width * height;
-          let fontSize = Math.sqrt(area) / 12;
-          fontSize = Math.max(7, Math.min(14, fontSize));
+          let fontSize = Math.sqrt(area) / (isMobile ? 16 : 12);
+          fontSize = Math.max(isMobile ? 5 : 7, Math.min(isMobile ? 10 : 14, fontSize));
           if (stateName === 'rajasthan') {
             fontSize = Math.max(8, fontSize * 0.7);
           }
@@ -509,9 +516,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       <svg
         ref={svgRef}
         className="max-w-full h-auto border rounded-lg"
-        width={800}
-        height={600}
+        width={isMobile ? 350 : 800}
+        height={isMobile ? 280 : 600}
         style={{ userSelect: 'none' }}
+        viewBox={isMobile ? "0 0 350 280" : "0 0 800 600"}
       >
         {/* Legend overlay (React) */}
         {data.length > 0 && (
@@ -522,7 +530,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             style={{ cursor: dragging ? 'grabbing' : 'grab' }}
           >
             <rect
-              width={200}
+              width={isMobile ? 150 : 200}
               height={15}
               fill="url(#legend-gradient)"
               stroke="#374151"
@@ -531,12 +539,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             />
             {/* Min value */}
             {editingMin ? (
-              <foreignObject x={-10} y={18} width={40} height={30}>
+              <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
                 <input
                   type="text"
                   value={legendMin}
                   autoFocus
-                  style={{ width: 38, fontSize: 12 }}
+                  style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
                   onChange={e => setLegendMin(e.target.value)}
                   onBlur={() => setEditingMin(false)}
                   onKeyDown={e => e.key === 'Enter' && setEditingMin(false)}
@@ -547,7 +555,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 x={0}
                 y={30}
                 textAnchor="start"
-                style={{ fontFamily: 'system-ui', fontSize: 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                style={{ fontFamily: 'system-ui', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
                 onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
               >
                 {legendMin}
@@ -555,12 +563,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             )}
             {/* Max value */}
             {editingMax ? (
-              <foreignObject x={170} y={18} width={40} height={30}>
+              <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
                 <input
                   type="text"
                   value={legendMax}
                   autoFocus
-                  style={{ width: 38, fontSize: 12 }}
+                  style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
                   onChange={e => setLegendMax(e.target.value)}
                   onBlur={() => setEditingMax(false)}
                   onKeyDown={e => e.key === 'Enter' && setEditingMax(false)}
@@ -568,10 +576,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               </foreignObject>
             ) : (
               <text
-                x={200}
+                x={isMobile ? 150 : 200}
                 y={30}
                 textAnchor="end"
-                style={{ fontFamily: 'system-ui', fontSize: 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                style={{ fontFamily: 'system-ui', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
                 onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
               >
                 {legendMax}
@@ -579,12 +587,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             )}
             {/* Title */}
             {editingTitle ? (
-              <foreignObject x={60} y={-25} width={90} height={30}>
+              <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
                 <input
                   type="text"
                   value={legendTitle}
                   autoFocus
-                  style={{ width: 88, fontSize: 13, fontWeight: 600, textAlign: 'center' }}
+                  style={{ width: isMobile ? 68 : 88, fontSize: isMobile ? 11 : 13, fontWeight: 600, textAlign: 'center' }}
                   onChange={e => setLegendTitle(e.target.value)}
                   onBlur={() => setEditingTitle(false)}
                   onKeyDown={e => e.key === 'Enter' && setEditingTitle(false)}
@@ -592,10 +600,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               </foreignObject>
             ) : (
               <text
-                x={100}
+                x={isMobile ? 75 : 100}
                 y={-5}
                 textAnchor="middle"
-                style={{ fontFamily: 'system-ui', fontSize: 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                style={{ fontFamily: 'system-ui', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
                 onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
               >
                 {legendTitle}
