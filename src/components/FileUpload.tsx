@@ -41,7 +41,7 @@ const demoData = [
 ];
 
 interface FileUploadProps {
-  onDataLoad: (data: Array<{ state: string; value: number }>) => void;
+  onDataLoad: (data: Array<{ state: string; value: number }>, title?: string) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
@@ -59,19 +59,31 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
       complete: (result) => {
         try {
           const data = result.data as Array<Record<string, string>>;
-          const processedData = data
-            .filter(row => row.state && row.value && !isNaN(Number(row.value)))
-            .map(row => ({
-              state: row.state.trim(),
-              value: Number(row.value)
-            }));
+          const headers = result.meta.fields || [];
           
-          if (processedData.length === 0) {
-            alert('No valid data found. Please ensure your file has "state" and "value" columns.');
+          // Use first column as state, second column as value
+          const stateColumn = headers[0];
+          const valueColumn = headers[1];
+          
+          if (!stateColumn || !valueColumn) {
+            alert('CSV must have at least two columns.');
             return;
           }
           
-          onDataLoad(processedData);
+          const processedData = data
+            .filter(row => row[stateColumn] && row[valueColumn] && !isNaN(Number(row[valueColumn])))
+            .map(row => ({
+              state: row[stateColumn].trim(),
+              value: Number(row[valueColumn])
+            }));
+          
+          if (processedData.length === 0) {
+            alert('No valid data found. Please ensure your file has data in the first two columns.');
+            return;
+          }
+          
+          // Use second column header as title
+          onDataLoad(processedData, valueColumn);
         } catch (error) {
           console.error('Error processing data:', error);
           alert('Error processing file data');
@@ -84,8 +96,58 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
     });
   };
 
-  const handleLoadDemo = () => {
-    onDataLoad(demoData);
+  const handleLoadDemo = async () => {
+    try {
+      const response = await fetch('/nfhs5_protein_consumption_eggs.csv');
+      if (!response.ok) {
+        throw new Error('Failed to load demo data');
+      }
+      const csvText = await response.text();
+      
+      Papa.parse(csvText, {
+        header: true,
+        complete: (result) => {
+          try {
+            const data = result.data as Array<Record<string, string>>;
+            const headers = result.meta.fields || [];
+            
+            // Use first column as state, second column as value
+            const stateColumn = headers[0];
+            const valueColumn = headers[1];
+            
+            if (!stateColumn || !valueColumn) {
+              alert('CSV must have at least two columns.');
+              return;
+            }
+            
+            const processedData = data
+              .filter(row => row[stateColumn] && row[valueColumn] && !isNaN(Number(row[valueColumn])))
+              .map(row => ({
+                state: row[stateColumn].trim(),
+                value: Number(row[valueColumn])
+              }));
+            
+            if (processedData.length === 0) {
+              alert('No valid data found in demo file.');
+              return;
+            }
+            
+            // Use second column header as title
+            onDataLoad(processedData, valueColumn);
+          } catch (error) {
+            console.error('Error processing demo data:', error);
+            alert('Error processing demo data');
+          }
+        },
+        error: (error) => {
+          console.error('Error parsing demo file:', error);
+          alert('Error parsing demo file');
+        }
+      });
+    } catch (error) {
+      console.error('Error loading demo data:', error);
+      alert('Error loading demo data');
+    }
   };
 
   const handleUploadClick = () => {
@@ -169,18 +231,31 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
         complete: (result) => {
           try {
             const data = result.data as Array<Record<string, string>>;
-            const processedData = data
-              .filter(row => row.state && row.value && !isNaN(Number(row.value)))
-              .map(row => ({
-                state: row.state.trim(),
-                value: Number(row.value)
-              }));
-            if (processedData.length === 0) {
-              setSheetError('No valid data found. Ensure your sheet has "state" and "value" columns.');
+            const headers = result.meta.fields || [];
+            
+            // Use first column as state, second column as value
+            const stateColumn = headers[0];
+            const valueColumn = headers[1];
+            
+            if (!stateColumn || !valueColumn) {
+              setSheetError('Sheet must have at least two columns.');
               setLoadingSheet(false);
               return;
             }
-            onDataLoad(processedData);
+            
+            const processedData = data
+              .filter(row => row[stateColumn] && row[valueColumn] && !isNaN(Number(row[valueColumn])))
+              .map(row => ({
+                state: row[stateColumn].trim(),
+                value: Number(row[valueColumn])
+              }));
+            if (processedData.length === 0) {
+              setSheetError('No valid data found. Ensure your sheet has data in the first two columns.');
+              setLoadingSheet(false);
+              return;
+            }
+            // Use second column header as title
+            onDataLoad(processedData, valueColumn);
             setLoadingSheet(false);
           } catch (error) {
             setSheetError('Error processing sheet data.');

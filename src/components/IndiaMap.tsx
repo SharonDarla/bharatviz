@@ -13,6 +13,7 @@ interface IndiaMapProps {
   colorScale?: ColorScale;
   hideStateNames?: boolean;
   hideValues?: boolean;
+  dataTitle?: string;
 }
 
 export interface IndiaMapRef {
@@ -22,7 +23,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', hideStateNames = false, hideValues = false }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', hideStateNames = false, hideValues = false, dataTitle = '' }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
 
@@ -33,7 +34,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingMin, setEditingMin] = useState(false);
   const [editingMax, setEditingMax] = useState(false);
-  const [legendTitle, setLegendTitle] = useState('Values (edit me) %');
+  const [legendTitle, setLegendTitle] = useState(dataTitle || 'Values (edit me) %');
   const [legendMin, setLegendMin] = useState('');
   const [legendMax, setLegendMax] = useState('');
   
@@ -47,6 +48,13 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   useEffect(() => {
     setLegendPosition(isMobile ? { x: 100, y: 240 } : { x: 220, y: 565 });
   }, [isMobile]);
+
+  // Update legend title when dataTitle changes
+  useEffect(() => {
+    if (dataTitle) {
+      setLegendTitle(dataTitle);
+    }
+  }, [dataTitle]);
 
   const exportPNG = () => {
     if (!svgRef.current) return;
@@ -676,7 +684,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .append("path")
       .attr("d", path)
       .attr("fill", (d: any) => {
-        // If no data, show all states as white/transparent
+        // If no data, show all states as white
         if (data.length === 0) {
           return "#ffffff";
         }
