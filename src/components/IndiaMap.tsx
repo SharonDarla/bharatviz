@@ -129,7 +129,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         magma: d3.interpolateMagma,
         rdylbu: d3.interpolateRdYlBu,
         rdylgn: d3.interpolateRdYlGn,
-        spectral: d3.interpolateSpectral,
+        spectral: (t: number) => d3.interpolateSpectral(1 - t),
         brbg: d3.interpolateBrBG,
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
@@ -634,7 +634,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         magma: d3.interpolateMagma,
         rdylbu: d3.interpolateRdYlBu,
         rdylgn: d3.interpolateRdYlGn,
-        spectral: d3.interpolateSpectral,
+        spectral: (t: number) => d3.interpolateSpectral(1 - t),
         brbg: d3.interpolateBrBG,
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
@@ -857,7 +857,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         magma: d3.interpolateMagma,
         rdylbu: d3.interpolateRdYlBu,
         rdylgn: d3.interpolateRdYlGn,
-        spectral: d3.interpolateSpectral,
+        spectral: (t: number) => d3.interpolateSpectral(1 - t),
         brbg: d3.interpolateBrBG,
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
