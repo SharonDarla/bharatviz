@@ -15,7 +15,7 @@ const emptyMapData: MapData[] = [];
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
   const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('spectral');
-  const [hideStateNames, setHideStateNames] = useState(false);
+  const [hideStateNames, setHideStateNames] = useState(true);
   const [hideValues, setHideValues] = useState(false);
   const mapRef = useRef<IndiaMapRef>(null);
 
@@ -43,7 +43,7 @@ const Index = () => {
     <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">India Data Visualization</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">BharatViz - Fast chloropeths for India</h1>
           <p className="text-lg sm:text-xl text-muted-foreground">Upload data to visualize state-wide distributions on India map</p>
         </div>
 
@@ -63,10 +63,7 @@ const Index = () => {
                 onScaleChange={setSelectedColorScale}
                 hideStateNames={hideStateNames}
                 hideValues={hideValues}
-                onHideStateNamesChange={checked => {
-                  setHideStateNames(checked);
-                  if (checked) setHideValues(true);
-                }}
+                onHideStateNamesChange={setHideStateNames}
                 onHideValuesChange={checked => setHideValues(checked)}
               />
               <ExportOptions 
