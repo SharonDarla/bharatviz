@@ -16,6 +16,15 @@
             "value": "application/geo+json"
           }
         ]
+      },
+      {
+        "source": "**/*.csv",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "text/csv"
+          }
+        ]
       }
     ],
     "rewrites": [
