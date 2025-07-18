@@ -6,12 +6,14 @@ import { Card } from '@/components/ui/card';
 interface ExportOptionsProps {
   onExportPNG: () => void;
   onExportSVG: () => void;
+  onExportPDF: () => void;
   disabled?: boolean;
 }
 
 export const ExportOptions: React.FC<ExportOptionsProps> = ({ 
   onExportPNG, 
   onExportSVG, 
+  onExportPDF,
   disabled = false 
 }) => {
   return (
@@ -40,6 +42,16 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         >
           <FileText className="h-4 w-4" />
           Export as SVG
+        </Button>
+        <Button 
+          onClick={onExportPDF} 
+          disabled={disabled}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Export as PDF
         </Button>
       </div>
     </Card>

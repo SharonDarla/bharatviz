@@ -35,6 +35,10 @@ const Index = () => {
     mapRef.current?.exportSVG();
   };
 
+  const handleExportPDF = () => {
+    mapRef.current?.exportPDF();
+  };
+
   const handleDownloadCSVTemplate = () => {
     mapRef.current?.downloadCSVTemplate();
   };
@@ -69,6 +73,7 @@ const Index = () => {
               <ExportOptions 
                 onExportPNG={handleExportPNG}
                 onExportSVG={handleExportSVG}
+                onExportPDF={handleExportPDF}
                 disabled={mapData.length === 0}
               />
             </div>

@@ -18,6 +18,7 @@ interface IndiaMapProps {
 export interface IndiaMapRef {
   exportPNG: () => void;
   exportSVG: () => void;
+  exportPDF: () => void;
   downloadCSVTemplate: () => void;
 }
 
@@ -32,9 +33,14 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingMin, setEditingMin] = useState(false);
   const [editingMax, setEditingMax] = useState(false);
-  const [legendTitle, setLegendTitle] = useState('Values (EDIT ME) %');
+  const [legendTitle, setLegendTitle] = useState('Values (edit me) %');
   const [legendMin, setLegendMin] = useState('');
   const [legendMax, setLegendMax] = useState('');
+  
+  // Main title state
+  const [editingMainTitle, setEditingMainTitle] = useState(false);
+  const [mainTitle, setMainTitle] = useState('BharatViz (edit me)');
+  
   const isMobile = useIsMobile();
 
   // Update legend position when mobile state changes
@@ -76,7 +82,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'india-map.png';
+            a.download = 'bharatviz.png';
             a.click();
             URL.revokeObjectURL(url);
           }
@@ -99,9 +105,413 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'india-map.svg';
+    a.download = 'bharatviz.svg';
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  // Helper function to fix legend gradient in cloned SVG by replacing with solid color rectangles
+  const fixLegendGradient = (svgClone: SVGSVGElement) => {
+    if (data.length === 0) return;
+    
+    // Get the appropriate D3 color interpolator
+    const getColorInterpolator = (scale: ColorScale) => {
+      const interpolators = {
+        blues: d3.interpolateBlues,
+        greens: d3.interpolateGreens,
+        reds: d3.interpolateReds,
+        oranges: d3.interpolateOranges,
+        purples: d3.interpolatePurples,
+        pinks: d3.interpolatePuRd,
+        viridis: d3.interpolateViridis,
+        plasma: d3.interpolatePlasma,
+        inferno: d3.interpolateInferno,
+        magma: d3.interpolateMagma,
+        rdylbu: d3.interpolateRdYlBu,
+        rdylgn: d3.interpolateRdYlGn,
+        spectral: d3.interpolateSpectral,
+        brbg: d3.interpolateBrBG,
+        piyg: d3.interpolatePiYG,
+        puor: d3.interpolatePuOr
+      };
+      return interpolators[scale] || d3.interpolateBlues;
+    };
+    
+    // Calculate color scale values
+    const values = data.map(d => d.value);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const colorInterpolator = getColorInterpolator(colorScale);
+    const colorScaleFunction = d3.scaleSequential(colorInterpolator)
+      .domain([minValue, maxValue]);
+    
+    // Find the legend rectangle that uses the gradient
+    const legendRect = svgClone.querySelector('rect[fill*="legend-gradient"]');
+    if (legendRect) {
+      // Get the rect's position and dimensions
+      const x = parseFloat(legendRect.getAttribute('x') || '0');
+      const y = parseFloat(legendRect.getAttribute('y') || '0');
+      const width = parseFloat(legendRect.getAttribute('width') || '200');
+      const height = parseFloat(legendRect.getAttribute('height') || '15');
+      const stroke = legendRect.getAttribute('stroke');
+      const strokeWidth = legendRect.getAttribute('stroke-width');
+      const rx = legendRect.getAttribute('rx');
+      
+      // Get parent element
+      const parent = legendRect.parentElement;
+      if (parent) {
+        // Remove the original gradient rect
+        legendRect.remove();
+        
+        // Create multiple small rectangles with solid colors
+        const numSegments = 50; // More segments for smoother gradient
+        const segmentWidth = width / numSegments;
+        
+        for (let i = 0; i < numSegments; i++) {
+          const t = i / (numSegments - 1);
+          const value = minValue + t * (maxValue - minValue);
+          const color = colorScaleFunction(value);
+          
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('x', (x + i * segmentWidth).toString());
+          rect.setAttribute('y', y.toString());
+          rect.setAttribute('width', segmentWidth.toString());
+          rect.setAttribute('height', height.toString());
+          rect.setAttribute('fill', color);
+          
+          // Add stroke only to first and last segment to maintain border
+          if (i === 0 || i === numSegments - 1) {
+            if (stroke) rect.setAttribute('stroke', stroke);
+            if (strokeWidth) rect.setAttribute('stroke-width', strokeWidth);
+          }
+          
+          // Add border radius to first and last segments
+          if (rx && (i === 0 || i === numSegments - 1)) {
+            rect.setAttribute('rx', rx);
+          }
+          
+          parent.appendChild(rect);
+        }
+      }
+    }
+    
+    // Also remove any gradient definitions that are no longer needed
+    const gradients = svgClone.querySelectorAll('#legend-gradient');
+    gradients.forEach(gradient => gradient.remove());
+  };
+
+  const exportPDF = async () => {
+    if (!svgRef.current) return;
+    
+    try {
+      // Dynamically import PDF libraries
+      const [{ default: jsPDF }, { svg2pdf }] = await Promise.all([
+        import('jspdf'),
+        import('svg2pdf.js')
+      ]);
+      
+      // Create PDF document
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Get the actual SVG dimensions
+      const svgWidth = isMobile ? 350 : 800;
+      const svgHeight = isMobile ? 280 : 600;
+      
+      // Clone the SVG to avoid modifying the original
+      const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
+      
+      // Ensure the cloned SVG has proper attributes for full capture
+      svgClone.setAttribute('width', svgWidth.toString());
+      svgClone.setAttribute('height', svgHeight.toString());
+      svgClone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+      svgClone.style.width = `${svgWidth}px`;
+      svgClone.style.height = `${svgHeight}px`;
+      
+      // Remove any CSS classes that might interfere with export
+      svgClone.removeAttribute('class');
+      
+      // Force all elements to be visible and properly positioned
+      const allElements = svgClone.querySelectorAll('*');
+      allElements.forEach(el => {
+        const element = el as SVGElement;
+        element.style.visibility = 'visible';
+        element.style.display = 'block';
+      });
+      
+      // Fix the legend gradient to match the selected color scale
+      fixLegendGradient(svgClone);
+      
+      // Calculate PDF margins and available space
+      const pdfMargin = 15; // 15mm margin
+      const availableWidth = pdfWidth - (2 * pdfMargin);
+      const availableHeight = pdfHeight - (2 * pdfMargin);
+      
+      // Convert SVG dimensions to mm (1px = 0.264583mm at 96dpi)
+      const svgWidthMm = svgWidth * 0.264583;
+      const svgHeightMm = svgHeight * 0.264583;
+      
+      // Calculate scale to fit entire SVG in PDF
+      const scaleX = availableWidth / svgWidthMm;
+      const scaleY = availableHeight / svgHeightMm;
+      const scale = Math.min(scaleX, scaleY);
+      
+      // Calculate final dimensions and position
+      const finalWidth = svgWidthMm * scale;
+      const finalHeight = svgHeightMm * scale;
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
+      
+      console.log('PDF Export Debug:', {
+        svgWidth, svgHeight,
+        svgWidthMm, svgHeightMm,
+        availableWidth, availableHeight,
+        scale, finalWidth, finalHeight,
+        x, y
+      });
+      
+      // Use svg2pdf.js for true vector conversion
+      await svg2pdf(svgClone, pdf, {
+        xOffset: x,
+        yOffset: y,
+        scale: scale,
+        preserveAspectRatio: 'xMidYMid meet',
+        width: finalWidth,
+        height: finalHeight
+      });
+      
+      // Save the PDF
+      pdf.save('bharatviz.pdf');
+      
+    } catch (error) {
+      console.error('Error generating vector PDF:', error);
+      
+      // Fallback to raster PDF if vector conversion fails
+      console.log('Falling back to raster PDF export...');
+      try {
+        await exportFallbackPDF();
+      } catch (fallbackError) {
+        console.error('Fallback PDF generation also failed:', fallbackError);
+        console.log('Trying html2canvas fallback...');
+        try {
+          await exportHtml2CanvasPDF();
+        } catch (html2canvasError) {
+          console.error('html2canvas fallback also failed:', html2canvasError);
+          alert('Failed to export PDF. Please try using SVG export instead.');
+        }
+      }
+    }
+  };
+
+  // Fallback raster PDF export method
+  const exportFallbackPDF = async () => {
+    if (!svgRef.current) return;
+    
+    const svg = svgRef.current;
+    
+    // Create a clean SVG clone for raster export
+    const svgClone = svg.cloneNode(true) as SVGSVGElement;
+    const svgWidth = isMobile ? 350 : 800;
+    const svgHeight = isMobile ? 280 : 600;
+    
+    // Ensure proper dimensions and viewBox
+    svgClone.setAttribute('width', svgWidth.toString());
+    svgClone.setAttribute('height', svgHeight.toString());
+    svgClone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+    svgClone.removeAttribute('class');
+    
+    // Force all elements to be visible and properly positioned
+    const allElements = svgClone.querySelectorAll('*');
+    allElements.forEach(el => {
+      const element = el as SVGElement;
+      element.style.visibility = 'visible';
+      element.style.display = 'block';
+      // Ensure text elements are properly rendered
+      if (element.tagName === 'text') {
+        element.setAttribute('font-family', 'Arial, sans-serif');
+      }
+    });
+    
+    // Fix the legend gradient to match the selected color scale
+    fixLegendGradient(svgClone);
+    
+    const svgData = new XMLSerializer().serializeToString(svgClone);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    return new Promise<void>(async (resolve, reject) => {
+      img.onload = async () => {
+        try {
+          // Dynamically import jsPDF for fallback
+          const { default: jsPDF } = await import('jspdf');
+          
+          // Use very high resolution for crisp output
+          const dpiScale = 8; // 8x resolution for maximum quality
+          canvas.width = svgWidth * dpiScale;
+          canvas.height = svgHeight * dpiScale;
+          
+          if (ctx) {
+            // Set high quality rendering
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            ctx.scale(dpiScale, dpiScale);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, svgWidth, svgHeight);
+            ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+            
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            
+            const pdf = new jsPDF({
+              orientation: 'landscape',
+              unit: 'mm',
+              format: 'a4'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const margin = 15; // 15mm margin
+            
+            const availableWidth = pdfWidth - (2 * margin);
+            const availableHeight = pdfHeight - (2 * margin);
+            
+            const imgAspectRatio = svgWidth / svgHeight;
+            const availableAspectRatio = availableWidth / availableHeight;
+            
+            let imgWidth, imgHeight;
+            if (imgAspectRatio > availableAspectRatio) {
+              imgWidth = availableWidth;
+              imgHeight = availableWidth / imgAspectRatio;
+            } else {
+              imgHeight = availableHeight;
+              imgWidth = availableHeight * imgAspectRatio;
+            }
+            
+            const x = (pdfWidth - imgWidth) / 2;
+            const y = (pdfHeight - imgHeight) / 2;
+            
+            console.log('Fallback PDF Debug:', {
+              svgWidth, svgHeight,
+              canvasWidth: canvas.width,
+              canvasHeight: canvas.height,
+              pdfWidth, pdfHeight,
+              availableWidth, availableHeight,
+              imgWidth, imgHeight,
+              x, y,
+              dpiScale
+            });
+            
+            pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+            pdf.save('bharatviz.pdf');
+            resolve();
+          } else {
+            reject(new Error('Could not get canvas context'));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load SVG'));
+      img.src = url;
+      
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+  };
+
+  // Final fallback using html2canvas for maximum compatibility
+  const exportHtml2CanvasPDF = async () => {
+    if (!svgRef.current) return;
+    
+    try {
+      // Dynamically import libraries
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas')
+      ]);
+      
+      // Use html2canvas to render the SVG element
+      const canvas = await html2canvas(svgRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 4, // High resolution
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        width: isMobile ? 350 : 800,
+        height: isMobile ? 280 : 600,
+        onclone: (clonedDoc) => {
+          // Ensure all elements are visible in the clone
+          const clonedSvg = clonedDoc.querySelector('svg');
+          if (clonedSvg) {
+            const allElements = clonedSvg.querySelectorAll('*');
+            allElements.forEach(el => {
+              const element = el as SVGElement;
+              element.style.visibility = 'visible';
+              element.style.display = 'block';
+            });
+            
+            // Fix the legend gradient to match the selected color scale
+            fixLegendGradient(clonedSvg);
+          }
+        }
+      });
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 15; // 15mm margin
+      
+      const availableWidth = pdfWidth - (2 * margin);
+      const availableHeight = pdfHeight - (2 * margin);
+      
+      const imgAspectRatio = canvas.width / canvas.height;
+      const availableAspectRatio = availableWidth / availableHeight;
+      
+      let imgWidth, imgHeight;
+      if (imgAspectRatio > availableAspectRatio) {
+        imgWidth = availableWidth;
+        imgHeight = availableWidth / imgAspectRatio;
+      } else {
+        imgHeight = availableHeight;
+        imgWidth = availableHeight * imgAspectRatio;
+      }
+      
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = (pdfHeight - imgHeight) / 2;
+      
+      console.log('html2canvas PDF Debug:', {
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        pdfWidth, pdfHeight,
+        availableWidth, availableHeight,
+        imgWidth, imgHeight,
+        x, y
+      });
+      
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+      pdf.save('bharatviz.pdf');
+      
+    } catch (error) {
+      console.error('html2canvas PDF export failed:', error);
+      throw error;
+    }
   };
 
   const downloadCSVTemplate = () => {
@@ -158,6 +568,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   useImperativeHandle(ref, () => ({
     exportPNG,
     exportSVG,
+    exportPDF,
     downloadCSVTemplate,
   }));
 
@@ -195,7 +606,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
     const width = isMobile ? 350 : 800;
     const height = isMobile ? 280 : 600;
-    const margin = { top: 20, right: 20, bottom: 40, left: 20 };
+    const margin = { top: isMobile ? 50 : 70, right: 20, bottom: 40, left: 20 };
 
     svg.attr("width", width).attr("height", height);
 
@@ -613,6 +1024,55 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             )}
           </g>
         )}
+        
+        {/* Main Title */}
+        <g className="main-title-container">
+          {editingMainTitle ? (
+            <foreignObject x={isMobile ? 75 : 160} y={isMobile ? 15 : 25} width={isMobile ? 200 : 300} height={40}>
+              <input
+                type="text"
+                value={mainTitle}
+                autoFocus
+                style={{ 
+                  width: isMobile ? 198 : 298, 
+                  fontSize: isMobile ? 16 : 20, 
+                  fontWeight: 700, 
+                  textAlign: 'center',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  padding: '4px 8px',
+                  backgroundColor: 'white'
+                }}
+                onChange={e => setMainTitle(e.target.value)}
+                onBlur={() => setEditingMainTitle(false)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    setEditingMainTitle(false);
+                  }
+                }}
+              />
+            </foreignObject>
+          ) : (
+            <text
+              x={isMobile ? 175 : 310}
+              y={isMobile ? 35 : 50}
+              textAnchor="middle"
+              style={{ 
+                fontFamily: 'system-ui, -apple-system, sans-serif', 
+                fontSize: isMobile ? 16 : 20, 
+                fontWeight: 700, 
+                fill: '#1f2937', 
+                cursor: 'pointer'
+              }}
+              onDoubleClick={e => { 
+                e.stopPropagation(); 
+                setEditingMainTitle(true); 
+              }}
+            >
+              {mainTitle}
+            </text>
+          )}
+        </g>
       </svg>
     </div>
   );
