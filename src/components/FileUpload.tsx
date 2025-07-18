@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Play } from 'lucide-react';
+import { Upload, Play, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Papa from 'papaparse';
 
 // Demo data with Indian states and literacy rates
@@ -228,15 +229,27 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
             onChange={e => setGoogleSheetUrl(e.target.value)}
             disabled={loadingSheet}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            onClick={handleLoadGoogleSheet}
-            disabled={loadingSheet || !googleSheetUrl}
-          >
-            {loadingSheet ? 'Loading...' : 'Load from Google Sheet'}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={handleLoadGoogleSheet}
+              disabled={loadingSheet || !googleSheetUrl}
+            >
+              {loadingSheet ? 'Loading...' : 'Load from Google Sheet'}
+            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Need a template? Use this <a href="https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="underline text-blue-500">Google Sheet template</a></p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           {sheetError && <div className="text-xs text-red-500 mt-1">{sheetError}</div>}
         </div>
         <p className="text-xs text-muted-foreground mt-3">
