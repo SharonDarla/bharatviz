@@ -47,7 +47,7 @@ const Index = () => {
     <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">BharatViz - Fast chloropeths for India</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">BharatViz - Fast choropleths for India</h1>
         </div>
 
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
