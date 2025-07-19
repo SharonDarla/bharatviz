@@ -48,7 +48,6 @@ const Index = () => {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">BharatViz - Fast chloropeths for India</h1>
-          <p className="text-lg sm:text-xl text-muted-foreground">Live demo showing protein consumption (eggs) by state. Upload your own data to visualize state-wide distributions on India map</p>
         </div>
 
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
