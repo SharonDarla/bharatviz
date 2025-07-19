@@ -40,7 +40,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   
   // Main title state
   const [editingMainTitle, setEditingMainTitle] = useState(false);
-  const [mainTitle, setMainTitle] = useState('BharatViz (editable title)');
+  const [mainTitle, setMainTitle] = useState('BharatViz (click to edit)');
   
   const isMobile = useIsMobile();
 
