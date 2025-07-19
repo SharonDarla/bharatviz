@@ -705,14 +705,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       'himachal pradesh': 'Himachal',
       'madhya pradesh': 'MP',
       'uttar pradesh': 'UP',
-      'west bengal': 'W Bengal',
+      'west bengal': 'WBengal',
       'tamil nadu': 'TN',
       'jammu & kashmir': 'J&K',  // Fixed: matches GeoJSON "Jammu & Kashmir"
       'telangana': 'Telangana',   // Added: matches GeoJSON "Telangana"
       'dadra and nagar haveli': 'D&NH',
       'daman and diu': 'D&D',
       'andaman and nicobar islands': 'A&N Islands',
-      'rajasthan': 'Rajasthan'
+      'rajasthan': 'Rajasthan',
+      'karnataka': 'KA',
+      'chandigarh': 'CH'
     };
 
     // Add text labels
@@ -721,10 +723,87 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .enter()
       .append("text")
       .attr("transform", (d: any) => {
+        const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const centroid = path.centroid(d);
+        
+        // Special positioning for states with external labels
+        const externalLabelStates = ['goa', 'kerala', 'dnhdd', 'nagaland', 'tripura', 'mizoram', 'lakshadweep', 'manipur', 'jharkhand', 'sikkim', 'andhra pradesh', 'karnataka', 'west bengal', 'delhi', 'chandigarh', 'puducherry'];
+        if (externalLabelStates.includes(stateName)) {
+          // Position labels with specific adjustments for each state
+          const bounds = path.bounds(d);
+          let posX, posY;
+          
+          if (stateName === 'goa') {
+            posX = bounds[0][0] - (isMobile ? 20 : 30); // Move Goa text more to the left
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'dnhdd') {
+            posX = bounds[0][0] + (isMobile ? 2 : 5); // Move DNHDD text further to the right
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'kerala') {
+            posX = bounds[0][0] - (isMobile ? 12 : 16); // Move Kerala text slightly to the right
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'nagaland') {
+            posX = bounds[1][0] + (isMobile ? 5 : 8); // Move Nagaland text slightly more left
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'tripura') {
+            posX = bounds[0][0] - (isMobile ? 5 : 10); // Move Tripura text slightly right
+            posY = bounds[1][1] + (isMobile ? 5 : 8); // Move slightly above previous position
+          } else if (stateName === 'mizoram') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2; // Horizontal center
+            posY = bounds[1][1] + (isMobile ? 5 : 8); // Move Mizoram slightly up
+          } else if (stateName === 'lakshadweep') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 10 : 15); // Move slightly left from center
+            posY = bounds[0][1] - (isMobile ? 10 : 15); // Move above the state
+          } else if (stateName === 'manipur') {
+            posX = bounds[1][0] + (isMobile ? 3 : 5); // Move Manipur text slightly more left
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'west bengal') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 3 : 5); // Horizontal center - slightly left
+            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 20 : 25); // Below Jharkhand, same vertical approach
+          } else if (stateName === 'jharkhand') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 5 : 8); // Move Jharkhand text slightly right
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'sikkim') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2; // Horizontal center
+            posY = bounds[0][1] - (isMobile ? 10 : 15); // Move Sikkim text above the state
+          } else if (stateName === 'andhra pradesh') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 20 : 30); // Move Andhra text left
+            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 15 : 20); // Move Andhra text down
+          } else if (stateName === 'karnataka') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 8 : 12); // Move Karnataka text very slightly left
+            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 3 : 5); // Move Karnataka text slightly down
+          } else if (stateName === 'delhi') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 + (isMobile ? 10 : 15); // Move Delhi text very slightly right
+            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
+          } else if (stateName === 'chandigarh') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 + (isMobile ? 6 : 9); // Move Chandigarh text more right (northeast)
+            posY = (bounds[0][1] + bounds[1][1]) / 2 - (isMobile ? 6 : 9); // Move Chandigarh text more up (northeast)
+          } else if (stateName === 'puducherry') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 + (isMobile ? 12 : 18); // Puducherry move more right
+            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 18 : 26); // Puducherry move slightly more down
+          } else {
+            // Default positioning for other external label states
+            posX = bounds[0][0] - (isMobile ? 15 : 20);
+            posY = (bounds[0][1] + bounds[1][1]) / 2;
+          }
+          
+          return `translate(${posX}, ${posY})`;
+        }
+        
         return `translate(${centroid[0]}, ${centroid[1]})`;
       })
-      .attr("text-anchor", "middle")
+      .attr("text-anchor", (d: any) => {
+        const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
+        const externalLabelStates = ['goa', 'kerala', 'dnhdd', 'nagaland', 'tripura', 'mizoram', 'lakshadweep', 'manipur', 'jharkhand', 'sikkim', 'andhra pradesh', 'karnataka', 'west bengal', 'delhi', 'chandigarh', 'puducherry'];
+        if (externalLabelStates.includes(stateName)) {
+          // Special text anchoring for different positions
+          if (stateName === 'mizoram' || stateName === 'lakshadweep' || stateName === 'jharkhand' || stateName === 'sikkim' || stateName === 'andhra pradesh' || stateName === 'karnataka' || stateName === 'west bengal' || stateName === 'delhi' || stateName === 'chandigarh') {
+            return "middle"; // Center-aligned for below/above positioning and centered states
+          }
+          return "start"; // Left-aligned for most external labels
+        }
+        return "middle";
+      })
       .attr("dominant-baseline", "middle")
       .style("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif")
       .style("font-weight", "600")
@@ -744,46 +823,86 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           const area = width * height;
           let fontSize = Math.sqrt(area) / (isMobile ? 16 : 12);
           fontSize = Math.max(isMobile ? 5 : 7, Math.min(isMobile ? 10 : 14, fontSize));
-          if (stateName === 'rajasthan') {
-            fontSize = Math.max(8, fontSize * 0.7);
+          
+          // Special handling for smaller states - reduce text size
+          const smallerStates = ['delhi', 'chandigarh', 'sikkim', 'tripura', 'manipur', 'mizoram', 'nagaland', 'meghalaya', 'puducherry', 'lakshadweep'];
+          if (smallerStates.includes(stateName)) {
+            fontSize = Math.max(isMobile ? 4 : 6, fontSize * 0.7);
           }
-          const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
-          // Robust color parsing for luminance
-          function parseColorToRGB(color: string): {r: number, g: number, b: number} | null {
-            // Hex format
-            if (color.startsWith('#')) {
-              let hex = color.slice(1);
-              if (hex.length === 3) {
-                hex = hex.split('').map(x => x + x).join('');
+          
+          // External label states use smaller font size and black color
+          const externalLabelStates = ['goa', 'kerala', 'dnhdd', 'nagaland', 'tripura', 'mizoram', 'lakshadweep', 'manipur', 'jharkhand', 'sikkim', 'andhra pradesh', 'karnataka', 'west bengal', 'delhi', 'chandigarh', 'puducherry'];
+          let textColor, valueColor;
+          if (externalLabelStates.includes(stateName)) {
+            // Special font sizes for specific states
+            if (stateName === 'west bengal' || stateName === 'jharkhand') {
+              fontSize = isMobile ? 5 : 7; // Smaller size for W Bengal and Jharkhand
+            } else if (stateName === 'delhi') {
+              fontSize = isMobile ? 4 : 6; // Even smaller size for Delhi
+            } else if (stateName === 'chandigarh') {
+              fontSize = isMobile ? 3 : 5; // Even smaller size for Chandigarh
+            } else if (stateName === 'himachal pradesh') {
+              fontSize = isMobile ? 4 : 6; // Smaller size for Himachal Pradesh
+            } else if (stateName === 'puducherry') {
+              fontSize = isMobile ? 5 : 7; // Increased size for Puducherry
+            } else if (stateName === 'dnhdd') {
+              fontSize = isMobile ? 5 : 7; // Smaller size for DNHDD
+            } else if (stateName === 'karnataka') {
+              fontSize = isMobile ? 5 : 8; // Slightly larger size for Karnataka (KA)
+            } else if (stateName === 'mizoram' || stateName === 'tripura') {
+              fontSize = isMobile ? 5 : 7; // Smaller size for Mizoram and Tripura
+            } else if (stateName === 'nagaland' || stateName === 'manipur') {
+              fontSize = isMobile ? 5 : 7; // Smaller size for Nagaland and Manipur
+            } else {
+              fontSize = isMobile ? 6 : 9; // Standard size for other external labels
+            }
+            textColor = "#000000"; // Black text for white background
+            valueColor = "#000000";
+          } else {
+            if (stateName === 'rajasthan') {
+              fontSize = Math.max(8, fontSize * 0.7);
+            } else if (stateName === 'west bengal') {
+              fontSize = isMobile ? 5 : 7; // Smaller size for W Bengal
+            }
+            const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
+            // Robust color parsing for luminance
+            function parseColorToRGB(color: string): {r: number, g: number, b: number} | null {
+              // Hex format
+              if (color.startsWith('#')) {
+                let hex = color.slice(1);
+                if (hex.length === 3) {
+                  hex = hex.split('').map(x => x + x).join('');
+                }
+                if (hex.length === 6) {
+                  const r = parseInt(hex.substr(0, 2), 16);
+                  const g = parseInt(hex.substr(2, 2), 16);
+                  const b = parseInt(hex.substr(4, 2), 16);
+                  return { r, g, b };
+                }
               }
-              if (hex.length === 6) {
-                const r = parseInt(hex.substr(0, 2), 16);
-                const g = parseInt(hex.substr(2, 2), 16);
-                const b = parseInt(hex.substr(4, 2), 16);
-                return { r, g, b };
+              // rgb() format
+              const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+              if (rgbMatch) {
+                return { r: +rgbMatch[1], g: +rgbMatch[2], b: +rgbMatch[3] };
               }
+              // rgba() format
+              const rgbaMatch = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
+              if (rgbaMatch) {
+                return { r: +rgbaMatch[1], g: +rgbaMatch[2], b: +rgbaMatch[3] };
+              }
+              return null;
             }
-            // rgb() format
-            const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-            if (rgbMatch) {
-              return { r: +rgbMatch[1], g: +rgbMatch[2], b: +rgbMatch[3] };
+            function isColorDark(color: string) {
+              const rgb = parseColorToRGB(color);
+              if (!rgb) return false; // fallback to dark text
+              const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+              return luminance < 0.5;
             }
-            // rgba() format
-            const rgbaMatch = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
-            if (rgbaMatch) {
-              return { r: +rgbaMatch[1], g: +rgbaMatch[2], b: +rgbaMatch[3] };
-            }
-            return null;
+            // End robust color parsing
+            textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
+            valueColor = textColor;
           }
-          function isColorDark(color: string) {
-            const rgb = parseColorToRGB(color);
-            if (!rgb) return false; // fallback to dark text
-            const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-            return luminance < 0.5;
-          }
-          // End robust color parsing
-          const textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
-          const valueColor = textColor;
+          
           const displayName = stateAbbreviations[stateName] || originalName;
           if (!hideStateNames) {
             // Add state name

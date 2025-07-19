@@ -15,7 +15,7 @@ const emptyMapData: MapData[] = [];
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
   const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('spectral');
-  const [hideStateNames, setHideStateNames] = useState(true);
+  const [hideStateNames, setHideStateNames] = useState(false);
   const [hideValues, setHideValues] = useState(false);
   const [dataTitle, setDataTitle] = useState<string>('');
   const mapRef = useRef<IndiaMapRef>(null);
@@ -57,6 +57,14 @@ const Index = () => {
               hideValues={hideValues}
               dataTitle={dataTitle}
             />
+            <div className="mt-6 flex justify-center">
+              <ExportOptions 
+                onExportPNG={handleExportPNG}
+                onExportSVG={handleExportSVG}
+                onExportPDF={handleExportPDF}
+                disabled={mapData.length === 0}
+              />
+            </div>
           </div>
           
           <div className="lg:col-span-1 order-1 lg:order-1">
@@ -69,12 +77,6 @@ const Index = () => {
                 hideValues={hideValues}
                 onHideStateNamesChange={setHideStateNames}
                 onHideValuesChange={checked => setHideValues(checked)}
-              />
-              <ExportOptions 
-                onExportPNG={handleExportPNG}
-                onExportSVG={handleExportSVG}
-                onExportPDF={handleExportPDF}
-                disabled={mapData.length === 0}
               />
             </div>
           </div>

@@ -22,7 +22,7 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         <Download className="h-4 w-4" />
         Export
       </h3>
-      <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
         <Button 
           onClick={onExportPNG} 
           disabled={disabled}
