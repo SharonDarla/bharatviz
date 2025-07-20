@@ -11,6 +11,7 @@ interface MapData {
 interface IndiaMapProps {
   data: MapData[];
   colorScale?: ColorScale;
+  invertColors?: boolean;
   hideStateNames?: boolean;
   hideValues?: boolean;
   dataTitle?: string;
@@ -23,7 +24,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', hideStateNames = false, hideValues = false, dataTitle = '' }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '' }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<any>(null);
 
@@ -142,7 +143,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
       };
-      return interpolators[scale] || d3.interpolateBlues;
+      const baseInterpolator = interpolators[scale] || d3.interpolateBlues;
+      return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
     
     // Calculate color scale values
@@ -647,7 +649,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
       };
-      return interpolators[scale] || d3.interpolateBlues;
+      const baseInterpolator = interpolators[scale] || d3.interpolateBlues;
+      return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
 
     // Create color scale only if we have data
@@ -938,7 +941,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
     // Legend will be handled by separate effect
 
-  }, [mapData, data, colorScale, hideStateNames, hideValues]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile]);
 
   // Legend values from data
   useEffect(() => {
@@ -989,7 +992,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
       };
-      return interpolators[scale] || d3.interpolateBlues;
+      const baseInterpolator = interpolators[scale] || d3.interpolateBlues;
+      return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
     const colorScaleFunction = d3.scaleSequential(getColorInterpolator(colorScale))
       .domain([minValue, maxValue]);
@@ -1002,7 +1006,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, data]);
+  }, [colorScale, invertColors, data]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {

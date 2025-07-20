@@ -8,6 +8,8 @@ export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | '
 interface ColorMapChooserProps {
   selectedScale: ColorScale;
   onScaleChange: (scale: ColorScale) => void;
+  invertColors: boolean;
+  onInvertColorsChange: (invert: boolean) => void;
   hideStateNames: boolean;
   hideValues: boolean;
   onHideStateNamesChange: (hide: boolean) => void;
@@ -36,7 +38,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -83,7 +85,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                 key={i}
                 className="flex-1"
                 style={{
-                  backgroundColor: getPreviewColor(selectedScale, i / 9),
+                  backgroundColor: getPreviewColor(selectedScale, invertColors ? 1 - (i / 9) : i / 9),
                 }}
               />
             ))}
@@ -91,6 +93,14 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
         </div>
       </CardContent>
       <div className="flex flex-col gap-2 px-6 pb-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={invertColors}
+            onChange={e => onInvertColorsChange(e.target.checked)}
+          />
+          Invert colors
+        </label>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

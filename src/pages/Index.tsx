@@ -15,6 +15,7 @@ const emptyMapData: MapData[] = [];
 const Index = () => {
   const [mapData, setMapData] = useState<MapData[]>([]);
   const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('spectral');
+  const [invertColors, setInvertColors] = useState(false);
   const [hideStateNames, setHideStateNames] = useState(false);
   const [hideValues, setHideValues] = useState(false);
   const [dataTitle, setDataTitle] = useState<string>('');
@@ -53,6 +54,7 @@ const Index = () => {
         <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 order-2 lg:order-2">
             <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} 
+              invertColors={invertColors}
               hideStateNames={hideStateNames}
               hideValues={hideValues}
               dataTitle={dataTitle}
@@ -73,6 +75,8 @@ const Index = () => {
               <ColorMapChooser 
                 selectedScale={selectedColorScale}
                 onScaleChange={setSelectedColorScale}
+                invertColors={invertColors}
+                onInvertColorsChange={setInvertColors}
                 hideStateNames={hideStateNames}
                 hideValues={hideValues}
                 onHideStateNamesChange={setHideStateNames}
