@@ -1,0 +1,109 @@
+state_name,district_name,column of interest
+A & N Islands,Nicobars,84.3
+A & N Islands,North And Middle Andaman,89.6
+A & N Islands,South Andamans,91.2
+Andhra Pradesh,Anantapur,64.3
+Andhra Pradesh,Chittoor,71.5
+Andhra Pradesh,East Godavari,73.1
+Andhra Pradesh,Guntur,68.9
+Andhra Pradesh,Krishna,74.2
+Andhra Pradesh,Kurnool,59.4
+Andhra Pradesh,Prakasam,63.8
+Arunachal Pradesh,Anjaw,56.9
+Arunachal Pradesh,Changlang,59.7
+Arunachal Pradesh,East Kameng,64.1
+Arunachal Pradesh,Papum Pare,85.5
+Assam,Barpeta,63.8
+Assam,Cachar,79.3
+Assam,Darrang,63.0
+Assam,Dhubri,58.3
+Assam,Dibrugarh,76.0
+Assam,Golaghat,77.9
+Assam,Jorhat,82.2
+Assam,Kamrup Metro,88.7
+Assam,Nagaon,72.3
+Bihar,Araria,53.5
+Bihar,Darbhanga,56.8
+Bihar,Gaya,63.0
+Bihar,Muzaffarpur,63.4
+Bihar,Patna,70.4
+Bihar,Purnia,51.8
+Chandigarh,Chandigarh,86.4
+Chhattisgarh,Bilaspur,71.6
+Chhattisgarh,Durg,77.2
+Chhattisgarh,Raipur,76.5
+Delhi,Central,86.3
+Delhi,East,89.1
+Delhi,New Delhi,89.2
+Delhi,North,83.0
+Delhi,South,87.4
+Goa,North Goa,89.6
+Goa,South Goa,87.4
+Gujarat,Ahmadabad,85.3
+Gujarat,Bharuch,83.7
+Gujarat,Gandhinagar,84.6
+Gujarat,Rajkot,80.8
+Gujarat,Surat,85.5
+Gujarat,Vadodara,82.5
+Haryana,Faridabad,81.7
+Haryana,Gurugram,84.7
+Haryana,Hisar,72.9
+Haryana,Karnal,74.7
+Haryana,Panipat,75.9
+Himachal Pradesh,Kangra,86.5
+Himachal Pradesh,Shimla,84.6
+Himachal Pradesh,Solan,85.0
+Jammu & Kashmir,Jammu,83.4
+Jammu & Kashmir,Srinagar,69.0
+Jharkhand,Dhanbad,73.1
+Jharkhand,Ranchi,76.1
+Karnataka,Bengaluru Rural,77.2
+Karnataka,Bengaluru Urban,88.7
+Karnataka,Dharwad,80.0
+Karnataka,Mysuru,73.4
+Kerala,Alappuzha,96.3
+Kerala,Ernakulam,95.7
+Kerala,Kannur,95.4
+Kerala,Kollam,94.0
+Kerala,Kottayam,97.2
+Kerala,Kozhikode,95.2
+Kerala,Thiruvananthapuram,93.0
+Madhya Pradesh,Bhopal,80.4
+Madhya Pradesh,Indore,80.9
+Madhya Pradesh,Jabalpur,81.1
+Maharashtra,Mumbai,89.7
+Maharashtra,Mumbai Suburban,90.9
+Maharashtra,Nagpur,89.5
+Maharashtra,Pune,86.2
+Maharashtra,Thane,84.5
+Manipur,Imphal East,81.9
+Manipur,Imphal West,86.1
+Meghalaya,East Khasi Hills,84.2
+Mizoram,Aizawl,98.5
+Nagaland,Dimapur,84.9
+Nagaland,Kohima,85.2
+Odisha,Bhubaneswar,87.0
+Odisha,Cuttack,77.3
+Odisha,Ganjam,71.9
+Punjab,Amritsar,76.3
+Punjab,Jalandhar,82.5
+Punjab,Ludhiana,82.2
+Rajasthan,Jaipur,76.4
+Rajasthan,Jodhpur,65.9
+Rajasthan,Udaipur,62.7
+Sikkim,East Sikkim,83.4
+Tamil Nadu,Chennai,90.2
+Tamil Nadu,Coimbatore,84.2
+Tamil Nadu,Madurai,81.3
+Telangana,Hyderabad,83.3
+Telangana,Ranga Reddy,75.8
+Telangana,Warangal,66.5
+Tripura,West Tripura,87.8
+Uttar Pradesh,Agra,71.6
+Uttar Pradesh,Lucknow,77.3
+Uttar Pradesh,Varanasi,75.6
+Uttarakhand,Dehradun,84.3
+Uttarakhand,Haridwar,73.2
+West Bengal,Kolkata,87.1
+West Bengal,Howrah,84.1
+West Bengal,24 Paraganas North,84.1

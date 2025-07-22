@@ -2,6 +2,18 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { ColorScale } from './ColorMapChooser';
+import { isColorDark } from '@/lib/colorUtils';
+import { GeoJSON } from 'geojson';
+import { 
+  BLACK_TEXT_STATES, 
+  ABBREVIATED_STATES, 
+  EXTERNAL_LABEL_STATES, 
+  STATE_ABBREVIATIONS,
+  MAP_DIMENSIONS,
+  DEFAULT_LEGEND_POSITION,
+  DATA_FILES,
+  EXPORT_FILENAMES
+} from '@/lib/constants';
 
 interface MapData {
   state: string;
@@ -26,18 +38,19 @@ export interface IndiaMapRef {
 
 export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '' }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [mapData, setMapData] = useState<any>(null);
+  const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
 
   // Legend state
-  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 220, y: 565 });
+  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>(DEFAULT_LEGEND_POSITION.STATES);
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingMin, setEditingMin] = useState(false);
   const [editingMax, setEditingMax] = useState(false);
-  const [legendTitle, setLegendTitle] = useState(dataTitle || 'Values (edit me) %');
+  const [legendTitle, setLegendTitle] = useState(dataTitle || 'Values (edit me)');
   const [legendMin, setLegendMin] = useState('');
   const [legendMax, setLegendMax] = useState('');
+  const [hoveredState, setHoveredState] = useState<{ state: string; value?: number } | null>(null);
   
   // Main title state
   const [editingMainTitle, setEditingMainTitle] = useState(false);
@@ -47,7 +60,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   // Update legend position when mobile state changes
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: 100, y: 240 } : { x: 220, y: 565 });
+    setLegendPosition(isMobile ? { x: 100, y: 310 } : { x: 375, y: 575 });
   }, [isMobile]);
 
   // Update legend title when dataTitle changes
@@ -69,7 +82,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // High DPI settings for 300 DPI output
     const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
     const originalWidth = isMobile ? 350 : 800;
-    const originalHeight = isMobile ? 280 : 600;
+    const originalHeight = isMobile ? 350 : 800;
     
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
@@ -91,7 +104,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'bharatviz.png';
+            a.download = `bharatviz-states-${Date.now()}.png`;
             a.click();
             URL.revokeObjectURL(url);
           }
@@ -107,14 +120,27 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const exportSVG = () => {
     if (!svgRef.current) return;
     
-    const svg = svgRef.current;
-    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    
+    // Ensure consistent font handling
+    const allElements = svgClone.querySelectorAll('*');
+    allElements.forEach(el => {
+      const element = el as SVGElement;
+      if (element.tagName === 'text') {
+        // Use both attribute and style to ensure compatibility
+        element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
+        element.style.fontFamily = 'Arial, Helvetica, sans-serif';
+      }
+    });
+    
+    const svgData = new XMLSerializer().serializeToString(svgClone);
     const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'bharatviz.svg';
+    a.download = `bharatviz-states-${Date.now()}.svg`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -148,15 +174,15 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     };
     
     // Calculate color scale values
-    const values = data.map(d => d.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const values = data.map(d => d.value).filter(v => !isNaN(v));
+    const minValue = values.length > 0 ? Math.min(...values) : 0;
+    const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const colorInterpolator = getColorInterpolator(colorScale);
     const colorScaleFunction = d3.scaleSequential(colorInterpolator)
       .domain([minValue, maxValue]);
     
     // Find the legend rectangle that uses the gradient
-    const legendRect = svgClone.querySelector('rect[fill*="legend-gradient"]');
+    const legendRect = svgClone.querySelector('rect[fill*="states-legend-gradient"]');
     if (legendRect) {
       // Get the rect's position and dimensions
       const x = parseFloat(legendRect.getAttribute('x') || '0');
@@ -206,7 +232,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     }
     
     // Also remove any gradient definitions that are no longer needed
-    const gradients = svgClone.querySelectorAll('#legend-gradient');
+    const gradients = svgClone.querySelectorAll('#states-legend-gradient');
     gradients.forEach(gradient => gradient.remove());
   };
 
@@ -232,7 +258,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       
       // Get the actual SVG dimensions
       const svgWidth = isMobile ? 350 : 800;
-      const svgHeight = isMobile ? 280 : 600;
+      const svgHeight = isMobile ? 350 : 800;
       
       // Clone the SVG to avoid modifying the original
       const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
@@ -278,13 +304,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const x = (pdfWidth - finalWidth) / 2;
       const y = (pdfHeight - finalHeight) / 2;
       
-      console.log('PDF Export Debug:', {
-        svgWidth, svgHeight,
-        svgWidthMm, svgHeightMm,
-        availableWidth, availableHeight,
-        scale, finalWidth, finalHeight,
-        x, y
-      });
       
       // Use svg2pdf.js for true vector conversion
       await svg2pdf(svgClone, pdf, {
@@ -297,18 +316,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       });
       
       // Save the PDF
-      pdf.save('bharatviz.pdf');
+      pdf.save(`bharatviz-states-${Date.now()}.pdf`);
       
     } catch (error) {
       console.error('Error generating vector PDF:', error);
       
       // Fallback to raster PDF if vector conversion fails
-      console.log('Falling back to raster PDF export...');
       try {
         await exportFallbackPDF();
       } catch (fallbackError) {
         console.error('Fallback PDF generation also failed:', fallbackError);
-        console.log('Trying html2canvas fallback...');
         try {
           await exportHtml2CanvasPDF();
         } catch (html2canvasError) {
@@ -328,7 +345,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Create a clean SVG clone for raster export
     const svgClone = svg.cloneNode(true) as SVGSVGElement;
     const svgWidth = isMobile ? 350 : 800;
-    const svgHeight = isMobile ? 280 : 600;
+    const svgHeight = isMobile ? 350 : 800;
     
     // Ensure proper dimensions and viewBox
     svgClone.setAttribute('width', svgWidth.toString());
@@ -342,9 +359,11 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const element = el as SVGElement;
       element.style.visibility = 'visible';
       element.style.display = 'block';
-      // Ensure text elements are properly rendered
+      // Ensure text elements are properly rendered with consistent font
       if (element.tagName === 'text') {
-        element.setAttribute('font-family', 'Arial, sans-serif');
+        // Use both attribute and style to ensure compatibility
+        element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
+        element.style.fontFamily = 'Arial, Helvetica, sans-serif';
       }
     });
     
@@ -359,7 +378,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
-    return new Promise<void>(async (resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       img.onload = async () => {
         try {
           // Dynamically import jsPDF for fallback
@@ -410,19 +429,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             const x = (pdfWidth - imgWidth) / 2;
             const y = (pdfHeight - imgHeight) / 2;
             
-            console.log('Fallback PDF Debug:', {
-              svgWidth, svgHeight,
-              canvasWidth: canvas.width,
-              canvasHeight: canvas.height,
-              pdfWidth, pdfHeight,
-              availableWidth, availableHeight,
-              imgWidth, imgHeight,
-              x, y,
-              dpiScale
-            });
             
             pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-            pdf.save('bharatviz.pdf');
+            pdf.save(`bharatviz-states-${Date.now()}.pdf`);
             resolve();
           } else {
             reject(new Error('Could not get canvas context'));
@@ -458,7 +467,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         allowTaint: false,
         logging: false,
         width: isMobile ? 350 : 800,
-        height: isMobile ? 280 : 600,
+        height: isMobile ? 350 : 800,
         onclone: (clonedDoc) => {
           // Ensure all elements are visible in the clone
           const clonedSvg = clonedDoc.querySelector('svg');
@@ -506,17 +515,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const x = (pdfWidth - imgWidth) / 2;
       const y = (pdfHeight - imgHeight) / 2;
       
-      console.log('html2canvas PDF Debug:', {
-        canvasWidth: canvas.width,
-        canvasHeight: canvas.height,
-        pdfWidth, pdfHeight,
-        availableWidth, availableHeight,
-        imgWidth, imgHeight,
-        x, y
-      });
       
       pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-      pdf.save('bharatviz.pdf');
+      pdf.save(`bharatviz-states-${Date.now()}.pdf`);
       
     } catch (error) {
       console.error('html2canvas PDF export failed:', error);
@@ -585,7 +586,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   useEffect(() => {
     const loadMapData = async () => {
       try {
-        const response = await fetch('/india_map_states.geojson');
+        const response = await fetch(DATA_FILES.STATES_GEOJSON);
         if (!response.ok) {
           throw new Error(`Failed to load map data: ${response.status} ${response.statusText}`);
         }
@@ -609,14 +610,15 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       return;
     }
 
-    const svg = d3.select(svgRef.current);
+    try {
+      const svg = d3.select(svgRef.current);
     
     // Only remove map content, not legend
     svg.selectAll(".map-content").remove();
 
     const width = isMobile ? 350 : 800;
-    const height = isMobile ? 280 : 600;
-    const margin = { top: isMobile ? 50 : 70, right: 20, bottom: 40, left: 20 };
+    const height = isMobile ? 350 : 800;
+    const margin = { top: isMobile ? 50 : 70, right: 20, bottom: isMobile ? 50 : 70, left: 20 };
 
     svg.attr("width", width).attr("height", height);
 
@@ -656,9 +658,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Create color scale only if we have data
     let colorScaleFunction;
     if (data.length > 0) {
-      const values = data.map(d => d.value);
-      const minValue = Math.min(...values);
-      const maxValue = Math.max(...values);
+      const values = data.map(d => d.value).filter(v => !isNaN(v));
+      const minValue = values.length > 0 ? Math.min(...values) : 0;
+      const maxValue = values.length > 0 ? Math.max(...values) : 1;
+      
       
       // Check if it's a diverging scale
       const divergingScales = ['rdylbu', 'rdylgn', 'spectral', 'brbg', 'piyg', 'puor'];
@@ -686,7 +689,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .enter()
       .append("path")
       .attr("d", path)
-      .attr("fill", (d: any) => {
+      .attr("fill", (d: GeoJSON.Feature) => {
         // If no data, show all states as white
         if (data.length === 0) {
           return "#ffffff";
@@ -695,55 +698,72 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
-        return value !== undefined && colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
+        
+        if (value === undefined) {
+          return "#e5e7eb"; // Light gray for no data
+        }
+        
+        if (isNaN(value)) {
+          return "#d1d5db"; // Light gray for NaN/NA values
+        }
+        
+        return colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
       })
       .attr("stroke", "#374151")
       .attr("stroke-width", 0.5)
-      .style("cursor", "pointer");
+      .style("cursor", "pointer")
+      .on("mouseenter", function(event: MouseEvent, d: GeoJSON.Feature) {
+        // Get state name and value for hover
+        const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
+        const originalName = d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM;
+        const value = dataMap.get(stateName);
+        
+        setHoveredState({ 
+          state: originalName, 
+          value: value 
+        });
+        
+        // Visual feedback - increase stroke width
+        d3.select(this)
+          .attr("stroke-width", 1.5)
+          .style("filter", "brightness(1.1)");
+      })
+      .on("mouseleave", function() {
+        setHoveredState(null);
+        
+        // Reset visual feedback
+        d3.select(this)
+          .attr("stroke-width", 0.5)
+          .style("filter", null);
+      });
 
     // State name abbreviations
-    const stateAbbreviations: { [key: string]: string } = {
-      'andhra pradesh': 'Andhra',
-      'arunachal pradesh': 'Arunachal',
-      'himachal pradesh': 'Himachal',
-      'madhya pradesh': 'MP',
-      'uttar pradesh': 'UP',
-      'west bengal': 'WBengal',
-      'tamil nadu': 'TN',
-      'jammu & kashmir': 'J&K',  // Fixed: matches GeoJSON "Jammu & Kashmir"
-      'telangana': 'Telangana',   // Added: matches GeoJSON "Telangana"
-      'dadra and nagar haveli': 'D&NH',
-      'daman and diu': 'D&D',
-      'andaman and nicobar islands': 'A&N Islands',
-      'rajasthan': 'Rajasthan',
-      'karnataka': 'KA',
-      'chandigarh': 'CH'
-    };
+    const stateAbbreviations = STATE_ABBREVIATIONS;
 
     // Add text labels
     g.selectAll("text")
       .data(mapData.features)
       .enter()
       .append("text")
-      .attr("transform", (d: any) => {
+      .attr("transform", (d: GeoJSON.Feature) => {
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const centroid = path.centroid(d);
         
         // Special positioning for states with external labels
-        const externalLabelStates = ['goa', 'kerala', 'dnhdd', 'nagaland', 'tripura', 'mizoram', 'lakshadweep', 'manipur', 'jharkhand', 'sikkim', 'andhra pradesh', 'karnataka', 'west bengal', 'delhi', 'chandigarh', 'puducherry'];
+        const externalLabelStates = EXTERNAL_LABEL_STATES;
         if (externalLabelStates.includes(stateName)) {
           // Position labels with specific adjustments for each state
           const bounds = path.bounds(d);
           let posX, posY;
           
           if (stateName === 'goa') {
-            posX = bounds[0][0] - (isMobile ? 20 : 30); // Move Goa text more to the left
+            posX = bounds[0][0] - (isMobile ? 12 : 22); // Move Goa text right by another 4
             posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
           } else if (stateName === 'dnhdd') {
             posX = bounds[0][0] + (isMobile ? 2 : 5); // Move DNHDD text further to the right
             posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
           } else if (stateName === 'kerala') {
-            posX = bounds[0][0] - (isMobile ? 12 : 16); // Move Kerala text slightly to the right
+            posX = bounds[0][0] - (isMobile ? 6 : 10); // Move Kerala text right by 6
             posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
           } else if (stateName === 'nagaland') {
             posX = bounds[1][0] + (isMobile ? 5 : 8); // Move Nagaland text slightly more left
@@ -760,17 +780,11 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           } else if (stateName === 'manipur') {
             posX = bounds[1][0] + (isMobile ? 3 : 5); // Move Manipur text slightly more left
             posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
-          } else if (stateName === 'west bengal') {
-            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 3 : 5); // Horizontal center - slightly left
-            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 20 : 25); // Below Jharkhand, same vertical approach
-          } else if (stateName === 'jharkhand') {
-            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 5 : 8); // Move Jharkhand text slightly right
-            posY = (bounds[0][1] + bounds[1][1]) / 2; // Vertical center
           } else if (stateName === 'sikkim') {
             posX = (bounds[0][0] + bounds[1][0]) / 2; // Horizontal center
             posY = bounds[0][1] - (isMobile ? 10 : 15); // Move Sikkim text above the state
           } else if (stateName === 'andhra pradesh') {
-            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 20 : 30); // Move Andhra text left
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 26 : 36); // Move Andhra text left by 6 more
             posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 15 : 20); // Move Andhra text down
           } else if (stateName === 'karnataka') {
             posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 8 : 12); // Move Karnataka text very slightly left
@@ -782,8 +796,11 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             posX = (bounds[0][0] + bounds[1][0]) / 2 + (isMobile ? 6 : 9); // Move Chandigarh text more right (northeast)
             posY = (bounds[0][1] + bounds[1][1]) / 2 - (isMobile ? 6 : 9); // Move Chandigarh text more up (northeast)
           } else if (stateName === 'puducherry') {
-            posX = (bounds[0][0] + bounds[1][0]) / 2 + (isMobile ? 12 : 18); // Puducherry move more right
-            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 18 : 26); // Puducherry move slightly more down
+            posX = (bounds[0][0] + bounds[1][0]) / 2 + (isMobile ? 15 : 22); // Puducherry move more right
+            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 26 : 36); // Puducherry move further down
+          } else if (stateName === 'a & n islands' || stateName === 'andaman and nicobar islands') {
+            posX = (bounds[0][0] + bounds[1][0]) / 2 - (isMobile ? 24 : 39); // Move A&N Islands even further left
+            posY = (bounds[0][1] + bounds[1][1]) / 2 + (isMobile ? 3 : 3); // Move A&N Islands down
           } else {
             // Default positioning for other external label states
             posX = bounds[0][0] - (isMobile ? 15 : 20);
@@ -793,14 +810,31 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           return `translate(${posX}, ${posY})`;
         }
         
+        // Apply adjustments for normal states (non-external label states)
+        if (!externalLabelStates.includes(stateName)) {
+          if (stateName === 'west bengal') {
+            centroid[1] += (isMobile ? 13 : 13); // Move West Bengal down by 13 (10+3)
+            centroid[0] -= (isMobile ? 6.5 : 6.5); // Move West Bengal left by 6.5 (5+1.5)
+          } else if (stateName === 'jharkhand') {
+            centroid[0] -= (isMobile ? 5 : 5); // Move Jharkhand left by 5
+          } else if (stateName === 'maharashtra') {
+            centroid[0] -= (isMobile ? 5 : 5); // Move Maharashtra left by 5
+          } else if (stateName === 'madhya pradesh') {
+            centroid[1] += (isMobile ? 4 : 4); // Move MP down by 4
+          } else if (stateName === 'gujarat') {
+            centroid[1] -= (isMobile ? 4 : 4); // Move Gujarat up by 4
+            centroid[0] += (isMobile ? 4 : 4); // Move Gujarat right by 4
+          }
+        }
+        
         return `translate(${centroid[0]}, ${centroid[1]})`;
       })
-      .attr("text-anchor", (d: any) => {
+      .attr("text-anchor", (d: GeoJSON.Feature) => {
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
-        const externalLabelStates = ['goa', 'kerala', 'dnhdd', 'nagaland', 'tripura', 'mizoram', 'lakshadweep', 'manipur', 'jharkhand', 'sikkim', 'andhra pradesh', 'karnataka', 'west bengal', 'delhi', 'chandigarh', 'puducherry'];
+        const externalLabelStates = EXTERNAL_LABEL_STATES;
         if (externalLabelStates.includes(stateName)) {
           // Special text anchoring for different positions
-          if (stateName === 'mizoram' || stateName === 'lakshadweep' || stateName === 'jharkhand' || stateName === 'sikkim' || stateName === 'andhra pradesh' || stateName === 'karnataka' || stateName === 'west bengal' || stateName === 'delhi' || stateName === 'chandigarh') {
+          if (stateName === 'mizoram' || stateName === 'lakshadweep' || stateName === 'sikkim' || stateName === 'andhra pradesh' || stateName === 'karnataka' || stateName === 'delhi' || stateName === 'chandigarh' || stateName === 'a & n islands' || stateName === 'andaman and nicobar islands') {
             return "middle"; // Center-aligned for below/above positioning and centered states
           }
           return "start"; // Left-aligned for most external labels
@@ -808,10 +842,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         return "middle";
       })
       .attr("dominant-baseline", "middle")
-      .style("font-family", "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif")
+      .style("font-family", "Arial, Helvetica, sans-serif")
       .style("font-weight", "600")
       .style("pointer-events", "none")
-      .each(function(d: any) {
+      .each(function(d: GeoJSON.Feature) {
         const text = d3.select(this);
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
@@ -833,14 +867,14 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             fontSize = Math.max(isMobile ? 4 : 6, fontSize * 0.7);
           }
           
-          // External label states use smaller font size and black color
-          const externalLabelStates = ['goa', 'kerala', 'dnhdd', 'nagaland', 'tripura', 'mizoram', 'lakshadweep', 'manipur', 'jharkhand', 'sikkim', 'andhra pradesh', 'karnataka', 'west bengal', 'delhi', 'chandigarh', 'puducherry'];
+          // States that need forced black text (small states with external labels)
+          const blackTextStates = BLACK_TEXT_STATES;
+          // States with abbreviated names that can use normal color detection
+          const abbreviatedStates = ABBREVIATED_STATES;
           let textColor, valueColor;
-          if (externalLabelStates.includes(stateName)) {
+          if (blackTextStates.includes(stateName)) {
             // Special font sizes for specific states
-            if (stateName === 'west bengal' || stateName === 'jharkhand') {
-              fontSize = isMobile ? 5 : 7; // Smaller size for W Bengal and Jharkhand
-            } else if (stateName === 'delhi') {
+            if (stateName === 'delhi') {
               fontSize = isMobile ? 4 : 6; // Even smaller size for Delhi
             } else if (stateName === 'chandigarh') {
               fontSize = isMobile ? 3 : 5; // Even smaller size for Chandigarh
@@ -861,47 +895,24 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             }
             textColor = "#000000"; // Black text for white background
             valueColor = "#000000";
+          } else if (abbreviatedStates.includes(stateName)) {
+            // States with abbreviated names - use smaller font size
+            if (stateName === 'karnataka') {
+              fontSize = isMobile ? 5 : 8; // Standard size for Karnataka
+            }
+            
+            // States with external positioning but automatic color detection
+            const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
+            textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
+            valueColor = textColor;
           } else {
             if (stateName === 'rajasthan') {
               fontSize = Math.max(8, fontSize * 0.7);
-            } else if (stateName === 'west bengal') {
-              fontSize = isMobile ? 5 : 7; // Smaller size for W Bengal
+            } else if (stateName === 'andhra pradesh') {
+              // Andhra Pradesh is abbreviated to "Andhra" - reduce font size to match Telangana
+              fontSize = Math.max(isMobile ? 5 : 7, fontSize * 0.8);
             }
             const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
-            // Robust color parsing for luminance
-            function parseColorToRGB(color: string): {r: number, g: number, b: number} | null {
-              // Hex format
-              if (color.startsWith('#')) {
-                let hex = color.slice(1);
-                if (hex.length === 3) {
-                  hex = hex.split('').map(x => x + x).join('');
-                }
-                if (hex.length === 6) {
-                  const r = parseInt(hex.substr(0, 2), 16);
-                  const g = parseInt(hex.substr(2, 2), 16);
-                  const b = parseInt(hex.substr(4, 2), 16);
-                  return { r, g, b };
-                }
-              }
-              // rgb() format
-              const rgbMatch = color.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-              if (rgbMatch) {
-                return { r: +rgbMatch[1], g: +rgbMatch[2], b: +rgbMatch[3] };
-              }
-              // rgba() format
-              const rgbaMatch = color.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/);
-              if (rgbaMatch) {
-                return { r: +rgbaMatch[1], g: +rgbaMatch[2], b: +rgbaMatch[3] };
-              }
-              return null;
-            }
-            function isColorDark(color: string) {
-              const rgb = parseColorToRGB(color);
-              if (!rgb) return false; // fallback to dark text
-              const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
-              return luminance < 0.5;
-            }
-            // End robust color parsing
             textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
             valueColor = textColor;
           }
@@ -925,7 +936,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.85}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(`${value.toFixed(1)}%`);
+              .text(`${value.toFixed(1)}`);
           } else if (hideStateNames && !hideValues) {
             // Only value, centered vertically
             text.append("tspan")
@@ -934,12 +945,15 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.95}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(`${value.toFixed(1)}%`);
+              .text(`${value.toFixed(1)}`);
           }
         }
       });
 
     // Legend will be handled by separate effect
+    } catch (error) {
+      console.error('Error during map rendering:', error);
+    }
 
   }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile]);
 
@@ -957,22 +971,29 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   // D3 gradient for legend
   useEffect(() => {
-    if (!svgRef.current || data.length === 0) return;
+    
+    if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
-    // Remove existing gradient
-    svg.selectAll('#legend-gradient').remove();
+    // Always remove existing gradient first
+    svg.selectAll('#states-legend-gradient').remove();
+    
+    // If no data, don't create gradient
+    if (data.length === 0) {
+      return;
+    }
+    
     let defs = svg.select('defs');
     if (defs.empty()) defs = svg.append('defs');
     const gradient = defs.append('linearGradient')
-      .attr('id', 'legend-gradient')
+      .attr('id', 'states-legend-gradient')
       .attr('x1', '0%')
       .attr('x2', '100%')
       .attr('y1', '0%')
       .attr('y2', '0%');
     // Color scale
-    const values = data.map(d => d.value);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const values = data.map(d => d.value).filter(v => !isNaN(v));
+    const minValue = values.length > 0 ? Math.min(...values) : 0;
+    const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
         blues: d3.interpolateBlues,
@@ -1034,7 +1055,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   // Attach global mousemove/mouseup for drag
   useEffect(() => {
     if (!dragging) return;
-    const handleMove = (e: MouseEvent) => handleLegendMouseMove(e as any);
+    const handleMove = (e: MouseEvent) => handleLegendMouseMove(e as React.MouseEvent<SVGElement>);
     const handleUp = () => setDragging(false);
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);
@@ -1060,10 +1081,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       <svg
         ref={svgRef}
         className="max-w-full h-auto border rounded-lg"
-        width={isMobile ? 350 : 800}
-        height={isMobile ? 280 : 600}
+        width={isMobile ? 350 : MAP_DIMENSIONS.STATES.width}
+        height={isMobile ? 350 : MAP_DIMENSIONS.STATES.height}
         style={{ userSelect: 'none' }}
-        viewBox={isMobile ? "0 0 350 280" : "0 0 800 600"}
+        viewBox={isMobile ? "0 0 350 350" : `0 0 ${MAP_DIMENSIONS.STATES.width} ${MAP_DIMENSIONS.STATES.height}`}
       >
         {/* Legend overlay (React) */}
         {data.length > 0 && (
@@ -1076,7 +1097,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             <rect
               width={isMobile ? 150 : 200}
               height={15}
-              fill="url(#legend-gradient)"
+              fill="url(#states-legend-gradient)"
               stroke="#374151"
               strokeWidth={0.5}
               rx={3}
@@ -1099,7 +1120,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 x={0}
                 y={30}
                 textAnchor="start"
-                style={{ fontFamily: 'system-ui', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
                 onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
               >
                 {legendMin}
@@ -1123,7 +1144,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 x={isMobile ? 150 : 200}
                 y={30}
                 textAnchor="end"
-                style={{ fontFamily: 'system-ui', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
                 onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
               >
                 {legendMax}
@@ -1147,7 +1168,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 x={isMobile ? 75 : 100}
                 y={-5}
                 textAnchor="middle"
-                style={{ fontFamily: 'system-ui', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
                 onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
               >
                 {legendTitle}
@@ -1189,7 +1210,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               y={isMobile ? 35 : 50}
               textAnchor="middle"
               style={{ 
-                fontFamily: 'system-ui, -apple-system, sans-serif', 
+                fontFamily: 'Arial, Helvetica, sans-serif', 
                 fontSize: isMobile ? 16 : 20, 
                 fontWeight: 700, 
                 fill: '#1f2937', 
@@ -1205,6 +1226,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           )}
         </g>
       </svg>
+      
+      {/* Hover Tooltip */}
+      {hoveredState && (
+        <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
+          <div className="font-medium">{hoveredState.state}</div>
+          {hoveredState.value !== undefined && (
+            <div className="text-xs">{hoveredState.value.toFixed(1)}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 });

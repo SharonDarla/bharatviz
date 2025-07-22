@@ -1,47 +1,85 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
+import { IndiaDistrictsMap, type IndiaDistrictsMapRef } from '@/components/IndiaDistrictsMap';
 import { ExportOptions } from '@/components/ExportOptions';
 import { ColorMapChooser, type ColorScale } from '@/components/ColorMapChooser';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface MapData {
+interface StateMapData {
   state: string;
   value: number;
 }
 
-// Empty data - just outline map with J&K and Ladakh included
-const emptyMapData: MapData[] = [];
+interface DistrictMapData {
+  district: string;
+  value: number;
+}
 
 const Index = () => {
-  const [mapData, setMapData] = useState<MapData[]>([]);
-  const [selectedColorScale, setSelectedColorScale] = useState<ColorScale>('spectral');
-  const [invertColors, setInvertColors] = useState(false);
-  const [hideStateNames, setHideStateNames] = useState(false);
-  const [hideValues, setHideValues] = useState(false);
-  const [dataTitle, setDataTitle] = useState<string>('');
-  const mapRef = useRef<IndiaMapRef>(null);
+  const [activeTab, setActiveTab] = useState<string>('states');
+  
+  // States tab state
+  const [stateMapData, setStateMapData] = useState<StateMapData[]>([]);
+  const [stateColorScale, setStateColorScale] = useState<ColorScale>('spectral');
+  const [stateInvertColors, setStateInvertColors] = useState(false);
+  const [stateHideNames, setStateHideNames] = useState(false);
+  const [stateHideValues, setStateHideValues] = useState(false);
+  const [stateDataTitle, setStateDataTitle] = useState<string>('');
+  
+  // Districts tab state
+  const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
+  const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
+  const [districtInvertColors, setDistrictInvertColors] = useState(false);
+  const [districtHideNames, setDistrictHideNames] = useState(false);
+  const [districtHideValues, setDistrictHideValues] = useState(false);
+  const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
+  
+  const stateMapRef = useRef<IndiaMapRef>(null);
+  const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
 
   // No automatic data loading - map starts empty
 
-  const handleDataLoad = (data: MapData[], title?: string) => {
-    setMapData(data);
-    setDataTitle(title || '');
+  const handleStateDataLoad = (data: StateMapData[], title?: string) => {
+    setStateMapData(data);
+    setStateDataTitle(title || '');
+  };
+
+  const handleDistrictDataLoad = (data: DistrictMapData[], title?: string) => {
+    setDistrictMapData(data);
+    setDistrictDataTitle(title || '');
   };
 
   const handleExportPNG = () => {
-    mapRef.current?.exportPNG();
+    if (activeTab === 'states') {
+      stateMapRef.current?.exportPNG();
+    } else {
+      districtMapRef.current?.exportPNG();
+    }
   };
 
   const handleExportSVG = () => {
-    mapRef.current?.exportSVG();
+    if (activeTab === 'states') {
+      stateMapRef.current?.exportSVG();
+    } else {
+      districtMapRef.current?.exportSVG();
+    }
   };
 
   const handleExportPDF = () => {
-    mapRef.current?.exportPDF();
+    if (activeTab === 'states') {
+      stateMapRef.current?.exportPDF();
+    } else {
+      districtMapRef.current?.exportPDF();
+    }
   };
 
   const handleDownloadCSVTemplate = () => {
-    mapRef.current?.downloadCSVTemplate();
+    if (activeTab === 'states') {
+      stateMapRef.current?.downloadCSVTemplate();
+    } else {
+      districtMapRef.current?.downloadCSVTemplate();
+    }
   };
 
   return (
@@ -51,40 +89,86 @@ const Index = () => {
           <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">BharatViz - Fast choropleths for India</h1>
         </div>
 
-        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 order-2 lg:order-2">
-            <IndiaMap ref={mapRef} data={mapData} colorScale={selectedColorScale} 
-              invertColors={invertColors}
-              hideStateNames={hideStateNames}
-              hideValues={hideValues}
-              dataTitle={dataTitle}
-            />
-            <div className="mt-6 flex justify-center">
-              <ExportOptions 
-                onExportPNG={handleExportPNG}
-                onExportSVG={handleExportSVG}
-                onExportPDF={handleExportPDF}
-                disabled={mapData.length === 0}
-              />
-            </div>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="states">States</TabsTrigger>
+            <TabsTrigger value="districts">Districts</TabsTrigger>
+          </TabsList>
           
-          <div className="lg:col-span-1 order-1 lg:order-1">
-            <FileUpload onDataLoad={handleDataLoad} />
-            <div className="space-y-4 mt-6">
-              <ColorMapChooser 
-                selectedScale={selectedColorScale}
-                onScaleChange={setSelectedColorScale}
-                invertColors={invertColors}
-                onInvertColorsChange={setInvertColors}
-                hideStateNames={hideStateNames}
-                hideValues={hideValues}
-                onHideStateNamesChange={setHideStateNames}
-                onHideValuesChange={checked => setHideValues(checked)}
-              />
+          <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 order-2 lg:order-2">
+                <IndiaMap ref={stateMapRef} data={stateMapData} colorScale={stateColorScale} 
+                  invertColors={stateInvertColors}
+                  hideStateNames={stateHideNames}
+                  hideValues={stateHideValues}
+                  dataTitle={stateDataTitle}
+                />
+                <div className="mt-6 flex justify-center">
+                  <ExportOptions 
+                    onExportPNG={handleExportPNG}
+                    onExportSVG={handleExportSVG}
+                    onExportPDF={handleExportPDF}
+                    disabled={stateMapData.length === 0}
+                  />
+                </div>
+              </div>
+              
+              <div className="lg:col-span-1 order-1 lg:order-1">
+                <FileUpload onDataLoad={handleStateDataLoad} mode="states" />
+                <div className="space-y-4 mt-6">
+                  <ColorMapChooser 
+                    selectedScale={stateColorScale}
+                    onScaleChange={setStateColorScale}
+                    invertColors={stateInvertColors}
+                    onInvertColorsChange={setStateInvertColors}
+                    hideStateNames={stateHideNames}
+                    hideValues={stateHideValues}
+                    onHideStateNamesChange={setStateHideNames}
+                    onHideValuesChange={setStateHideValues}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+
+          <div className={`space-y-6 ${activeTab === 'districts' ? 'block' : 'hidden'}`}>
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 order-2 lg:order-2">
+                <IndiaDistrictsMap ref={districtMapRef} data={districtMapData} colorScale={districtColorScale} 
+                  invertColors={districtInvertColors}
+                  hideStateNames={districtHideNames}
+                  hideValues={districtHideValues}
+                  dataTitle={districtDataTitle}
+                />
+                <div className="mt-6 flex justify-center">
+                  <ExportOptions 
+                    onExportPNG={handleExportPNG}
+                    onExportSVG={handleExportSVG}
+                    onExportPDF={handleExportPDF}
+                    disabled={districtMapData.length === 0}
+                  />
+                </div>
+              </div>
+              
+              <div className="lg:col-span-1 order-1 lg:order-1">
+                <FileUpload onDataLoad={handleDistrictDataLoad} mode="districts" />
+                <div className="space-y-4 mt-6">
+                  <ColorMapChooser 
+                    selectedScale={districtColorScale}
+                    onScaleChange={setDistrictColorScale}
+                    invertColors={districtInvertColors}
+                    onInvertColorsChange={setDistrictInvertColors}
+                    hideStateNames={districtHideNames}
+                    hideValues={districtHideValues}
+                    onHideStateNamesChange={setDistrictHideNames}
+                    onHideValuesChange={setDistrictHideValues}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Tabs>
       </div>
       <footer className="w-full text-center text-xs text-muted-foreground mt-8 mb-2">
         © 2025 Saket Choudhary | <a href="http://saketlab.in/" target="_blank" rel="noopener noreferrer" className="underline">Saket Lab</a>
