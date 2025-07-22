@@ -1,50 +1,15 @@
 import React, { useRef, useState } from 'react';
-import { Upload, Play, Info } from 'lucide-react';
+import { Upload, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import Papa from 'papaparse';
 
-// Demo data with Indian states and literacy rates
-const demoData = [
-  { state: 'kerala', value: 94.0 },
-  { state: 'mizoram', value: 91.3 },
-  { state: 'goa', value: 88.7 },
-  { state: 'tripura', value: 87.2 },
-  { state: 'himachal pradesh', value: 82.8 },
-  { state: 'maharashtra', value: 82.3 },
-  { state: 'sikkim', value: 81.4 },
-  { state: 'tamil nadu', value: 80.1 },
-  { state: 'nagaland', value: 79.6 },
-  { state: 'punjab', value: 75.8 },
-  { state: 'haryana', value: 75.6 },
-  { state: 'west bengal', value: 76.3 },
-  { state: 'gujarat', value: 78.0 },
-  { state: 'manipur', value: 79.2 },
-  { state: 'karnataka', value: 75.4 },
-  { state: 'uttarakhand', value: 78.8 },
-  { state: 'delhi', value: 86.2 },
-  { state: 'assam', value: 72.2 },
-  { state: 'meghalaya', value: 74.4 },
-  { state: 'odisha', value: 72.9 },
-  { state: 'jammu & kashmir', value: 67.2 },
-  { state: 'ladakh', value: 71.0 },
-  { state: 'uttar pradesh', value: 67.7 },
-  { state: 'madhya pradesh', value: 69.3 },
-  { state: 'chhattisgarh', value: 70.3 },
-  { state: 'rajasthan', value: 66.1 },
-  { state: 'jharkhand', value: 66.4 },
-  { state: 'andhra pradesh', value: 67.4 },
-  { state: 'telangana', value: 66.5 },
-  { state: 'bihar', value: 61.8 },
-  { state: 'arunachal pradesh', value: 65.4 }
-];
-
 interface FileUploadProps {
-  onDataLoad: (data: Array<{ state: string; value: number }>, title?: string) => void;
+  onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ district: string; value: number }>, title?: string) => void;
+  mode?: 'states' | 'districts';
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states' }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -61,27 +26,50 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
           const data = result.data as Array<Record<string, string>>;
           const headers = result.meta.fields || [];
           
-          // Use first column as state, second column as value
-          const stateColumn = headers[0];
-          const valueColumn = headers[1];
           
-          if (!stateColumn || !valueColumn) {
-            alert('CSV must have at least two columns.');
+          // Validate column count based on mode
+          const requiredColumns = mode === 'districts' ? 3 : 2;
+          if (headers.length < requiredColumns) {
+            alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
             return;
           }
+          
+          // For districts: state, district, value columns
+          // For states: state, value columns
+          const stateColumn = headers[0];
+          const locationColumn = mode === 'districts' ? headers[1] : headers[0];
+          const valueColumn = mode === 'districts' ? headers[2] : headers[1];
           
           const processedData = data
-            .filter(row => row[stateColumn] && row[valueColumn] && !isNaN(Number(row[valueColumn])))
-            .map(row => ({
-              state: row[stateColumn].trim(),
-              value: Number(row[valueColumn])
-            }));
+            .filter(row => {
+              const hasLocationData = mode === 'districts' 
+                ? row[stateColumn] && row[locationColumn] 
+                : row[locationColumn];
+              return hasLocationData;
+            })
+            .map(row => {
+              const value = row[valueColumn];
+              const trimmedValue = value ? value.trim() : '';
+              const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a' 
+                ? NaN 
+                : Number(trimmedValue);
+              
+              return mode === 'districts' 
+                ? {
+                    district: row[locationColumn].trim(),
+                    value: numericValue
+                  }
+                : {
+                    state: row[locationColumn].trim(),
+                    value: numericValue
+                  };
+            }) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
           
           if (processedData.length === 0) {
-            alert('No valid data found. Please ensure your file has data in the first two columns.');
+            const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
+            alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
             return;
           }
-          
           // Use second column header as title
           onDataLoad(processedData, valueColumn);
         } catch (error) {
@@ -98,7 +86,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
 
   const handleLoadDemo = async () => {
     try {
-      const response = await fetch('/nfhs5_protein_consumption_eggs.csv');
+      const demoFile = mode === 'districts' ? '/districts_demo.csv' : '/nfhs5_protein_consumption_eggs.csv';
+      const response = await fetch(demoFile);
       if (!response.ok) {
         throw new Error('Failed to load demo data');
       }
@@ -111,24 +100,47 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
             const data = result.data as Array<Record<string, string>>;
             const headers = result.meta.fields || [];
             
-            // Use first column as state, second column as value
-            const stateColumn = headers[0];
-            const valueColumn = headers[1];
-            
-            if (!stateColumn || !valueColumn) {
-              alert('CSV must have at least two columns.');
+            // Validate column count based on mode
+            const requiredColumns = mode === 'districts' ? 3 : 2;
+            if (headers.length < requiredColumns) {
+              alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
               return;
             }
             
+            // For districts: state, district, value columns
+            // For states: state, value columns
+            const stateColumn = headers[0];
+            const locationColumn = mode === 'districts' ? headers[1] : headers[0];
+            const valueColumn = mode === 'districts' ? headers[2] : headers[1];
+            
             const processedData = data
-              .filter(row => row[stateColumn] && row[valueColumn] && !isNaN(Number(row[valueColumn])))
-              .map(row => ({
-                state: row[stateColumn].trim(),
-                value: Number(row[valueColumn])
-              }));
+              .filter(row => {
+                const hasLocationData = mode === 'districts' 
+                  ? row[stateColumn] && row[locationColumn] 
+                  : row[locationColumn];
+                return hasLocationData;
+              })
+              .map(row => {
+                const value = row[valueColumn];
+                const trimmedValue = value ? value.trim() : '';
+                const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a' 
+                  ? NaN 
+                  : Number(trimmedValue);
+                
+                return mode === 'districts' 
+                  ? {
+                      district: row[locationColumn].trim(),
+                      value: numericValue
+                    }
+                  : {
+                      state: row[locationColumn].trim(),
+                      value: numericValue
+                    };
+              }) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
             
             if (processedData.length === 0) {
-              alert('No valid data found in demo file.');
+              const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
+              alert(`No valid data found in demo file. Please ensure it has data in the ${columnDesc}.`);
               return;
             }
             
@@ -154,54 +166,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
     fileInputRef.current?.click();
   };
 
-  const downloadCSVTemplate = () => {
-    const stateNames = [
-      'A & N Islands',
-      'Andhra Pradesh', 
-      'Arunachal Pradesh',
-      'Assam',
-      'Bihar',
-      'Chandigarh',
-      'Chhattisgarh',
-      'Delhi',
-      'DNHDD',
-      'Goa',
-      'Gujarat',
-      'Haryana',
-      'Himachal Pradesh',
-      'Jammu & Kashmir',
-      'Jharkhand',
-      'Karnataka',
-      'Kerala',
-      'Ladakh',
-      'Lakshadweep',
-      'Madhya Pradesh',
-      'Maharashtra',
-      'Manipur',
-      'Meghalaya',
-      'Mizoram',
-      'Nagaland',
-      'Odisha',
-      'Puducherry',
-      'Punjab',
-      'Rajasthan',
-      'Sikkim',
-      'Tamil Nadu',
-      'Telangana',
-      'Tripura',
-      'Uttar Pradesh',
-      'Uttarakhand',
-      'West Bengal'
-    ];
-
-    const csvContent = 'state,value\n' + stateNames.map(state => `${state},NA`).join('\n');
-    const csvBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(csvBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'india-states-template.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+  const downloadCSVTemplate = async () => {
+    try {
+      const templateFile = mode === 'districts' ? '/bharatviz-district-template.csv' : '/bharatviz-state-template.csv';
+      const response = await fetch(templateFile);
+      if (!response.ok) {
+        throw new Error('Failed to download template');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = mode === 'districts' ? 'bharatviz-district-template.csv' : 'bharatviz-state-template.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      alert('Error downloading template file');
+    }
   };
 
   // Helper to extract Google Sheet ID and GID from URL
@@ -233,24 +215,47 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
             const data = result.data as Array<Record<string, string>>;
             const headers = result.meta.fields || [];
             
-            // Use first column as state, second column as value
-            const stateColumn = headers[0];
-            const valueColumn = headers[1];
-            
-            if (!stateColumn || !valueColumn) {
-              setSheetError('Sheet must have at least two columns.');
+            // Validate column count based on mode
+            const requiredColumns = mode === 'districts' ? 3 : 2;
+            if (headers.length < requiredColumns) {
+              setSheetError(`Sheet must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
               setLoadingSheet(false);
               return;
             }
             
+            // For districts: state, district, value columns
+            // For states: state, value columns
+            const stateColumn = headers[0];
+            const locationColumn = mode === 'districts' ? headers[1] : headers[0];
+            const valueColumn = mode === 'districts' ? headers[2] : headers[1];
+            
             const processedData = data
-              .filter(row => row[stateColumn] && row[valueColumn] && !isNaN(Number(row[valueColumn])))
-              .map(row => ({
-                state: row[stateColumn].trim(),
-                value: Number(row[valueColumn])
-              }));
+              .filter(row => {
+                const hasLocationData = mode === 'districts' 
+                  ? row[stateColumn] && row[locationColumn] 
+                  : row[locationColumn];
+                return hasLocationData;
+              })
+              .map(row => {
+                const value = row[valueColumn];
+                const trimmedValue = value ? value.trim() : '';
+                const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a' 
+                  ? NaN 
+                  : Number(trimmedValue);
+                
+                return mode === 'districts' 
+                  ? {
+                      district: row[locationColumn].trim(),
+                      value: numericValue
+                    }
+                  : {
+                      state: row[locationColumn].trim(),
+                      value: numericValue
+                    };
+              }) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
             if (processedData.length === 0) {
-              setSheetError('No valid data found. Ensure your sheet has data in the first two columns.');
+              const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
+              setSheetError(`No valid data found. Ensure your sheet has data in the ${columnDesc}.`);
               setLoadingSheet(false);
               return;
             }
@@ -279,7 +284,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
         <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Upload a CSV or TSV file with 'state' and 'value' columns
+          {mode === 'districts' 
+            ? 'Upload a TSV file with state_name, district_name and value columns. Fourth column name becomes color map text.'
+            : 'Upload a CSV or TSV file with state and value columns'
+          }
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button onClick={handleUploadClick}>
@@ -295,40 +303,58 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad }) => {
             Download CSV Template
           </Button>
         </div>
-        <div className="flex flex-col items-center mt-3 gap-2">
-          <input
-            type="text"
-            className="border rounded px-2 py-1 w-full max-w-xs"
-            placeholder="Paste link to Google Sheet"
-            value={googleSheetUrl}
-            onChange={e => setGoogleSheetUrl(e.target.value)}
-            disabled={loadingSheet}
-          />
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-              onClick={handleLoadGoogleSheet}
-              disabled={loadingSheet || !googleSheetUrl}
-            >
-              {loadingSheet ? 'Loading...' : 'Load from Google Sheet'}
-            </Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground hover:text-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Need a template? Use this <a href="https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing" target="_blank" rel="noopener noreferrer" className="underline text-blue-500">Google Sheet template</a></p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        
+        <div className="mt-4 p-4 border-t border-gray-200">
+          <div className="text-center mb-3">
+            <h4 className="text-sm font-medium text-gray-700 mb-1">Or load from Google Sheets</h4>
+            <p className="text-xs text-gray-500">
+              Paste your Google Sheet link below (see{' '}
+              <a 
+                href={mode === 'districts' 
+                  ? "https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing"
+                  : "https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing"} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="underline text-blue-500 hover:text-blue-700"
+              >
+                template
+              </a>)
+            </p>
           </div>
-          {sheetError && <div className="text-xs text-red-500 mt-1">{sheetError}</div>}
+          <div className="flex flex-col gap-3">
+            <div className="relative">
+              <input
+                type="text"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                value={googleSheetUrl}
+                onChange={e => setGoogleSheetUrl(e.target.value)}
+                disabled={loadingSheet}
+              />
+              {googleSheetUrl && (
+                <button
+                  onClick={() => setGoogleSheetUrl('')}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  disabled={loadingSheet}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            <div className="flex items-center justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+                onClick={handleLoadGoogleSheet}
+                disabled={loadingSheet || !googleSheetUrl}
+              >
+                {loadingSheet ? 'Loading...' : 'Load from Google Sheet'}
+              </Button>
+            </div>
+            {sheetError && <div className="text-xs text-red-500 text-center">{sheetError}</div>}
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-3">
-        </p>
         <input
           ref={fileInputRef}
           type="file"
