@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
-import { Card } from '@/components/ui/card';
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { scaleSequential } from 'd3-scale';
 import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCool, interpolatePlasma, interpolateInferno, interpolateMagma, interpolateTurbo, interpolateRdYlBu, interpolateBrBG, interpolatePRGn, interpolatePiYG, interpolateRdBu, interpolateRdGy, interpolatePuOr, interpolateSpectral as interpolateSpectralReversed } from 'd3-scale-chromatic';
 import { extent } from 'd3-array';
 import { saveAs } from 'file-saver';
-import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { type ColorScale } from './ColorMapChooser';
 
@@ -22,6 +20,7 @@ interface IndiaDistrictsMapProps {
   hideStateNames: boolean;
   hideValues: boolean;
   dataTitle: string;
+  showStateBoundaries?: boolean;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -75,9 +74,11 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   invertColors,
   hideStateNames,
   hideValues,
-  dataTitle
+  dataTitle,
+  showStateBoundaries = true
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
+  const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
@@ -125,16 +126,24 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   }, [data]);
 
   useEffect(() => {
-    fetch('/India_LGD_Districts_simplified.geojson')
-      .then(response => {
+    Promise.all([
+      fetch('/India_LGD_Districts_simplified.geojson').then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      }),
+      fetch('/india_map_states.geojson').then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
       })
-      .then(data => {
-        setGeojsonData(data);
-        calculateBounds(data);
+    ])
+      .then(([districtsData, statesDataResponse]) => {
+        setGeojsonData(districtsData);
+        setStatesData(statesDataResponse);
+        calculateBounds(districtsData);
       })
       .catch(error => {
         console.error('Error loading GeoJSON:', error);
@@ -440,63 +449,108 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   // Fallback PDF export method
   const exportDistrictsFallbackPDF = async () => {
-    if (!containerRef.current) return;
+    if (!svgRef.current) return;
     
-    const canvas = await html2canvas(containerRef.current, {
-      backgroundColor: '#ffffff',
-      scale: 2,
+    // Use the same high-quality approach as PNG export
+    const svg = svgRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const img = new Image();
+    const dpiScale = 300 / 96;
+    const originalWidth = isMobile ? 245 : 560;
+    const originalHeight = isMobile ? 330 : 730;
+    
+    canvas.width = originalWidth * dpiScale;
+    canvas.height = originalHeight * dpiScale;
+    
+    return new Promise<void>((resolve) => {
+      img.onload = () => {
+        ctx.scale(dpiScale, dpiScale);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, originalWidth, originalHeight);
+        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+        
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('landscape');
+        
+        // Get PDF dimensions
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        // Calculate margins and available space
+        const pdfMargin = 15; // 15mm margin
+        const availableWidth = pdfWidth - (2 * pdfMargin);
+        const availableHeight = pdfHeight - (2 * pdfMargin);
+        
+        // Calculate aspect ratio preserving dimensions
+        const canvasAspectRatio = canvas.width / canvas.height;
+        let imgWidth = availableWidth;
+        let imgHeight = availableWidth / canvasAspectRatio;
+        
+        // If height exceeds available space, scale by height instead
+        if (imgHeight > availableHeight) {
+          imgHeight = availableHeight;
+          imgWidth = availableHeight * canvasAspectRatio;
+        }
+        
+        // Center the image
+        const x = (pdfWidth - imgWidth) / 2;
+        const y = (pdfHeight - imgHeight) / 2;
+        
+        pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+        pdf.save(`bharatviz-districts-${Date.now()}.pdf`);
+        resolve();
+      };
+      
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     });
-    
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('landscape');
-    
-    // Get PDF dimensions
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    // Calculate margins and available space
-    const pdfMargin = 15; // 15mm margin
-    const availableWidth = pdfWidth - (2 * pdfMargin);
-    const availableHeight = pdfHeight - (2 * pdfMargin);
-    
-    // Calculate aspect ratio preserving dimensions
-    const canvasAspectRatio = canvas.width / canvas.height;
-    let imgWidth = availableWidth;
-    let imgHeight = availableWidth / canvasAspectRatio;
-    
-    // If height exceeds available space, scale by height instead
-    if (imgHeight > availableHeight) {
-      imgHeight = availableHeight;
-      imgWidth = availableHeight * canvasAspectRatio;
-    }
-    
-    // Center the image
-    const x = (pdfWidth - imgWidth) / 2;
-    const y = (pdfHeight - imgHeight) / 2;
-    
-    pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
-    pdf.save(`bharatviz-districts-${Date.now()}.pdf`);
   };
 
-  useImperativeHandle(ref, () => ({
-    exportPNG: async () => {
-      if (!containerRef.current) return;
-      
-      try {
-        const canvas = await html2canvas(containerRef.current, {
-          backgroundColor: '#ffffff',
-          scale: 2,
-        });
+  const exportPNG = () => {
+    if (!svgRef.current) return;
+    
+    const svg = svgRef.current;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    // High DPI settings for 300 DPI output
+    const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
+    const originalWidth = isMobile ? 245 : 560;
+    const originalHeight = isMobile ? 330 : 730;
+    
+    canvas.width = originalWidth * dpiScale;
+    canvas.height = originalHeight * dpiScale;
+    
+    img.onload = () => {
+      if (ctx) {
+        // Scale the context to match the DPI
+        ctx.scale(dpiScale, dpiScale);
+        
+        // Fill background with white
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, originalWidth, originalHeight);
+        
+        // Draw the image at original size (context scaling handles the DPI)
+        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
         
         canvas.toBlob((blob) => {
           if (blob) {
             saveAs(blob, `bharatviz-districts-${Date.now()}.png`);
           }
         });
-      } catch (error) {
-        console.error('Error exporting PNG:', error);
       }
-    },
+    };
+    
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  useImperativeHandle(ref, () => ({
+    exportPNG,
     exportSVG: () => {
       if (!svgRef.current) return;
       
@@ -628,19 +682,16 @@ Chittoor,50`;
 
   if (!geojsonData || !bounds) {
     return (
-      <Card className="w-full h-96 flex items-center justify-center">
+      <div className="w-full h-96 flex items-center justify-center border border-border rounded bg-background">
         <div className="text-xl text-muted-foreground">Loading districts map...</div>
-      </Card>
+      </div>
     );
   }
 
   const dataExtent = data.length > 0 ? extent(data, d => d.value) as [number, number] : undefined;
 
   return (
-    <Card ref={containerRef} className="w-full p-4">
-      <div className="space-y-4">        
-        <div className="flex justify-center">
-          <div className="relative ml-8 mt-10">
+    <div className="w-full flex justify-center relative" ref={containerRef}>
             <svg
               ref={svgRef}
               width={isMobile ? "245" : "560"}
@@ -673,6 +724,25 @@ Chittoor,50`;
                       {districtData?.value !== undefined ? `: ${districtData.value}` : ''}
                     </title>
                   </path>
+                );
+              })}
+              
+              {/* State boundaries overlay */}
+              {showStateBoundaries && statesData && statesData.features.map((stateFeature, index) => {
+                const mapWidth = isMobile ? 245 : 560;
+                const mapHeight = isMobile ? 280 : 630;
+                const path = convertCoordinatesToPath(stateFeature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 35 : 35);
+                
+                return (
+                  <path
+                    key={`state-boundary-${index}`}
+                    d={path}
+                    fill="none"
+                    stroke="#1f2937"
+                    strokeWidth="1.2"
+                    pointerEvents="none"
+                    className="state-boundary"
+                  />
                 );
               })}
               
@@ -818,20 +888,18 @@ Chittoor,50`;
                 </g>
               )}
             </svg>
-
+            
+            {/* Hover Tooltip */}
             {hoveredDistrict && (
-              <div className="absolute top-4 right-2 bg-popover text-popover-foreground px-3 py-2 rounded-md text-sm pointer-events-none border shadow-md">
+              <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
                 <div className="font-medium">{hoveredDistrict.district}</div>
                 <div className="text-xs text-muted-foreground">{hoveredDistrict.state}</div>
                 {hoveredDistrict.value !== undefined && (
-                  <div className="text-xs">{hoveredDistrict.value}</div>
+                  <div className="text-xs">{hoveredDistrict.value.toFixed(1)}</div>
                 )}
               </div>
             )}
-          </div>
-        </div>
-      </div>
-    </Card>
+    </div>
   );
 });
 
