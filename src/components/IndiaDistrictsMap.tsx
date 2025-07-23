@@ -82,10 +82,10 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [bounds, setBounds] = useState<Bounds | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
-  const [mainTitle, setMainTitle] = useState('BharatViz (double click to edit)');
+  const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
   
   // Legend state
-  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 220, y: 615 });
+  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 375, y: 820 });
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editingTitle, setEditingTitle] = useState(false);
@@ -101,7 +101,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   // Update legend position when mobile state changes
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: 70, y: 300 } : { x: 240, y: 640 });
+    setLegendPosition(isMobile ? { x: 100, y: 360 } : { x: 375, y: 820 });
   }, [isMobile]);
 
   // Update legend title when dataTitle changes
@@ -146,7 +146,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         calculateBounds(districtsData);
       })
       .catch(error => {
-        console.error('Error loading GeoJSON:', error);
+        // GeoJSON loading failed - component will show loading state
       });
   }, []);
 
@@ -227,7 +227,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     }
   }, [colorScale, invertColors, data]);
 
-  const projectCoordinate = (lng: number, lat: number, width = 560, height = 630): [number, number] => {
+  const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];
     
     const geoWidth = bounds.maxLng - bounds.minLng;
@@ -255,14 +255,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return [x, y];
   };
 
-  const convertCoordinatesToPath = (coordinates: number[][][] | number[][][][], width = 560, height = 630, yOffset = 0): string => {
+  const convertCoordinatesToPath = (coordinates: number[][][] | number[][][][], width = 800, height = 890, yOffset = 0, xOffset = 0): string => {
     if (!coordinates || !Array.isArray(coordinates)) return '';
     
     const convertRing = (ring: number[][]) => {
       return ring.map(coord => {
         const [lng, lat] = coord;
         const [x, y] = projectCoordinate(lng, lat, width, height);
-        return `${x},${y + yOffset}`;
+        return `${x + xOffset},${y + yOffset}`;
       }).join(' L ');
     };
 
@@ -460,8 +460,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     
     const img = new Image();
     const dpiScale = 300 / 96;
-    const originalWidth = isMobile ? 245 : 560;
-    const originalHeight = isMobile ? 330 : 730;
+    const originalWidth = isMobile ? 350 : 800;
+    const originalHeight = isMobile ? 440 : 890;
     
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
@@ -520,8 +520,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     
     // High DPI settings for 300 DPI output
     const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
-    const originalWidth = isMobile ? 245 : 560;
-    const originalHeight = isMobile ? 330 : 730;
+    const originalWidth = isMobile ? 350 : 800;
+    const originalHeight = isMobile ? 440 : 890;
     
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
@@ -591,8 +591,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
         // Get the actual SVG dimensions
-        const svgWidth = isMobile ? 245 : 560;
-        const svgHeight = isMobile ? 330 : 730;
+        const svgWidth = isMobile ? 350 : 800;
+        const svgHeight = isMobile ? 440 : 890;
         
         // Clone the SVG to avoid modifying the original
         const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
@@ -600,7 +600,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         // Ensure the cloned SVG has proper attributes for full capture
         svgClone.setAttribute('width', svgWidth.toString());
         svgClone.setAttribute('height', svgHeight.toString());
-        svgClone.setAttribute('viewBox', `${isMobile ? '0 0 245 330' : '0 0 560 730'}`);
+        svgClone.setAttribute('viewBox', `${isMobile ? '0 0 350 440' : '0 0 800 890'}`);
         svgClone.style.width = `${svgWidth}px`;
         svgClone.style.height = `${svgHeight}px`;
         
@@ -656,13 +656,10 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         pdf.save(`bharatviz-districts-${Date.now()}.pdf`);
         
       } catch (error) {
-        console.error('Error generating vector PDF:', error);
-        
         // Fallback to raster PDF if vector conversion fails
         try {
           await exportDistrictsFallbackPDF();
         } catch (fallbackError) {
-          console.error('Fallback PDF generation also failed:', fallbackError);
           alert('Failed to export PDF. Please try using SVG export instead.');
         }
       }
@@ -694,15 +691,15 @@ Chittoor,50`;
     <div className="w-full flex justify-center relative" ref={containerRef}>
             <svg
               ref={svgRef}
-              width={isMobile ? "245" : "560"}
-              height={isMobile ? "330" : "730"}
-              viewBox={isMobile ? "0 0 245 330" : "0 0 560 730"}
+              width={isMobile ? "350" : "800"}
+              height={isMobile ? "440" : "890"}
+              viewBox={isMobile ? "0 0 350 440" : "0 0 800 890"}
               className="border border-border rounded bg-background max-w-full h-auto"
             >
               {geojsonData.features.map((feature, index) => {
-                const mapWidth = isMobile ? 245 : 560;
-                const mapHeight = isMobile ? 280 : 630;
-                const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 35 : 35);
+                const mapWidth = isMobile ? 320 : 760;
+                const mapHeight = isMobile ? 400 : 850;
+                const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
                 const districtData = data.find(d => d.district === feature.properties.district_name);
                 const fillColor = getColorForValue(districtData?.value, dataExtent);
                 const isHovered = hoveredDistrict && 
@@ -729,9 +726,9 @@ Chittoor,50`;
               
               {/* State boundaries overlay */}
               {showStateBoundaries && statesData && statesData.features.map((stateFeature, index) => {
-                const mapWidth = isMobile ? 245 : 560;
-                const mapHeight = isMobile ? 280 : 630;
-                const path = convertCoordinatesToPath(stateFeature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 35 : 35);
+                const mapWidth = isMobile ? 320 : 760;
+                const mapHeight = isMobile ? 400 : 850;
+                const path = convertCoordinatesToPath(stateFeature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
                 
                 return (
                   <path
@@ -749,7 +746,7 @@ Chittoor,50`;
               {/* Main Title */}
               <g className="main-title-container">
                 {editingMainTitle ? (
-                  <foreignObject x={isMobile ? -50 : 10} y={isMobile ? 10 : 15} width={isMobile ? 200 : 300} height={40}>
+                  <foreignObject x={isMobile ? 75 : 160} y={isMobile ? 15 : 25} width={isMobile ? 200 : 300} height={40}>
                     <input
                       type="text"
                       value={mainTitle}
@@ -776,8 +773,8 @@ Chittoor,50`;
                   </foreignObject>
                 ) : (
                   <text
-                    x={isMobile ? 22 : 180}
-                    y={isMobile ? 30 : 35}
+                    x={isMobile ? 175 : 310}
+                    y={isMobile ? 35 : 50}
                     textAnchor="middle"
                     style={{ 
                       fontFamily: 'Arial, Helvetica, sans-serif', 

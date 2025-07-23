@@ -54,7 +54,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   
   // Main title state
   const [editingMainTitle, setEditingMainTitle] = useState(false);
-  const [mainTitle, setMainTitle] = useState('BharatViz (click to edit)');
+  const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
   
   const isMobile = useIsMobile();
 
@@ -319,17 +319,13 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       pdf.save(`bharatviz-states-${Date.now()}.pdf`);
       
     } catch (error) {
-      console.error('Error generating vector PDF:', error);
-      
       // Fallback to raster PDF if vector conversion fails
       try {
         await exportFallbackPDF();
       } catch (fallbackError) {
-        console.error('Fallback PDF generation also failed:', fallbackError);
         try {
           await exportHtml2CanvasPDF();
         } catch (html2canvasError) {
-          console.error('html2canvas fallback also failed:', html2canvasError);
           alert('Failed to export PDF. Please try using SVG export instead.');
         }
       }
@@ -520,7 +516,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       pdf.save(`bharatviz-states-${Date.now()}.pdf`);
       
     } catch (error) {
-      console.error('html2canvas PDF export failed:', error);
       throw error;
     }
   };
@@ -594,7 +589,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         const geoData = await response.json();
         setMapData(geoData);
       } catch (error) {
-        console.error('Error loading map data:', error);
+        // Map data loading failed - component will show loading state
       }
     };
 
@@ -606,7 +601,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     
     // Check if mapData has features property
     if (!mapData.features || !Array.isArray(mapData.features)) {
-      console.error('Invalid GeoJSON data: missing features array');
+      // Invalid GeoJSON data - skip rendering
       return;
     }
 
@@ -952,7 +947,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
     // Legend will be handled by separate effect
     } catch (error) {
-      console.error('Error during map rendering:', error);
+      // Map rendering failed - component will continue to show current state
     }
 
   }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile]);
