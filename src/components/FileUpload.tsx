@@ -73,12 +73,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
           // Use second column header as title
           onDataLoad(processedData, valueColumn);
         } catch (error) {
-          console.error('Error processing data:', error);
           alert('Error processing file data');
         }
       },
       error: (error) => {
-        console.error('Error parsing file:', error);
         alert('Error parsing file');
       }
     });
@@ -147,17 +145,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             // Use second column header as title
             onDataLoad(processedData, valueColumn);
           } catch (error) {
-            console.error('Error processing demo data:', error);
             alert('Error processing demo data');
           }
         },
         error: (error) => {
-          console.error('Error parsing demo file:', error);
           alert('Error parsing demo file');
         }
       });
     } catch (error) {
-      console.error('Error loading demo data:', error);
       alert('Error loading demo data');
     }
   };
@@ -181,7 +176,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading template:', error);
       alert('Error downloading template file');
     }
   };
@@ -285,7 +279,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
           {mode === 'districts' 
-            ? 'Upload a TSV file with state_name, district_name and value columns. Fourth column name becomes color map text.'
+            ? 'Upload a CSV or TSV file with state, district, and value columns. The fourth column name becomes the color map title.'
             : 'Upload a CSV or TSV file with state and value columns'
           }
         </p>

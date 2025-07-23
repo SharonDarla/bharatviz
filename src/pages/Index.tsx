@@ -34,6 +34,7 @@ const Index = () => {
   const [districtHideNames, setDistrictHideNames] = useState(false);
   const [districtHideValues, setDistrictHideValues] = useState(false);
   const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
+  const [showStateBoundaries, setShowStateBoundaries] = useState(true);
   
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -140,6 +141,7 @@ const Index = () => {
                   hideStateNames={districtHideNames}
                   hideValues={districtHideValues}
                   dataTitle={districtDataTitle}
+                  showStateBoundaries={showStateBoundaries}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions 
@@ -163,6 +165,8 @@ const Index = () => {
                     hideValues={districtHideValues}
                     onHideStateNamesChange={setDistrictHideNames}
                     onHideValuesChange={setDistrictHideValues}
+                    showStateBoundaries={showStateBoundaries}
+                    onShowStateBoundariesChange={setShowStateBoundaries}
                   />
                 </div>
               </div>

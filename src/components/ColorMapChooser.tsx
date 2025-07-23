@@ -14,6 +14,8 @@ interface ColorMapChooserProps {
   hideValues: boolean;
   onHideStateNamesChange: (hide: boolean) => void;
   onHideValuesChange: (hide: boolean) => void;
+  showStateBoundaries?: boolean;
+  onShowStateBoundariesChange?: (show: boolean) => void;
 }
 
 const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverging' } } = {
@@ -38,7 +40,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -117,6 +119,16 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           />
           Hide values
         </label>
+        {showStateBoundaries !== undefined && onShowStateBoundariesChange && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showStateBoundaries}
+              onChange={e => onShowStateBoundariesChange(e.target.checked)}
+            />
+            Show state boundaries
+          </label>
+        )}
       </div>
     </Card>
   );
