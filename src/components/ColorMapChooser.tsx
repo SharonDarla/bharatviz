@@ -10,10 +10,10 @@ interface ColorMapChooserProps {
   onScaleChange: (scale: ColorScale) => void;
   invertColors: boolean;
   onInvertColorsChange: (invert: boolean) => void;
-  hideStateNames: boolean;
-  hideValues: boolean;
-  onHideStateNamesChange: (hide: boolean) => void;
-  onHideValuesChange: (hide: boolean) => void;
+  hideStateNames?: boolean;
+  hideValues?: boolean;
+  onHideStateNamesChange?: (hide: boolean) => void;
+  onHideValuesChange?: (hide: boolean) => void;
   showStateBoundaries?: boolean;
   onShowStateBoundariesChange?: (show: boolean) => void;
 }
@@ -46,10 +46,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Color Scale</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <div>
           <Label htmlFor="colorScale" className="text-sm font-medium">
             Choose Color Scale
@@ -103,22 +100,26 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           />
           Invert colors
         </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={hideStateNames}
-            onChange={e => onHideStateNamesChange(e.target.checked)}
-          />
-          Hide state names
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={hideValues}
-            onChange={e => onHideValuesChange(e.target.checked)}
-          />
-          Hide values
-        </label>
+        {hideStateNames !== undefined && onHideStateNamesChange && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={hideStateNames}
+              onChange={e => onHideStateNamesChange(e.target.checked)}
+            />
+            Hide state names
+          </label>
+        )}
+        {hideValues !== undefined && onHideValuesChange && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={hideValues}
+              onChange={e => onHideValuesChange(e.target.checked)}
+            />
+            Hide values
+          </label>
+        )}
         {showStateBoundaries !== undefined && onShowStateBoundariesChange && (
           <label className="flex items-center gap-2 text-sm">
             <input

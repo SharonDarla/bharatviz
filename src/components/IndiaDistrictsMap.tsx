@@ -17,8 +17,6 @@ interface IndiaDistrictsMapProps {
   data: DistrictMapData[];
   colorScale: ColorScale;
   invertColors: boolean;
-  hideStateNames: boolean;
-  hideValues: boolean;
   dataTitle: string;
   showStateBoundaries?: boolean;
 }
@@ -72,8 +70,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   data,
   colorScale,
   invertColors,
-  hideStateNames,
-  hideValues,
   dataTitle,
   showStateBoundaries = true
 }, ref) => {

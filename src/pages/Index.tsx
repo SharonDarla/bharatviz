@@ -31,8 +31,6 @@ const Index = () => {
   const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
   const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
   const [districtInvertColors, setDistrictInvertColors] = useState(false);
-  const [districtHideNames, setDistrictHideNames] = useState(false);
-  const [districtHideValues, setDistrictHideValues] = useState(false);
   const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
   const [showStateBoundaries, setShowStateBoundaries] = useState(true);
   
@@ -138,8 +136,6 @@ const Index = () => {
               <div className="lg:col-span-2 order-2 lg:order-2">
                 <IndiaDistrictsMap ref={districtMapRef} data={districtMapData} colorScale={districtColorScale} 
                   invertColors={districtInvertColors}
-                  hideStateNames={districtHideNames}
-                  hideValues={districtHideValues}
                   dataTitle={districtDataTitle}
                   showStateBoundaries={showStateBoundaries}
                 />
@@ -161,10 +157,6 @@ const Index = () => {
                     onScaleChange={setDistrictColorScale}
                     invertColors={districtInvertColors}
                     onInvertColorsChange={setDistrictInvertColors}
-                    hideStateNames={districtHideNames}
-                    hideValues={districtHideValues}
-                    onHideStateNamesChange={setDistrictHideNames}
-                    onHideValuesChange={setDistrictHideValues}
                     showStateBoundaries={showStateBoundaries}
                     onShowStateBoundariesChange={setShowStateBoundaries}
                   />
