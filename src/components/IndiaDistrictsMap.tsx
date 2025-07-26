@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } f
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { scaleSequential } from 'd3-scale';
-import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCool, interpolatePlasma, interpolateInferno, interpolateMagma, interpolateTurbo, interpolateRdYlBu, interpolateBrBG, interpolatePRGn, interpolatePiYG, interpolateRdBu, interpolateRdGy, interpolatePuOr, interpolateSpectral as interpolateSpectralReversed } from 'd3-scale-chromatic';
+import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCool, interpolatePlasma, interpolateInferno, interpolateMagma, interpolateTurbo, interpolateRdYlBu, interpolateRdYlGn, interpolateBrBG, interpolatePRGn, interpolatePiYG, interpolateRdBu, interpolateRdGy, interpolatePuOr, interpolateBlues, interpolateGreens, interpolateReds, interpolateOranges, interpolatePurples, interpolatePuRd, interpolateSpectral as interpolateSpectralReversed } from 'd3-scale-chromatic';
 import { extent } from 'd3-array';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
@@ -49,22 +49,22 @@ interface Bounds {
 }
 
 const colorScales: Record<ColorScale, (t: number) => string> = {
-  spectral: interpolateSpectral,
+  blues: interpolateBlues,
+  greens: interpolateGreens,
+  reds: interpolateReds,
+  oranges: interpolateOranges,
+  purples: interpolatePurples,
+  pinks: interpolatePuRd,
   viridis: interpolateViridis,
-  warm: interpolateWarm,
-  cool: interpolateCool,
   plasma: interpolatePlasma,
   inferno: interpolateInferno,
   magma: interpolateMagma,
-  turbo: interpolateTurbo,
   rdylbu: interpolateRdYlBu,
+  rdylgn: interpolateRdYlGn,
+  spectral: interpolateSpectral,
   brbg: interpolateBrBG,
-  prgn: interpolatePRGn,
   piyg: interpolatePiYG,
-  rdbu: interpolateRdBu,
-  rdgy: interpolateRdGy,
   puor: interpolatePuOr,
-  spectral_r: interpolateSpectralReversed,
 };
 
 export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistrictsMapProps>(({
@@ -707,7 +707,10 @@ Chittoor,50`;
                     key={index}
                     d={path}
                     fill={fillColor}
-                    stroke={isColorDark(fillColor) ? "#ffffff" : "#374151"}
+                    stroke={
+                      data.length === 0 ? "#0f172a" : 
+                      fillColor === 'white' || !isColorDark(fillColor) ? "#0f172a" : "#ffffff"
+                    }
                     strokeWidth={isHovered ? "1.5" : "0.3"}
                     className="cursor-pointer transition-all duration-200"
                     onMouseEnter={() => handleDistrictHover(feature)}
