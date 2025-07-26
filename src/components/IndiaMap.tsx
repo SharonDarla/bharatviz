@@ -707,7 +707,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .attr("stroke", (d: GeoJSON.Feature) => {
         // If no data, use default gray stroke
         if (data.length === 0) {
-          return "#374151";
+          return "#0f172a";
         }
         
         // Try different possible field names for state
@@ -715,15 +715,15 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         const value = dataMap.get(stateName);
         
         if (value === undefined || isNaN(value)) {
-          return "#374151"; // Default gray for no data or NaN
+          return "#0f172a"; // Default gray for no data or NaN
         }
         
         if (colorScaleFunction) {
           const fillColor = colorScaleFunction(value);
-          return isColorDark(fillColor) ? "#ffffff" : "#374151";
+          return fillColor === "#ffffff" || !isColorDark(fillColor) ? "#0f172a" : "#ffffff";
         }
         
-        return "#374151";
+        return "#0f172a";
       })
       .attr("stroke-width", 0.5)
       .style("cursor", "pointer")
