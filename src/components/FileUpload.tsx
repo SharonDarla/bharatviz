@@ -63,7 +63,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                     state: row[locationColumn].trim(),
                     value: numericValue
                   };
-            }) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
+            })
+            .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
           
           if (processedData.length === 0) {
             const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
@@ -134,7 +135,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                       state: row[locationColumn].trim(),
                       value: numericValue
                     };
-              }) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
+              })
+              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
             
             if (processedData.length === 0) {
               const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
@@ -246,7 +248,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                       state: row[locationColumn].trim(),
                       value: numericValue
                     };
-              }) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
+              })
+              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
             if (processedData.length === 0) {
               const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
               setSheetError(`No valid data found. Ensure your sheet has data in the ${columnDesc}.`);

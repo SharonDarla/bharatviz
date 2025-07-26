@@ -7,6 +7,7 @@ import { extent } from 'd3-array';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import { type ColorScale } from './ColorMapChooser';
+import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 
 interface DistrictMapData {
   district: string;
@@ -113,11 +114,11 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       const values = data.map(d => d.value).filter(v => !isNaN(v));
       const minValue = values.length > 0 ? Math.min(...values) : 0;
       const maxValue = values.length > 0 ? Math.max(...values) : 1;
-      setLegendMin(minValue.toFixed(1));
-      setLegendMax(maxValue.toFixed(1));
+      setLegendMin(roundToSignificantDigits(minValue));
+      setLegendMax(roundToSignificantDigits(maxValue));
     } else {
-      setLegendMin('0.0');
-      setLegendMax('1.0');
+      setLegendMin('0');
+      setLegendMax('1');
     }
   }, [data]);
 
@@ -706,7 +707,7 @@ Chittoor,50`;
                     key={index}
                     d={path}
                     fill={fillColor}
-                    stroke="#374151"
+                    stroke={isColorDark(fillColor) ? "#ffffff" : "#374151"}
                     strokeWidth={isHovered ? "1.5" : "0.3"}
                     className="cursor-pointer transition-all duration-200"
                     onMouseEnter={() => handleDistrictHover(feature)}
@@ -714,7 +715,7 @@ Chittoor,50`;
                   >
                     <title>
                       {feature.properties.district_name}, {feature.properties.state_name}
-                      {districtData?.value !== undefined ? `: ${districtData.value}` : ''}
+                      {districtData?.value !== undefined ? `: ${roundToSignificantDigits(districtData.value)}` : ''}
                     </title>
                   </path>
                 );
@@ -888,7 +889,7 @@ Chittoor,50`;
                 <div className="font-medium">{hoveredDistrict.district}</div>
                 <div className="text-xs text-muted-foreground">{hoveredDistrict.state}</div>
                 {hoveredDistrict.value !== undefined && (
-                  <div className="text-xs">{hoveredDistrict.value.toFixed(1)}</div>
+                  <div className="text-xs">{roundToSignificantDigits(hoveredDistrict.value)}</div>
                 )}
               </div>
             )}

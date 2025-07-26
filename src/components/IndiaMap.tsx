@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } f
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { ColorScale } from './ColorMapChooser';
-import { isColorDark } from '@/lib/colorUtils';
+import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { GeoJSON } from 'geojson';
 import { 
   BLACK_TEXT_STATES, 
@@ -174,7 +174,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     };
     
     // Calculate color scale values
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
+    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const colorInterpolator = getColorInterpolator(colorScale);
@@ -653,7 +653,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Create color scale only if we have data
     let colorScaleFunction;
     if (data.length > 0) {
-      const values = data.map(d => d.value).filter(v => !isNaN(v));
+      const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
       const minValue = values.length > 0 ? Math.min(...values) : 0;
       const maxValue = values.length > 0 ? Math.max(...values) : 1;
       
@@ -704,7 +704,27 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         
         return colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
       })
-      .attr("stroke", "#374151")
+      .attr("stroke", (d: GeoJSON.Feature) => {
+        // If no data, use default gray stroke
+        if (data.length === 0) {
+          return "#374151";
+        }
+        
+        // Try different possible field names for state
+        const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
+        const value = dataMap.get(stateName);
+        
+        if (value === undefined || isNaN(value)) {
+          return "#374151"; // Default gray for no data or NaN
+        }
+        
+        if (colorScaleFunction) {
+          const fillColor = colorScaleFunction(value);
+          return isColorDark(fillColor) ? "#ffffff" : "#374151";
+        }
+        
+        return "#374151";
+      })
       .attr("stroke-width", 0.5)
       .style("cursor", "pointer")
       .on("mouseenter", function(event: MouseEvent, d: GeoJSON.Feature) {
@@ -931,7 +951,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.85}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(`${value.toFixed(1)}`);
+              .text(roundToSignificantDigits(value));
           } else if (hideStateNames && !hideValues) {
             // Only value, centered vertically
             text.append("tspan")
@@ -940,7 +960,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.95}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(`${value.toFixed(1)}`);
+              .text(roundToSignificantDigits(value));
           }
         }
       });
@@ -955,12 +975,17 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   // Legend values from data
   useEffect(() => {
     if (data.length > 0) {
-      const values = data.map(d => d.value);
-      setLegendMin(Math.min(...values).toFixed(1));
-      setLegendMax(Math.max(...values).toFixed(1));
+      const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+      if (values.length > 0) {
+        setLegendMin(roundToSignificantDigits(Math.min(...values)));
+        setLegendMax(roundToSignificantDigits(Math.max(...values)));
+      } else {
+        setLegendMin('0');
+        setLegendMax('1');
+      }
     } else {
-      setLegendMin('0.0');
-      setLegendMax('1.0');
+      setLegendMin('0');
+      setLegendMax('1');
     }
   }, [data]);
 
@@ -986,7 +1011,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .attr('y1', '0%')
       .attr('y2', '0%');
     // Color scale
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
+    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const getColorInterpolator = (scale: ColorScale) => {
@@ -1227,7 +1252,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
           <div className="font-medium">{hoveredState.state}</div>
           {hoveredState.value !== undefined && (
-            <div className="text-xs">{hoveredState.value.toFixed(1)}</div>
+            <div className="text-xs">{roundToSignificantDigits(hoveredState.value)}</div>
           )}
         </div>
       )}
