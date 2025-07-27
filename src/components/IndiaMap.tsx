@@ -60,7 +60,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   // Update legend position when mobile state changes
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: 100, y: 310 } : { x: 375, y: 575 });
+    setLegendPosition(isMobile ? { x: -10, y: 160 } : DEFAULT_LEGEND_POSITION.STATES);
   }, [isMobile]);
 
   // Update legend title when dataTitle changes

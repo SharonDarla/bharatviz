@@ -52,8 +52,8 @@ export const MAP_DIMENSIONS = {
 
 // Default legend positions
 export const DEFAULT_LEGEND_POSITION = {
-  STATES: { x: 220, y: 565 },
-  DISTRICTS: { x: 280, y: 580 }
+  STATES: { x: 390, y: 200 },
+  DISTRICTS: { x: 390, y: 200 }
 };
 
 // File paths

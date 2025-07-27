@@ -82,7 +82,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
   
   // Legend state
-  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 375, y: 820 });
+  const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 390, y: 200 });
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [editingTitle, setEditingTitle] = useState(false);
@@ -98,7 +98,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   // Update legend position when mobile state changes
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: 100, y: 360 } : { x: 375, y: 820 });
+    setLegendPosition(isMobile ? { x: -10, y: 160 } : { x: 390, y: 200 });
   }, [isMobile]);
 
   // Update legend title when dataTitle changes
