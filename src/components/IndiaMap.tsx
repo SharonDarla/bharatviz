@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
-import { ColorScale } from './ColorMapChooser';
+import { ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
+import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
+import { DiscreteLegend } from '@/lib/discreteLegend';
 import { GeoJSON } from 'geojson';
 import { 
   BLACK_TEXT_STATES, 
@@ -27,6 +29,7 @@ interface IndiaMapProps {
   hideStateNames?: boolean;
   hideValues?: boolean;
   dataTitle?: string;
+  colorBarSettings?: ColorBarSettings;
 }
 
 export interface IndiaMapRef {
@@ -36,7 +39,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '' }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
 
@@ -698,11 +701,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           return "#e5e7eb"; // Light gray for no data
         }
         
-        if (isNaN(value)) {
-          return "#d1d5db"; // Light gray for NaN/NA values
-        }
-        
-        return colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
+        // Use the new discrete color utility
+        const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+        return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
       })
       .attr("stroke", (d: GeoJSON.Feature) => {
         // If no data, use default gray stroke
@@ -970,7 +971,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       // Map rendering failed - component will continue to show current state
     }
 
-  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings]);
 
   // Legend values from data
   useEffect(() => {
@@ -989,7 +990,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     }
   }, [data]);
 
-  // D3 gradient for legend
+  // D3 gradient for legend (only for continuous mode)
   useEffect(() => {
     
     if (!svgRef.current) return;
@@ -997,8 +998,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Always remove existing gradient first
     svg.selectAll('#states-legend-gradient').remove();
     
-    // If no data, don't create gradient
-    if (data.length === 0) {
+    // If no data or discrete mode, don't create gradient
+    if (data.length === 0 || colorBarSettings?.isDiscrete) {
       return;
     }
     
@@ -1010,7 +1011,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .attr('x2', '100%')
       .attr('y1', '0%')
       .attr('y2', '0%');
-    // Color scale
+    
+    // Color scale - continuous mode only
     const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
@@ -1047,7 +1049,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data]);
+  }, [colorScale, invertColors, data, colorBarSettings]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {
@@ -1108,93 +1110,114 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       >
         {/* Legend overlay (React) */}
         {data.length > 0 && (
-          <g
-            className="legend-container"
-            transform={`translate(${legendPosition.x}, ${legendPosition.y})`}
-            onMouseDown={handleLegendMouseDown}
-            style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-          >
-            <rect
-              width={isMobile ? 150 : 200}
-              height={15}
-              fill="url(#states-legend-gradient)"
-              stroke="#374151"
-              strokeWidth={0.5}
-              rx={3}
-            />
-            {/* Min value */}
-            {editingMin ? (
-              <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
-                <input
-                  type="text"
-                  value={legendMin}
-                  autoFocus
-                  style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
-                  onChange={e => setLegendMin(e.target.value)}
-                  onBlur={() => setEditingMin(false)}
-                  onKeyDown={e => e.key === 'Enter' && setEditingMin(false)}
-                />
-              </foreignObject>
+          <>
+            {/* Discrete Legend */}
+            {colorBarSettings?.isDiscrete ? (
+              <DiscreteLegend
+                data={data.map(d => d.value)}
+                colorScale={colorScale}
+                invertColors={invertColors}
+                colorBarSettings={colorBarSettings}
+                legendPosition={legendPosition}
+                isMobile={isMobile}
+                onMouseDown={handleLegendMouseDown}
+                dragging={dragging}
+                legendTitle={legendTitle}
+                editingTitle={editingTitle}
+                setEditingTitle={setEditingTitle}
+                setLegendTitle={setLegendTitle}
+              />
             ) : (
-              <text
-                x={0}
-                y={30}
-                textAnchor="start"
-                style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
-                onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
+              /* Continuous Legend */
+              <g
+                className="legend-container"
+                transform={`translate(${legendPosition.x}, ${legendPosition.y})`}
+                onMouseDown={handleLegendMouseDown}
+                style={{ cursor: dragging ? 'grabbing' : 'grab' }}
               >
-                {legendMin}
-              </text>
-            )}
-            {/* Max value */}
-            {editingMax ? (
-              <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
-                <input
-                  type="text"
-                  value={legendMax}
-                  autoFocus
-                  style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
-                  onChange={e => setLegendMax(e.target.value)}
-                  onBlur={() => setEditingMax(false)}
-                  onKeyDown={e => e.key === 'Enter' && setEditingMax(false)}
+                <rect
+                  width={isMobile ? 150 : 200}
+                  height={15}
+                  fill="url(#states-legend-gradient)"
+                  stroke="#374151"
+                  strokeWidth={0.5}
+                  rx={3}
                 />
-              </foreignObject>
-            ) : (
-              <text
-                x={isMobile ? 150 : 200}
-                y={30}
-                textAnchor="end"
-                style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
-                onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
-              >
-                {legendMax}
-              </text>
+                {/* Min value */}
+                {editingMin ? (
+                  <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
+                    <input
+                      type="text"
+                      value={legendMin}
+                      autoFocus
+                      style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
+                      onChange={e => setLegendMin(e.target.value)}
+                      onBlur={() => setEditingMin(false)}
+                      onKeyDown={e => e.key === 'Enter' && setEditingMin(false)}
+                    />
+                  </foreignObject>
+                ) : (
+                  <text
+                    x={0}
+                    y={30}
+                    textAnchor="start"
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
+                  >
+                    {legendMin}
+                  </text>
+                )}
+                {/* Max value */}
+                {editingMax ? (
+                  <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
+                    <input
+                      type="text"
+                      value={legendMax}
+                      autoFocus
+                      style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
+                      onChange={e => setLegendMax(e.target.value)}
+                      onBlur={() => setEditingMax(false)}
+                      onKeyDown={e => e.key === 'Enter' && setEditingMax(false)}
+                    />
+                  </foreignObject>
+                ) : (
+                  <text
+                    x={isMobile ? 150 : 200}
+                    y={30}
+                    textAnchor="end"
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
+                  >
+                    {legendMax}
+                  </text>
+                )}
+                {/* Title */}
+                {editingTitle ? (
+                  <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
+                    <input
+                      type="text"
+                      value={legendTitle}
+                      autoFocus
+                      style={{ width: isMobile ? 68 : 88, fontSize: isMobile ? 11 : 13, fontWeight: 600, textAlign: 'center' }}
+                      onChange={e => setLegendTitle(e.target.value)}
+                      onBlur={() => setEditingTitle(false)}
+                      onKeyDown={e => e.key === 'Enter' && setEditingTitle(false)}
+                    />
+                  </foreignObject>
+                ) : (
+                  <text
+                    x={isMobile ? 75 : 100}
+                    y={-5}
+                    textAnchor="middle"
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                    onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
+                  >
+                    {legendTitle}
+                  </text>
+                )}
+              </g>
             )}
-            {/* Title */}
-            {editingTitle ? (
-              <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
-                <input
-                  type="text"
-                  value={legendTitle}
-                  autoFocus
-                  style={{ width: isMobile ? 68 : 88, fontSize: isMobile ? 11 : 13, fontWeight: 600, textAlign: 'center' }}
-                  onChange={e => setLegendTitle(e.target.value)}
-                  onBlur={() => setEditingTitle(false)}
-                  onKeyDown={e => e.key === 'Enter' && setEditingTitle(false)}
-                />
-              </foreignObject>
-            ) : (
-              <text
-                x={isMobile ? 75 : 100}
-                y={-5}
-                textAnchor="middle"
-                style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
-                onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
-              >
-                {legendTitle}
-              </text>
-            )}
-          </g>
+          </>
         )}
         
         {/* Main Title */}

@@ -2,8 +2,18 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
+
+export interface ColorBarSettings {
+  isDiscrete: boolean;
+  binCount: number;
+  customBoundaries: number[];
+  useCustomBoundaries: boolean;
+}
 
 interface ColorMapChooserProps {
   selectedScale: ColorScale;
@@ -16,6 +26,8 @@ interface ColorMapChooserProps {
   onHideValuesChange?: (hide: boolean) => void;
   showStateBoundaries?: boolean;
   onShowStateBoundariesChange?: (show: boolean) => void;
+  colorBarSettings?: ColorBarSettings;
+  onColorBarSettingsChange?: (settings: ColorBarSettings) => void;
 }
 
 const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverging' } } = {
@@ -40,7 +52,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, colorBarSettings, onColorBarSettingsChange }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -79,17 +91,115 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
         <div className="mt-4">
           <Label className="text-sm font-medium">Preview</Label>
           <div className="mt-2 h-4 rounded flex overflow-hidden">
-            {[...Array(10)].map((_, i) => (
+            {getPreviewColors(selectedScale, invertColors, colorBarSettings).map((color, i) => (
               <div
                 key={i}
                 className="flex-1"
                 style={{
-                  backgroundColor: getPreviewColor(selectedScale, invertColors ? 1 - (i / 9) : i / 9),
+                  backgroundColor: color,
                 }}
               />
             ))}
           </div>
         </div>
+        
+        {/* Discrete/Continuous Toggle */}
+        {colorBarSettings && onColorBarSettingsChange && (
+          <>
+            <Separator />
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Color Bar Type</Label>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="colorBarType"
+                    checked={!colorBarSettings.isDiscrete}
+                    onChange={() => onColorBarSettingsChange({ ...colorBarSettings, isDiscrete: false })}
+                    className="w-4 h-4"
+                  />
+                  Continuous
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="colorBarType"
+                    checked={colorBarSettings.isDiscrete}
+                    onChange={() => onColorBarSettingsChange({ ...colorBarSettings, isDiscrete: true })}
+                    className="w-4 h-4"
+                  />
+                  Discrete
+                </label>
+              </div>
+              
+              {/* Discrete Options */}
+              {colorBarSettings.isDiscrete && (
+                <div className="space-y-3 pl-4 border-l-2 border-muted">
+                  <div>
+                    <Label htmlFor="binCount" className="text-xs font-medium text-muted-foreground">
+                      Number of Bins
+                    </Label>
+                    <Input
+                      id="binCount"
+                      type="number"
+                      min="2"
+                      max="20"
+                      value={colorBarSettings.binCount}
+                      onChange={(e) => {
+                        const count = parseInt(e.target.value) || 5;
+                        onColorBarSettingsChange({ ...colorBarSettings, binCount: Math.max(2, Math.min(20, count)) });
+                      }}
+                      className="w-20 h-8 text-xs"
+                      disabled={colorBarSettings.useCustomBoundaries}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={colorBarSettings.useCustomBoundaries}
+                        onChange={(e) => {
+                          onColorBarSettingsChange({ 
+                            ...colorBarSettings, 
+                            useCustomBoundaries: e.target.checked,
+                            customBoundaries: e.target.checked && colorBarSettings.customBoundaries.length === 0 
+                              ? [0, 25, 50, 75, 100] 
+                              : colorBarSettings.customBoundaries
+                          });
+                        }}
+                        className="w-3 h-3"
+                      />
+                      Custom boundaries
+                    </label>
+                    
+                    {colorBarSettings.useCustomBoundaries && (
+                      <div className="mt-2">
+                        <Input
+                          placeholder="e.g., 0,25,50,75,100"
+                          value={colorBarSettings.customBoundaries.join(',')}
+                          onChange={(e) => {
+                            const boundaries = e.target.value
+                              .split(',')
+                              .map(b => parseFloat(b.trim()))
+                              .filter(b => !isNaN(b))
+                              .sort((a, b) => a - b);
+                            onColorBarSettingsChange({ ...colorBarSettings, customBoundaries: boundaries });
+                          }}
+                          className="text-xs h-8"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter comma-separated values
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            <Separator />
+          </>
+        )}
       </CardContent>
       <div className="flex flex-col gap-2 px-6 pb-4">
         <label className="flex items-center gap-2 text-sm">
@@ -160,4 +270,44 @@ function getPreviewColor(scale: ColorScale, t: number): string {
   const colorArray = colors[scale];
   const index = Math.floor(t * (colorArray.length - 1));
   return colorArray[index] || colorArray[0];
+}
+
+// Helper function to get preview colors based on discrete/continuous settings
+function getPreviewColors(scale: ColorScale, invertColors: boolean, colorBarSettings?: ColorBarSettings): string[] {
+  const previewCount = 10;
+  
+  if (!colorBarSettings || !colorBarSettings.isDiscrete) {
+    // Continuous mode - show smooth gradient
+    return [...Array(previewCount)].map((_, i) => {
+      const t = invertColors ? 1 - (i / (previewCount - 1)) : i / (previewCount - 1);
+      return getPreviewColor(scale, t);
+    });
+  }
+  
+  // Discrete mode
+  let binCount = colorBarSettings.binCount;
+  
+  if (colorBarSettings.useCustomBoundaries && colorBarSettings.customBoundaries.length >= 2) {
+    binCount = colorBarSettings.customBoundaries.length - 1;
+  }
+  
+  const colors: string[] = [];
+  
+  for (let bin = 0; bin < binCount; bin++) {
+    const t = invertColors ? 1 - ((bin + 0.5) / binCount) : (bin + 0.5) / binCount;
+    const color = getPreviewColor(scale, t);
+    
+    // Each bin takes proportional space in the preview
+    const segmentsPerBin = Math.ceil(previewCount / binCount);
+    for (let j = 0; j < segmentsPerBin && colors.length < previewCount; j++) {
+      colors.push(color);
+    }
+  }
+  
+  // Fill remaining if needed
+  while (colors.length < previewCount) {
+    colors.push(colors[colors.length - 1]);
+  }
+  
+  return colors.slice(0, previewCount);
 }

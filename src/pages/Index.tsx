@@ -3,7 +3,7 @@ import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
 import { IndiaDistrictsMap, type IndiaDistrictsMapRef } from '@/components/IndiaDistrictsMap';
 import { ExportOptions } from '@/components/ExportOptions';
-import { ColorMapChooser, type ColorScale } from '@/components/ColorMapChooser';
+import { ColorMapChooser, type ColorScale, type ColorBarSettings } from '@/components/ColorMapChooser';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface StateMapData {
@@ -26,6 +26,12 @@ const Index = () => {
   const [stateHideNames, setStateHideNames] = useState(false);
   const [stateHideValues, setStateHideValues] = useState(false);
   const [stateDataTitle, setStateDataTitle] = useState<string>('');
+  const [stateColorBarSettings, setStateColorBarSettings] = useState<ColorBarSettings>({
+    isDiscrete: false,
+    binCount: 5,
+    customBoundaries: [],
+    useCustomBoundaries: false
+  });
   
   // Districts tab state
   const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
@@ -33,6 +39,12 @@ const Index = () => {
   const [districtInvertColors, setDistrictInvertColors] = useState(false);
   const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
   const [showStateBoundaries, setShowStateBoundaries] = useState(true);
+  const [districtColorBarSettings, setDistrictColorBarSettings] = useState<ColorBarSettings>({
+    isDiscrete: false,
+    binCount: 5,
+    customBoundaries: [],
+    useCustomBoundaries: false
+  });
   
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -102,6 +114,7 @@ const Index = () => {
                   hideStateNames={stateHideNames}
                   hideValues={stateHideValues}
                   dataTitle={stateDataTitle}
+                  colorBarSettings={stateColorBarSettings}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions 
@@ -125,6 +138,8 @@ const Index = () => {
                     hideValues={stateHideValues}
                     onHideStateNamesChange={setStateHideNames}
                     onHideValuesChange={setStateHideValues}
+                    colorBarSettings={stateColorBarSettings}
+                    onColorBarSettingsChange={setStateColorBarSettings}
                   />
                 </div>
               </div>
@@ -138,6 +153,7 @@ const Index = () => {
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
                   showStateBoundaries={showStateBoundaries}
+                  colorBarSettings={districtColorBarSettings}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions 
@@ -159,6 +175,8 @@ const Index = () => {
                     onInvertColorsChange={setDistrictInvertColors}
                     showStateBoundaries={showStateBoundaries}
                     onShowStateBoundariesChange={setShowStateBoundaries}
+                    colorBarSettings={districtColorBarSettings}
+                    onColorBarSettingsChange={setDistrictColorBarSettings}
                   />
                 </div>
               </div>

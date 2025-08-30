@@ -6,8 +6,10 @@ import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCo
 import { extent } from 'd3-array';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
-import { type ColorScale } from './ColorMapChooser';
+import { type ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
+import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
+import { DiscreteLegend } from '@/lib/discreteLegend';
 
 interface DistrictMapData {
   district: string;
@@ -20,6 +22,7 @@ interface IndiaDistrictsMapProps {
   invertColors: boolean;
   dataTitle: string;
   showStateBoundaries?: boolean;
+  colorBarSettings?: ColorBarSettings;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -72,7 +75,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   colorScale,
   invertColors,
   dataTitle,
-  showStateBoundaries = true
+  showStateBoundaries = true,
+  colorBarSettings
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -180,7 +184,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     setBounds({ minLng, maxLng, minLat, maxLat });
   };
 
-  // D3 gradient for legend
+  // D3 gradient for legend (only for continuous mode)
   useEffect(() => {
     
     if (!svgRef.current) return;
@@ -188,8 +192,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     // Always remove existing gradient first
     svg.selectAll('#districts-legend-gradient').remove();
     
-    // If no data, don't create gradient
-    if (data.length === 0) {
+    // If no data or discrete mode, don't create gradient
+    if (data.length === 0 || colorBarSettings?.isDiscrete) {
       return;
     }
     
@@ -202,7 +206,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .attr('y1', '0%')
       .attr('y2', '0%');
     
-    // Color scale
+    // Color scale - continuous mode only
     const values = data.map(d => d.value).filter(v => !isNaN(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
@@ -222,7 +226,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data]);
+  }, [colorScale, invertColors, data, colorBarSettings]);
 
   const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];
@@ -282,7 +286,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return '';
   };
 
-  const getColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
+  const getDistrictColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
     if (value === undefined || !dataExtent) return 'white';
     
     if (isNaN(value)) {
@@ -292,10 +296,9 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     const [minVal, maxVal] = dataExtent;
     if (minVal === maxVal) return colorScales[colorScale](0.5);
     
-    let normalizedValue = (value - minVal) / (maxVal - minVal);
-    if (invertColors) normalizedValue = 1 - normalizedValue;
-    
-    return colorScales[colorScale](normalizedValue);
+    // Use the new discrete color utility
+    const values = data.map(d => d.value).filter(v => !isNaN(v));
+    return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
   };
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
@@ -378,10 +381,9 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
       
-      let normalizedValue = (value - minVal) / (maxVal - minVal);
-      if (invertColors) normalizedValue = 1 - normalizedValue;
-      
-      return colorScales[colorScale](normalizedValue);
+      // Use the new discrete color utility
+      const values = data.map(d => d.value).filter(v => !isNaN(v));
+      return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     };
     
     // Calculate color scale values
@@ -414,7 +416,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
-          const color = getColorForValue(value, [minValue, maxValue]);
+          const values = data.map(d => d.value).filter(v => !isNaN(v));
+          const color = getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
           
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
@@ -698,7 +701,7 @@ Chittoor,50`;
                 const mapHeight = isMobile ? 400 : 850;
                 const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
                 const districtData = data.find(d => d.district === feature.properties.district_name);
-                const fillColor = getColorForValue(districtData?.value, dataExtent);
+                const fillColor = getDistrictColorForValue(districtData?.value, dataExtent);
                 const isHovered = hoveredDistrict && 
                   hoveredDistrict.district === feature.properties.district_name;
                 
@@ -796,93 +799,114 @@ Chittoor,50`;
 
               {/* Legend */}
               {data.length > 0 && (
-                <g
-                  className="legend-container"
-                  transform={`translate(${legendPosition.x}, ${legendPosition.y})`}
-                  onMouseDown={handleLegendMouseDown}
-                  style={{ cursor: dragging ? 'grabbing' : 'grab' }}
-                >
-                  <rect
-                    width={isMobile ? 150 : 200}
-                    height={15}
-                    fill="url(#districts-legend-gradient)"
-                    stroke="#374151"
-                    strokeWidth={0.5}
-                    rx={3}
-                  />
-                  {/* Min value */}
-                  {editingMin ? (
-                    <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
-                      <input
-                        type="text"
-                        value={legendMin}
-                        autoFocus
-                        style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
-                        onChange={e => setLegendMin(e.target.value)}
-                        onBlur={() => setEditingMin(false)}
-                        onKeyDown={e => e.key === 'Enter' && setEditingMin(false)}
-                      />
-                    </foreignObject>
+                <>
+                  {/* Discrete Legend */}
+                  {colorBarSettings?.isDiscrete ? (
+                    <DiscreteLegend
+                      data={data.map(d => d.value)}
+                      colorScale={colorScale}
+                      invertColors={invertColors}
+                      colorBarSettings={colorBarSettings}
+                      legendPosition={legendPosition}
+                      isMobile={isMobile}
+                      onMouseDown={handleLegendMouseDown}
+                      dragging={dragging}
+                      legendTitle={legendTitle}
+                      editingTitle={editingTitle}
+                      setEditingTitle={setEditingTitle}
+                      setLegendTitle={setLegendTitle}
+                    />
                   ) : (
-                    <text
-                      x={0}
-                      y={30}
-                      textAnchor="start"
-                      style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
-                      onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
+                    /* Continuous Legend */
+                    <g
+                      className="legend-container"
+                      transform={`translate(${legendPosition.x}, ${legendPosition.y})`}
+                      onMouseDown={handleLegendMouseDown}
+                      style={{ cursor: dragging ? 'grabbing' : 'grab' }}
                     >
-                      {legendMin}
-                    </text>
-                  )}
-                  {/* Max value */}
-                  {editingMax ? (
-                    <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
-                      <input
-                        type="text"
-                        value={legendMax}
-                        autoFocus
-                        style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
-                        onChange={e => setLegendMax(e.target.value)}
-                        onBlur={() => setEditingMax(false)}
-                        onKeyDown={e => e.key === 'Enter' && setEditingMax(false)}
+                      <rect
+                        width={isMobile ? 150 : 200}
+                        height={15}
+                        fill="url(#districts-legend-gradient)"
+                        stroke="#374151"
+                        strokeWidth={0.5}
+                        rx={3}
                       />
-                    </foreignObject>
-                  ) : (
-                    <text
-                      x={isMobile ? 150 : 200}
-                      y={30}
-                      textAnchor="end"
-                      style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
-                      onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
-                    >
-                      {legendMax}
-                    </text>
+                      {/* Min value */}
+                      {editingMin ? (
+                        <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
+                          <input
+                            type="text"
+                            value={legendMin}
+                            autoFocus
+                            style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
+                            onChange={e => setLegendMin(e.target.value)}
+                            onBlur={() => setEditingMin(false)}
+                            onKeyDown={e => e.key === 'Enter' && setEditingMin(false)}
+                          />
+                        </foreignObject>
+                      ) : (
+                        <text
+                          x={0}
+                          y={30}
+                          textAnchor="start"
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
+                        >
+                          {legendMin}
+                        </text>
+                      )}
+                      {/* Max value */}
+                      {editingMax ? (
+                        <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
+                          <input
+                            type="text"
+                            value={legendMax}
+                            autoFocus
+                            style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
+                            onChange={e => setLegendMax(e.target.value)}
+                            onBlur={() => setEditingMax(false)}
+                            onKeyDown={e => e.key === 'Enter' && setEditingMax(false)}
+                          />
+                        </foreignObject>
+                      ) : (
+                        <text
+                          x={isMobile ? 150 : 200}
+                          y={30}
+                          textAnchor="end"
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
+                        >
+                          {legendMax}
+                        </text>
+                      )}
+                      {/* Legend Title */}
+                      {editingTitle ? (
+                        <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
+                          <input
+                            type="text"
+                            value={legendTitle}
+                            autoFocus
+                            style={{ width: isMobile ? 68 : 88, fontSize: isMobile ? 11 : 13, fontWeight: 600, textAlign: 'center' }}
+                            onChange={e => setLegendTitle(e.target.value)}
+                            onBlur={() => setEditingTitle(false)}
+                            onKeyDown={e => e.key === 'Enter' && setEditingTitle(false)}
+                          />
+                        </foreignObject>
+                      ) : (
+                        <text
+                          x={isMobile ? 75 : 100}
+                          y={-5}
+                          textAnchor="middle"
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                          onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
+                        >
+                          {legendTitle}
+                        </text>
+                      )}
+                    </g>
                   )}
-                  {/* Legend Title */}
-                  {editingTitle ? (
-                    <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
-                      <input
-                        type="text"
-                        value={legendTitle}
-                        autoFocus
-                        style={{ width: isMobile ? 68 : 88, fontSize: isMobile ? 11 : 13, fontWeight: 600, textAlign: 'center' }}
-                        onChange={e => setLegendTitle(e.target.value)}
-                        onBlur={() => setEditingTitle(false)}
-                        onKeyDown={e => e.key === 'Enter' && setEditingTitle(false)}
-                      />
-                    </foreignObject>
-                  ) : (
-                    <text
-                      x={isMobile ? 75 : 100}
-                      y={-5}
-                      textAnchor="middle"
-                      style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
-                      onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
-                    >
-                      {legendTitle}
-                    </text>
-                  )}
-                </g>
+                </>
               )}
             </svg>
             
