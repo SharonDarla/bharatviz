@@ -163,6 +163,7 @@ const Index = () => {
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
+                  statesGeojsonPath={getDistrictMapConfig(selectedDistrictMapType).states}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions

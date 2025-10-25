@@ -37,11 +37,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             return;
           }
           
-          // For districts: state, district, value columns
-          // For states: state, value columns
+          // For districts: state, district, value columns (value is always last column)
+          // For states: state, value columns (value is always last column)
           const stateColumn = headers[0];
           const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-          const valueColumn = mode === 'districts' ? headers[2] : headers[1];
+          const valueColumn = headers[headers.length - 1]; // Always use the last column
           
           const processedData = data
             .filter(row => {
@@ -70,11 +70,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             })
             .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
           
-          if (processedData.length === 0) {
-            const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
-            alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
-            return;
-          }
+if (processedData.length === 0) {
+              const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
+              alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
+              return;
+            }
           // Use second column header as title
           onDataLoad(processedData, valueColumn);
         } catch (error) {
@@ -110,11 +110,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               return;
             }
             
-            // For districts: state, district, value columns
-            // For states: state, value columns
+            // For districts: state, district, value columns (value is always last column)
+            // For states: state, value columns (value is always last column)
             const stateColumn = headers[0];
             const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-            const valueColumn = mode === 'districts' ? headers[2] : headers[1];
+            const valueColumn = headers[headers.length - 1]; // Always use the last column
             
             const processedData = data
               .filter(row => {
@@ -144,7 +144,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
             
             if (processedData.length === 0) {
-              const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
+              const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
               alert(`No valid data found in demo file. Please ensure it has data in the ${columnDesc}.`);
               return;
             }
@@ -224,11 +224,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               return;
             }
             
-            // For districts: state, district, value columns
-            // For states: state, value columns
+            // For districts: state, district, value columns (value is always last column)
+            // For states: state, value columns (value is always last column)
             const stateColumn = headers[0];
             const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-            const valueColumn = mode === 'districts' ? headers[2] : headers[1];
+            const valueColumn = headers[headers.length - 1]; // Always use the last column
             
             const processedData = data
               .filter(row => {
@@ -257,7 +257,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               })
               .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
             if (processedData.length === 0) {
-              const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
+              const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
               setSheetError(`No valid data found. Ensure your sheet has data in the ${columnDesc}.`);
               setLoadingSheet(false);
               return;
@@ -288,8 +288,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
           {mode === 'districts' 
-            ? 'Upload a CSV or TSV file with state, district, and value columns. The fourth column name becomes the color map title.'
-            : 'Upload a CSV or TSV file with state and value columns'
+            ? 'Upload a CSV or TSV file with state, district, and value columns. The last column name becomes the color map title.'
+            : 'Upload a CSV or TSV file with state and value columns. The last column name becomes the color map title.'
           }
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

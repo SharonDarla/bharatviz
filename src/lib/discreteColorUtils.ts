@@ -228,12 +228,12 @@ export function getD3ColorInterpolator(scale: ColorScale) {
     magma: d3.interpolateMagma,
     rdylbu: d3.interpolateRdYlBu,
     rdylgn: d3.interpolateRdYlGn,
-    spectral: (t: number) => d3.interpolateSpectral(1 - t),
+    spectral: (t: number) => d3.interpolateSpectral(1 - t), // Inverted so blue=low, red=high
     brbg: d3.interpolateBrBG,
     piyg: d3.interpolatePiYG,
     puor: d3.interpolatePuOr
   };
-  
+
   return interpolators[scale] || d3.interpolateBlues;
 }
 

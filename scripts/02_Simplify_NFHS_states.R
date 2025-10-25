@@ -16,8 +16,17 @@ st_write(states.map,
          delete_dsn = TRUE
 )
 
+states.map.all <- read_sf("~/github/India_NFHS_shapefiles/output/india_map_states.geojson")
+ggplot(states.map.all) + geom_sf()
 
-states.map <- read_sf("~/github/India_NFHS_shapefiles/output/nfhs5_1_with_pok.geojson")
+states.map4 <- read_sf("~/github/India_NFHS_shapefiles/output/nfhs4_1.geojson")
+ggplot(states.map4) + geom_sf()
+states.map5 <- read_sf("~/github/India_NFHS_shapefiles/output/nfhs5_1.geojson")
+ggplot(states.map5) + geom_sf()
+
+
+states.map <- read_sf("~/github/India_NFHS_shapefiles/output/nfhs5_1_with_pok_revised.geojson")
+ggplot(states.map) + geom_sf()
 states.map$state_name <- states.map$DHSREGEN
 states.map <- st_make_valid(states.map)
 states.map <- states.map %>% arrange(state_name)

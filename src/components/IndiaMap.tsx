@@ -50,8 +50,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [editingTitle, setEditingTitle] = useState(false);
   const [editingMin, setEditingMin] = useState(false);
   const [editingMax, setEditingMax] = useState(false);
+  const [editingMean, setEditingMean] = useState(false);
   const [legendTitle, setLegendTitle] = useState(dataTitle || 'Values (edit me)');
   const [legendMin, setLegendMin] = useState('');
+  const [legendMean, setLegendMean] = useState('');
   const [legendMax, setLegendMax] = useState('');
   const [hoveredState, setHoveredState] = useState<{ state: string; value?: number } | null>(null);
   
@@ -167,7 +169,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         magma: d3.interpolateMagma,
         rdylbu: d3.interpolateRdYlBu,
         rdylgn: d3.interpolateRdYlGn,
-        spectral: (t: number) => d3.interpolateSpectral(1 - t),
+        spectral: (t: number) => d3.interpolateSpectral(1 - t), // Inverted so blue=low, red=high
         brbg: d3.interpolateBrBG,
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
@@ -176,10 +178,20 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
     
-    // Calculate color scale values
-    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
-    const minValue = values.length > 0 ? Math.min(...values) : 0;
-    const maxValue = values.length > 0 ? Math.max(...values) : 1;
+    // Calculate color scale values from matched states only
+    const matchedValues = mapData
+      ? data
+          .filter(dataRow => {
+            return mapData.features.some((feature: GeoJSON.Feature) => {
+              const featureStateName = (feature.properties?.state_name || feature.properties?.NAME_1 || feature.properties?.name || feature.properties?.ST_NM)?.toLowerCase().trim();
+              return dataRow.state.toLowerCase().trim() === featureStateName;
+            });
+          })
+          .map(d => d.value)
+          .filter(v => !isNaN(v) && isFinite(v))
+      : [];
+    const minValue = matchedValues.length > 0 ? Math.min(...matchedValues) : 0;
+    const maxValue = matchedValues.length > 0 ? Math.max(...matchedValues) : 1;
     const colorInterpolator = getColorInterpolator(colorScale);
     const colorScaleFunction = d3.scaleSequential(colorInterpolator)
       .domain([minValue, maxValue]);
@@ -644,7 +656,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         magma: d3.interpolateMagma,
         rdylbu: d3.interpolateRdYlBu,
         rdylgn: d3.interpolateRdYlGn,
-        spectral: (t: number) => d3.interpolateSpectral(1 - t),
+        spectral: (t: number) => d3.interpolateSpectral(1 - t), // Inverted so blue=low, red=high
         brbg: d3.interpolateBrBG,
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
@@ -696,11 +708,11 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
-        
+
         if (value === undefined) {
           return "#e5e7eb"; // Light gray for no data
         }
-        
+
         // Use the new discrete color utility
         const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
         return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
@@ -978,14 +990,18 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     if (data.length > 0) {
       const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
       if (values.length > 0) {
+        const meanValue = values.reduce((a, b) => a + b, 0) / values.length;
         setLegendMin(roundToSignificantDigits(Math.min(...values)));
+        setLegendMean(roundToSignificantDigits(meanValue));
         setLegendMax(roundToSignificantDigits(Math.max(...values)));
       } else {
         setLegendMin('0');
+        setLegendMean('0.5');
         setLegendMax('1');
       }
     } else {
       setLegendMin('0');
+      setLegendMean('0.5');
       setLegendMax('1');
     }
   }, [data]);
@@ -1030,7 +1046,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         magma: d3.interpolateMagma,
         rdylbu: d3.interpolateRdYlBu,
         rdylgn: d3.interpolateRdYlGn,
-        spectral: (t: number) => d3.interpolateSpectral(1 - t),
+        spectral: (t: number) => d3.interpolateSpectral(1 - t), // Inverted so blue=low, red=high
         brbg: d3.interpolateBrBG,
         piyg: d3.interpolatePiYG,
         puor: d3.interpolatePuOr
@@ -1114,7 +1130,19 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             {/* Discrete Legend */}
             {colorBarSettings?.isDiscrete ? (
               <DiscreteLegend
-                data={data.map(d => d.value)}
+                data={
+                  mapData
+                    ? data
+                        .filter(dataRow => {
+                          return mapData.features.some((feature: GeoJSON.Feature) => {
+                            const featureStateName = (feature.properties?.state_name || feature.properties?.NAME_1 || feature.properties?.name || feature.properties?.ST_NM)?.toLowerCase().trim();
+                            return dataRow.state.toLowerCase().trim() === featureStateName;
+                          });
+                        })
+                        .map(d => d.value)
+                        .filter(v => !isNaN(v) && isFinite(v))
+                    : []
+                }
                 colorScale={colorScale}
                 invertColors={invertColors}
                 colorBarSettings={colorBarSettings}
@@ -1165,6 +1193,30 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
                   >
                     {legendMin}
+                  </text>
+                )}
+                {/* Mean value */}
+                {editingMean ? (
+                  <foreignObject x={isMobile ? 60 : 80} y={18} width={isMobile ? 30 : 40} height={30}>
+                    <input
+                      type="text"
+                      value={legendMean}
+                      autoFocus
+                      style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
+                      onChange={e => setLegendMean(e.target.value)}
+                      onBlur={() => setEditingMean(false)}
+                      onKeyDown={e => e.key === 'Enter' && setEditingMean(false)}
+                    />
+                  </foreignObject>
+                ) : (
+                  <text
+                    x={isMobile ? 75 : 100}
+                    y={30}
+                    textAnchor="middle"
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    onDoubleClick={e => { e.stopPropagation(); setEditingMean(true); }}
+                  >
+                    {legendMean}
                   </text>
                 )}
                 {/* Max value */}

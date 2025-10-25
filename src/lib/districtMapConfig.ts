@@ -10,6 +10,7 @@ export interface DistrictMapConfig {
   name: string;
   displayName: string;
   geojsonPath: string;
+  states: string;
   templateCsvPath: string;
   demoDataPath: string;
   googleSheetLink: string;
@@ -30,7 +31,8 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     id: 'LGD',
     name: 'LGD',
     displayName: 'LGD (Default)',
-    geojsonPath: '/India_LGD_Districts.geojson',
+    geojsonPath: '/India_LGD_districts.geojson',
+    states: '/India_LGD_states.geojson',
     templateCsvPath: '/bharatviz-lgd-district-template.csv',
     demoDataPath: '/districts_demo.csv',
     googleSheetLink: 'https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing',
@@ -41,8 +43,10 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     name: 'NFHS5',
     displayName: 'NFHS-5',
     geojsonPath: '/India_NFHS5_districts_simplified.geojson',
+    /*states: '/India_NFHS5_states_simplified.geojson',*/
+    states: '/India_LGD_states.geojson',
     templateCsvPath: '/bharatviz-NFHS5-district-template.csv',
-    demoDataPath: '/districts_demo.csv',
+    demoDataPath: '/nfhs5_blood_sugar_levels.csv',
     googleSheetLink: 'https://docs.google.com/spreadsheets/d/1xUOwqgpvp4hkO-e3-ENvSaqWsu0JGb6i_vUncklWotk/edit?usp=sharing',
     description: 'NFHS-5 survey district boundaries'
   },
@@ -51,8 +55,9 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     name: 'NFHS4',
     displayName: 'NFHS-4',
     geojsonPath: '/India_NFHS4_districts_simplified.geojson',
+    states: '/India_NFHS4_states_simplified.geojson',
     templateCsvPath: '/bharatviz-NFHS4-district-template.csv',
-    demoDataPath: '/districts_demo.csv',
+    demoDataPath: '/nfhs4_blood_sugar_levels.csv',
     googleSheetLink: 'https://docs.google.com/spreadsheets/d/1kiVltD6zV7N500r6sgAMaubrFGLSUNd1DxXlGcnnuls/edit?usp=sharing',
     description: 'NFHS-4 survey district boundaries'
   }

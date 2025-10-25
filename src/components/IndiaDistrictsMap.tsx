@@ -25,6 +25,7 @@ interface IndiaDistrictsMapProps {
   showStateBoundaries?: boolean;
   colorBarSettings?: ColorBarSettings;
   geojsonPath?: string;
+  statesGeojsonPath?: string;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -66,7 +67,7 @@ const colorScales: Record<ColorScale, (t: number) => string> = {
   magma: interpolateMagma,
   rdylbu: interpolateRdYlBu,
   rdylgn: interpolateRdYlGn,
-  spectral: interpolateSpectral,
+  spectral: (t: number) => interpolateSpectral(1 - t), // Inverted so blue=low, red=high
   brbg: interpolateBrBG,
   piyg: interpolatePiYG,
   puor: interpolatePuOr,
@@ -79,7 +80,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   dataTitle,
   showStateBoundaries = true,
   colorBarSettings,
-  geojsonPath = '/India_LGD_Districts_simplified.geojson'
+  geojsonPath = '/India_LGD_Districts_simplified.geojson',
+  statesGeojsonPath = '/India_LGD_states.geojson'
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -97,8 +99,10 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [editingMax, setEditingMax] = useState(false);
   const [legendTitle, setLegendTitle] = useState(dataTitle || 'Values (edit me)');
   const [legendMin, setLegendMin] = useState('');
+  const [legendMean, setLegendMean] = useState('');
   const [legendMax, setLegendMax] = useState('');
-  
+  const [editingMean, setEditingMean] = useState(false);
+
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -121,10 +125,13 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       const values = data.map(d => d.value).filter(v => !isNaN(v));
       const minValue = values.length > 0 ? Math.min(...values) : 0;
       const maxValue = values.length > 0 ? Math.max(...values) : 1;
+      const meanValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0.5;
       setLegendMin(roundToSignificantDigits(minValue));
+      setLegendMean(roundToSignificantDigits(meanValue));
       setLegendMax(roundToSignificantDigits(maxValue));
     } else {
       setLegendMin('0');
+      setLegendMean('0.5');
       setLegendMax('1');
     }
   }, [data]);
@@ -137,7 +144,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         }
         return response.json();
       }),
-      fetch('/India_LGD_states.geojson').then(response => {
+      fetch(statesGeojsonPath).then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -152,7 +159,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .catch(error => {
         // GeoJSON loading failed - component will show loading state
       });
-  }, [geojsonPath]);
+  }, [geojsonPath, statesGeojsonPath]);
 
   const calculateBounds = (data: { features: GeoJSONFeature[] }) => {
     let minLng = Infinity, maxLng = -Infinity;
@@ -219,7 +226,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     };
     const colorScaleFunction = scaleSequential(getColorInterpolator(colorScale))
       .domain([minValue, maxValue]);
-    
+
     const numStops = 10;
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
@@ -291,14 +298,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   const getDistrictColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
     if (value === undefined || !dataExtent) return 'white';
-    
+
     if (isNaN(value)) {
       return '#d1d5db'; // Light gray for NaN/NA values
     }
-    
+
     const [minVal, maxVal] = dataExtent;
     if (minVal === maxVal) return colorScales[colorScale](0.5);
-    
+
     // Use the new discrete color utility
     const values = data.map(d => d.value).filter(v => !isNaN(v));
     return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
@@ -383,15 +390,15 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
     const getColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
       if (value === undefined || !dataExtent || isNaN(value)) return '#d1d5db';
-      
+
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
-      
+
       // Use the new discrete color utility
       const values = data.map(d => d.value).filter(v => !isNaN(v));
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     };
-    
+
     // Calculate color scale values
     const values = data.map(d => d.value).filter(v => !isNaN(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
@@ -863,6 +870,30 @@ Chittoor,50`;
                           onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
                         >
                           {legendMin}
+                        </text>
+                      )}
+                      {/* Mean value */}
+                      {editingMean ? (
+                        <foreignObject x={isMobile ? 60 : 80} y={18} width={isMobile ? 30 : 40} height={30}>
+                          <input
+                            type="text"
+                            value={legendMean}
+                            autoFocus
+                            style={{ width: isMobile ? 28 : 38, fontSize: isMobile ? 10 : 12 }}
+                            onChange={e => setLegendMean(e.target.value)}
+                            onBlur={() => setEditingMean(false)}
+                            onKeyDown={e => e.key === 'Enter' && setEditingMean(false)}
+                          />
+                        </foreignObject>
+                      ) : (
+                        <text
+                          x={isMobile ? 75 : 100}
+                          y={30}
+                          textAnchor="middle"
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          onDoubleClick={e => { e.stopPropagation(); setEditingMean(true); }}
+                        >
+                          {legendMean}
                         </text>
                       )}
                       {/* Max value */}
