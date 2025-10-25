@@ -8,6 +8,17 @@ lgd.district.map$state_name <- lgd.district.map$OTHREGNA
 lgd.district.map$reg_code <- lgd.district.map$REGCODE
 lgd.district.map <- st_make_valid(lgd.district.map)
 lgd.district.map <- lgd.district.map %>% arrange(state_name, district_name, reg_code)
+state_district <- lgd.district.map %>%
+  select(state_name, district_name, reg_code) %>%
+  as.data.frame() %>%
+  select(state_name, district_name,reg_code) %>%
+  arrange(state_name, district_name,reg_code) %>%
+  unique()
+write.csv(state_district,
+          here("public/India_NFHS4_state_district_list.csv"),
+          row.names = FALSE
+)
+
 lgd.district.map <- lgd.district.map %>%
   mutate(
     geometry = map(geometry, function(geom) {

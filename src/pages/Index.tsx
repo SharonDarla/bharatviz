@@ -5,6 +5,9 @@ import { IndiaDistrictsMap, type IndiaDistrictsMapRef } from '@/components/India
 import { ExportOptions } from '@/components/ExportOptions';
 import { ColorMapChooser, type ColorScale, type ColorBarSettings } from '@/components/ColorMapChooser';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { DISTRICT_MAP_TYPES, DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
 
 interface StateMapData {
   state: string;
@@ -46,6 +49,7 @@ const Index = () => {
     customBoundaries: [],
     useCustomBoundaries: false
   });
+  const [selectedDistrictMapType, setSelectedDistrictMapType] = useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
   
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -150,14 +154,18 @@ const Index = () => {
           <div className={`space-y-6 ${activeTab === 'districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 order-2 lg:order-2">
-                <IndiaDistrictsMap ref={districtMapRef} data={districtMapData} colorScale={districtColorScale} 
+                <IndiaDistrictsMap
+                  ref={districtMapRef}
+                  data={districtMapData}
+                  colorScale={districtColorScale}
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
+                  geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
                 />
                 <div className="mt-6 flex justify-center">
-                  <ExportOptions 
+                  <ExportOptions
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
@@ -165,11 +173,41 @@ const Index = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="lg:col-span-1 order-1 lg:order-1">
-                <FileUpload onDataLoad={handleDistrictDataLoad} mode="districts" />
+                {/* District Map Type Selector */}
+                <div className="mb-4 p-4 border rounded-lg bg-card">
+                  <Label htmlFor="district-map-type" className="text-sm font-medium mb-2 block">
+                    District Map Type
+                  </Label>
+                  <Select value={selectedDistrictMapType} onValueChange={setSelectedDistrictMapType}>
+                    <SelectTrigger id="district-map-type" className="w-full">
+                      <SelectValue placeholder="Select district map type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getDistrictMapTypesList().map((mapType) => (
+                        <SelectItem key={mapType.id} value={mapType.id}>
+                          <div className="flex flex-col">
+                            <span>{mapType.displayName}</span>
+                            {mapType.description && (
+                              <span className="text-xs text-muted-foreground">{mapType.description}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <FileUpload
+                  onDataLoad={handleDistrictDataLoad}
+                  mode="districts"
+                  templateCsvPath={getDistrictMapConfig(selectedDistrictMapType).templateCsvPath}
+                  demoDataPath={getDistrictMapConfig(selectedDistrictMapType).demoDataPath}
+                  googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
+                />
                 <div className="space-y-4 mt-6">
-                  <ColorMapChooser 
+                  <ColorMapChooser
                     selectedScale={districtColorScale}
                     onScaleChange={setDistrictColorScale}
                     invertColors={districtInvertColors}

@@ -7,9 +7,12 @@ import Papa from 'papaparse';
 interface FileUploadProps {
   onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>, title?: string) => void;
   mode?: 'states' | 'districts';
+  templateCsvPath?: string;
+  demoDataPath?: string;
+  googleSheetLink?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states' }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -86,7 +89,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
 
   const handleLoadDemo = async () => {
     try {
-      const demoFile = mode === 'districts' ? '/districts_demo.csv' : '/nfhs5_protein_consumption_eggs.csv';
+      const demoFile = demoDataPath || (mode === 'districts' ? '/districts_demo.csv' : '/nfhs5_protein_consumption_eggs.csv');
       const response = await fetch(demoFile);
       if (!response.ok) {
         throw new Error('Failed to load demo data');
@@ -167,7 +170,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
 
   const downloadCSVTemplate = async () => {
     try {
-      const templateFile = mode === 'districts' ? '/bharatviz-district-template.csv' : '/bharatviz-state-template.csv';
+      const templateFile = templateCsvPath || (mode === 'districts' ? '/bharatviz-district-template.csv' : '/bharatviz-state-template.csv');
       const response = await fetch(templateFile);
       if (!response.ok) {
         throw new Error('Failed to download template');
@@ -309,12 +312,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             <h4 className="text-sm font-medium text-gray-700 mb-1">Or load from Google Sheets</h4>
             <p className="text-xs text-gray-500">
               Paste your Google Sheet link below (see{' '}
-              <a 
-                href={mode === 'districts' 
+              <a
+                href={googleSheetLink || (mode === 'districts'
                   ? "https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing"
-                  : "https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing"} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+                  : "https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing")}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="underline text-blue-500 hover:text-blue-700"
               >
                 template

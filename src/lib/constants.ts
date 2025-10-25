@@ -59,7 +59,7 @@ export const DEFAULT_LEGEND_POSITION = {
 // File paths
 export const DATA_FILES = {
   STATES_GEOJSON: '/India_LGD_states.geojson',
-  DISTRICTS_GEOJSON: '/India_LGD_districts.geojson',
+  DISTRICTS_GEOJSON: '/India_LGD_Districts_simplified.geojson',
   STATES_DEMO_CSV: '/nfhs5_protein_consumption_eggs.csv',
   DISTRICTS_DEMO_CSV: '/districts_demo.csv'
 };

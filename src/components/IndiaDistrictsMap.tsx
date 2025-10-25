@@ -24,6 +24,7 @@ interface IndiaDistrictsMapProps {
   dataTitle: string;
   showStateBoundaries?: boolean;
   colorBarSettings?: ColorBarSettings;
+  geojsonPath?: string;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -77,7 +78,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   invertColors,
   dataTitle,
   showStateBoundaries = true,
-  colorBarSettings
+  colorBarSettings,
+  geojsonPath = '/India_LGD_Districts_simplified.geojson'
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -129,7 +131,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   useEffect(() => {
     Promise.all([
-      fetch('/India_LGD_districts.geojson').then(response => {
+      fetch(geojsonPath).then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -150,7 +152,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .catch(error => {
         // GeoJSON loading failed - component will show loading state
       });
-  }, []);
+  }, [geojsonPath]);
 
   const calculateBounds = (data: { features: GeoJSONFeature[] }) => {
     let minLng = Infinity, maxLng = -Infinity;
