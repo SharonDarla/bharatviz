@@ -129,13 +129,13 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   useEffect(() => {
     Promise.all([
-      fetch('/India_LGD_Districts_simplified.geojson').then(response => {
+      fetch('/India_LGD_districts.geojson').then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
       }),
-      fetch('/india_map_states.geojson').then(response => {
+      fetch('/India_LGD_states.geojson').then(response => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
