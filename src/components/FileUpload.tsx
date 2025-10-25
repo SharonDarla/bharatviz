@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import Papa from 'papaparse';
 
 interface FileUploadProps {
-  onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ district: string; value: number }>, title?: string) => void;
+  onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>, title?: string) => void;
   mode?: 'states' | 'districts';
 }
 
@@ -54,8 +54,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                 ? NaN 
                 : Number(trimmedValue);
               
-              return mode === 'districts' 
+              return mode === 'districts'
                 ? {
+                    state: row[stateColumn].trim(),
                     district: row[locationColumn].trim(),
                     value: numericValue
                   }
@@ -64,7 +65,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                     value: numericValue
                   };
             })
-            .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
+            .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
           
           if (processedData.length === 0) {
             const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
@@ -126,8 +127,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                   ? NaN 
                   : Number(trimmedValue);
                 
-                return mode === 'districts' 
+                return mode === 'districts'
                   ? {
+                      state: row[stateColumn].trim(),
                       district: row[locationColumn].trim(),
                       value: numericValue
                     }
@@ -136,7 +138,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                       value: numericValue
                     };
               })
-              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
+              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
             
             if (processedData.length === 0) {
               const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
@@ -239,8 +241,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                   ? NaN 
                   : Number(trimmedValue);
                 
-                return mode === 'districts' 
+                return mode === 'districts'
                   ? {
+                      state: row[stateColumn].trim(),
                       district: row[locationColumn].trim(),
                       value: numericValue
                     }
@@ -249,7 +252,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                       value: numericValue
                     };
               })
-              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ district: string; value: number }>;
+              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
             if (processedData.length === 0) {
               const columnDesc = mode === 'districts' ? 'first three columns (state, district, value)' : 'first two columns (state, value)';
               setSheetError(`No valid data found. Ensure your sheet has data in the ${columnDesc}.`);

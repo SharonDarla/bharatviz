@@ -12,6 +12,7 @@ interface StateMapData {
 }
 
 interface DistrictMapData {
+  state: string;
   district: string;
   value: number;
 }

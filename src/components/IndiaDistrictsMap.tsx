@@ -12,6 +12,7 @@ import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUti
 import { DiscreteLegend } from '@/lib/discreteLegend';
 
 interface DistrictMapData {
+  state: string;
   district: string;
   value: number;
 }
@@ -303,9 +304,12 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
     const { district_name, state_name } = feature.properties;
-    const districtData = data.find(d => d.district === district_name);
-    setHoveredDistrict({ 
-      district: district_name, 
+    const districtData = data.find(d =>
+      d.district.toLowerCase().trim() === district_name.toLowerCase().trim() &&
+      d.state.toLowerCase().trim() === state_name.toLowerCase().trim()
+    );
+    setHoveredDistrict({
+      district: district_name,
       state: state_name,
       value: districtData?.value
     });
@@ -700,9 +704,12 @@ Chittoor,50`;
                 const mapWidth = isMobile ? 320 : 760;
                 const mapHeight = isMobile ? 400 : 850;
                 const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
-                const districtData = data.find(d => d.district === feature.properties.district_name);
+                const districtData = data.find(d =>
+                  d.district.toLowerCase().trim() === feature.properties.district_name.toLowerCase().trim() &&
+                  d.state.toLowerCase().trim() === feature.properties.state_name.toLowerCase().trim()
+                );
                 const fillColor = getDistrictColorForValue(districtData?.value, dataExtent);
-                const isHovered = hoveredDistrict && 
+                const isHovered = hoveredDistrict &&
                   hoveredDistrict.district === feature.properties.district_name;
                 
                 return (
