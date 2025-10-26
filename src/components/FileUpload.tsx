@@ -10,13 +10,51 @@ interface FileUploadProps {
   templateCsvPath?: string;
   demoDataPath?: string;
   googleSheetLink?: string;
+  geojsonPath?: string;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
+
+  // Helper function to filter data based on GeoJSON
+  const filterDataByGeoJSON = async (
+    data: Array<{ state: string; value: number } | { state: string; district: string; value: number }>
+  ): Promise<Array<{ state: string; value: number } | { state: string; district: string; value: number }>> => {
+    if (!geojsonPath) return data; // If no geojsonPath provided, return all data
+
+    try {
+      const response = await fetch(geojsonPath);
+      if (!response.ok) return data;
+
+      const geojson = await response.json();
+
+      if (mode === 'districts') {
+        // For districts, filter based on both state_name and district_name
+        const districtData = data as Array<{ state: string; district: string; value: number }>;
+        return districtData.filter(row => {
+          return geojson.features.some((feature: any) =>
+            row.district.toLowerCase().trim() === feature.properties.district_name?.toLowerCase().trim() &&
+            row.state.toLowerCase().trim() === feature.properties.state_name?.toLowerCase().trim()
+          );
+        });
+      } else {
+        // For states, filter based on state_name
+        const stateData = data as Array<{ state: string; value: number }>;
+        return stateData.filter(row => {
+          return geojson.features.some((feature: any) => {
+            const featureStateName = (feature.properties.state_name || feature.properties.NAME_1 || feature.properties.name || feature.properties.ST_NM)?.toLowerCase().trim();
+            return row.state.toLowerCase().trim() === featureStateName;
+          });
+        });
+      }
+    } catch (error) {
+      console.error('Error filtering data by GeoJSON:', error);
+      return data; // Return unfiltered data on error
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -24,39 +62,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
 
     Papa.parse(file, {
       header: true,
-      complete: (result) => {
+      complete: async (result) => {
         try {
           const data = result.data as Array<Record<string, string>>;
           const headers = result.meta.fields || [];
-          
-          
+
+
           // Validate column count based on mode
           const requiredColumns = mode === 'districts' ? 3 : 2;
           if (headers.length < requiredColumns) {
             alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
             return;
           }
-          
+
           // For districts: state, district, value columns (value is always last column)
           // For states: state, value columns (value is always last column)
           const stateColumn = headers[0];
           const locationColumn = mode === 'districts' ? headers[1] : headers[0];
           const valueColumn = headers[headers.length - 1]; // Always use the last column
-          
+
           const processedData = data
             .filter(row => {
-              const hasLocationData = mode === 'districts' 
-                ? row[stateColumn] && row[locationColumn] 
+              const hasLocationData = mode === 'districts'
+                ? row[stateColumn] && row[locationColumn]
                 : row[locationColumn];
               return hasLocationData;
             })
             .map(row => {
               const value = row[valueColumn];
               const trimmedValue = value ? value.trim() : '';
-              const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a' 
-                ? NaN 
+              const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a'
+                ? NaN
                 : Number(trimmedValue);
-              
+
               return mode === 'districts'
                 ? {
                     state: row[stateColumn].trim(),
@@ -69,14 +107,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                   };
             })
             .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
-          
-if (processedData.length === 0) {
-              const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
-              alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
-              return;
-            }
+
+          if (processedData.length === 0) {
+            const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
+            alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
+            return;
+          }
+
+          // Filter data based on GeoJSON before passing to parent
+          const filteredData = await filterDataByGeoJSON(processedData);
+
+          if (filteredData.length === 0) {
+            alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
+            return;
+          }
+
           // Use second column header as title
-          onDataLoad(processedData, valueColumn);
+          onDataLoad(filteredData, valueColumn);
         } catch (error) {
           alert('Error processing file data');
         }
@@ -95,10 +142,10 @@ if (processedData.length === 0) {
         throw new Error('Failed to load demo data');
       }
       const csvText = await response.text();
-      
+
       Papa.parse(csvText, {
         header: true,
-        complete: (result) => {
+        complete: async (result) => {
           try {
             const data = result.data as Array<Record<string, string>>;
             const headers = result.meta.fields || [];
@@ -148,9 +195,17 @@ if (processedData.length === 0) {
               alert(`No valid data found in demo file. Please ensure it has data in the ${columnDesc}.`);
               return;
             }
-            
+
+            // Filter data based on GeoJSON before passing to parent
+            const filteredData = await filterDataByGeoJSON(processedData);
+
+            if (filteredData.length === 0) {
+              alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
+              return;
+            }
+
             // Use second column header as title
-            onDataLoad(processedData, valueColumn);
+            onDataLoad(filteredData, valueColumn);
           } catch (error) {
             alert('Error processing demo data');
           }
@@ -211,11 +266,11 @@ if (processedData.length === 0) {
       const csvText = await response.text();
       Papa.parse(csvText, {
         header: true,
-        complete: (result) => {
+        complete: async (result) => {
           try {
             const data = result.data as Array<Record<string, string>>;
             const headers = result.meta.fields || [];
-            
+
             // Validate column count based on mode
             const requiredColumns = mode === 'districts' ? 3 : 2;
             if (headers.length < requiredColumns) {
@@ -223,27 +278,27 @@ if (processedData.length === 0) {
               setLoadingSheet(false);
               return;
             }
-            
+
             // For districts: state, district, value columns (value is always last column)
             // For states: state, value columns (value is always last column)
             const stateColumn = headers[0];
             const locationColumn = mode === 'districts' ? headers[1] : headers[0];
             const valueColumn = headers[headers.length - 1]; // Always use the last column
-            
+
             const processedData = data
               .filter(row => {
-                const hasLocationData = mode === 'districts' 
-                  ? row[stateColumn] && row[locationColumn] 
+                const hasLocationData = mode === 'districts'
+                  ? row[stateColumn] && row[locationColumn]
                   : row[locationColumn];
                 return hasLocationData;
               })
               .map(row => {
                 const value = row[valueColumn];
                 const trimmedValue = value ? value.trim() : '';
-                const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a' 
-                  ? NaN 
+                const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a'
+                  ? NaN
                   : Number(trimmedValue);
-                
+
                 return mode === 'districts'
                   ? {
                       state: row[stateColumn].trim(),
@@ -262,8 +317,18 @@ if (processedData.length === 0) {
               setLoadingSheet(false);
               return;
             }
+
+            // Filter data based on GeoJSON before passing to parent
+            const filteredData = await filterDataByGeoJSON(processedData);
+
+            if (filteredData.length === 0) {
+              setSheetError(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
+              setLoadingSheet(false);
+              return;
+            }
+
             // Use second column header as title
-            onDataLoad(processedData, valueColumn);
+            onDataLoad(filteredData, valueColumn);
             setLoadingSheet(false);
           } catch (error) {
             setSheetError('Error processing sheet data.');

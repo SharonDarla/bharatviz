@@ -178,20 +178,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
     
-    // Calculate color scale values from matched states only
-    const matchedValues = mapData
-      ? data
-          .filter(dataRow => {
-            return mapData.features.some((feature: GeoJSON.Feature) => {
-              const featureStateName = (feature.properties?.state_name || feature.properties?.NAME_1 || feature.properties?.name || feature.properties?.ST_NM)?.toLowerCase().trim();
-              return dataRow.state.toLowerCase().trim() === featureStateName;
-            });
-          })
-          .map(d => d.value)
-          .filter(v => !isNaN(v) && isFinite(v))
-      : [];
-    const minValue = matchedValues.length > 0 ? Math.min(...matchedValues) : 0;
-    const maxValue = matchedValues.length > 0 ? Math.max(...matchedValues) : 1;
+    // Calculate color scale values
+    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+    const minValue = values.length > 0 ? Math.min(...values) : 0;
+    const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const colorInterpolator = getColorInterpolator(colorScale);
     const colorScaleFunction = d3.scaleSequential(colorInterpolator)
       .domain([minValue, maxValue]);
@@ -1130,19 +1120,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             {/* Discrete Legend */}
             {colorBarSettings?.isDiscrete ? (
               <DiscreteLegend
-                data={
-                  mapData
-                    ? data
-                        .filter(dataRow => {
-                          return mapData.features.some((feature: GeoJSON.Feature) => {
-                            const featureStateName = (feature.properties?.state_name || feature.properties?.NAME_1 || feature.properties?.name || feature.properties?.ST_NM)?.toLowerCase().trim();
-                            return dataRow.state.toLowerCase().trim() === featureStateName;
-                          });
-                        })
-                        .map(d => d.value)
-                        .filter(v => !isNaN(v) && isFinite(v))
-                    : []
-                }
+                data={data.map(d => d.value)}
                 colorScale={colorScale}
                 invertColors={invertColors}
                 colorBarSettings={colorBarSettings}

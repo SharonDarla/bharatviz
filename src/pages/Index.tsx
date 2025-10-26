@@ -132,7 +132,11 @@ const Index = () => {
               </div>
               
               <div className="lg:col-span-1 order-1 lg:order-1">
-                <FileUpload onDataLoad={handleStateDataLoad} mode="states" />
+                <FileUpload
+                  onDataLoad={handleStateDataLoad}
+                  mode="states"
+                  geojsonPath="/india_map_states.geojson"
+                />
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser 
                     selectedScale={stateColorScale}
@@ -206,6 +210,7 @@ const Index = () => {
                   templateCsvPath={getDistrictMapConfig(selectedDistrictMapType).templateCsvPath}
                   demoDataPath={getDistrictMapConfig(selectedDistrictMapType).demoDataPath}
                   googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
+                  geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
                 />
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser
