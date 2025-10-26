@@ -1,0 +1,138 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import mapRoutes from './routes/mapRoutes.js';
+import districtsMapRoutes from './routes/districtsMapRoutes.js';
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Security middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+app.use('/api/', limiter);
+
+// Body parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// API routes
+app.use('/api/v1/states', mapRoutes);
+app.use('/api/v1/districts', districtsMapRoutes);
+
+// Root endpoint with API documentation
+app.get('/', (req, res) => {
+  res.json({
+    name: 'BharatViz API',
+    version: '1.0.0',
+    description: 'Generate India choropleth maps programmatically',
+    endpoints: {
+      'POST /api/v1/states/map': {
+        description: 'Generate state-level choropleth map',
+        requestBody: {
+          data: 'Array<{ state: string, value: number }> - Required',
+          colorScale: 'string - Optional (default: spectral)',
+          invertColors: 'boolean - Optional (default: false)',
+          hideStateNames: 'boolean - Optional (default: false)',
+          hideValues: 'boolean - Optional (default: false)',
+          mainTitle: 'string - Optional (default: BharatViz)',
+          legendTitle: 'string - Optional (default: Values)',
+          formats: 'Array<"png" | "svg" | "pdf"> - Optional (default: ["png"])'
+        }
+      },
+      'POST /api/v1/districts/map': {
+        description: 'Generate district-level choropleth map',
+        requestBody: {
+          data: 'Array<{ state: string, district: string, value: number }> - Required',
+          mapType: 'string - Optional: "LGD" | "NFHS5" | "NFHS4" (default: LGD)',
+          colorScale: 'string - Optional (default: spectral)',
+          invertColors: 'boolean - Optional (default: false)',
+          hideValues: 'boolean - Optional (default: false)',
+          showStateBoundaries: 'boolean - Optional (default: true)',
+          mainTitle: 'string - Optional (default: BharatViz)',
+          legendTitle: 'string - Optional (default: Values)',
+          formats: 'Array<"png" | "svg" | "pdf"> - Optional (default: ["png"])'
+        },
+        availableMapTypes: {
+          LGD: 'Local Government Directory (LGD) district boundaries',
+          NFHS5: 'NFHS-5 survey district boundaries',
+          NFHS4: 'NFHS-4 survey district boundaries'
+        }
+      },
+      availableColorScales: [
+        'spectral', 'rdylbu', 'rdylgn', 'brbg', 'piyg', 'puor',
+        'blues', 'greens', 'reds', 'oranges', 'purples', 'pinks',
+        'viridis', 'plasma', 'inferno', 'magma'
+      ]
+    },
+    examples: {
+      curl: `curl -X POST http://localhost:${PORT}/api/v1/states/map \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "data": [
+      {"state": "Maharashtra", "value": 75.8},
+      {"state": "Karnataka", "value": 85.5}
+    ],
+    "colorScale": "spectral",
+    "legendTitle": "% of children who eat eggs",
+    "formats": ["png", "svg", "pdf"]
+  }'`
+    }
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: {
+      message: 'Endpoint not found',
+      code: 'NOT_FOUND'
+    }
+  });
+});
+
+// Error handler
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    error: {
+      message: 'Internal server error',
+      code: 'INTERNAL_ERROR'
+    }
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 BharatViz API server running on http://localhost:${PORT}`);
+  console.log(`📊 Generate India maps at POST http://localhost:${PORT}/api/v1/states/map`);
+  console.log(`📖 API documentation at http://localhost:${PORT}/`);
+});
+
+export default app;
