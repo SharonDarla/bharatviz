@@ -92,16 +92,14 @@ export class DistrictsMapRenderer {
     let maxLat = -Infinity;
 
     const processCoordinates = (coords: any) => {
-      if (typeof coords[0] === 'number') {
-        // Single coordinate pair
+      if (Array.isArray(coords[0])) {
+        coords.forEach(processCoordinates);
+      } else {
         const [lng, lat] = coords;
         minLng = Math.min(minLng, lng);
         maxLng = Math.max(maxLng, lng);
         minLat = Math.min(minLat, lat);
         maxLat = Math.max(maxLat, lat);
-      } else {
-        // Array of coordinates
-        coords.forEach(processCoordinates);
       }
     };
 
@@ -113,19 +111,18 @@ export class DistrictsMapRenderer {
   }
 
   /**
-   * Custom projection function matching frontend logic
+   * Project a coordinate to canvas space (matching frontend exactly)
    */
   private projectCoordinate(
     lng: number,
     lat: number,
     bounds: { minLng: number; maxLng: number; minLat: number; maxLat: number },
-    width = 800,
-    height = 890
+    width: number,
+    height: number
   ): [number, number] {
     const geoWidth = bounds.maxLng - bounds.minLng;
     const geoHeight = bounds.maxLat - bounds.minLat;
     const geoAspectRatio = geoWidth / geoHeight;
-
     const canvasAspectRatio = width / height;
 
     let projectionWidth = width;
@@ -148,34 +145,42 @@ export class DistrictsMapRenderer {
   }
 
   /**
-   * Convert GeoJSON coordinates to SVG path using custom projection
+   * Convert GeoJSON coordinates to SVG path data
    */
-  private coordinatesToPath(
-    coords: any,
+  private convertCoordinatesToPath(
+    coordinates: any,
     bounds: { minLng: number; maxLng: number; minLat: number; maxLat: number },
     width: number,
     height: number
   ): string {
-    const processRing = (ring: number[][]): string => {
-      const points = ring.map(([lng, lat]) => {
+    if (!coordinates || !Array.isArray(coordinates)) return '';
+
+    const convertRing = (ring: number[][]): string => {
+      return ring.map(coord => {
+        const [lng, lat] = coord;
         const [x, y] = this.projectCoordinate(lng, lat, bounds, width, height);
         return `${x},${y}`;
-      });
-      return `M${points.join('L')}Z`;
+      }).join(' L ');
     };
 
-    if (coords[0] && typeof coords[0][0] === 'number') {
-      // Single ring (Polygon)
-      return processRing(coords);
-    } else if (coords[0] && coords[0][0] && typeof coords[0][0][0] === 'number') {
-      // Multiple rings (Polygon with holes)
-      return coords.map(processRing).join(' ');
-    } else {
+    // Check if it's a MultiPolygon
+    if (coordinates[0] && Array.isArray(coordinates[0][0]) && Array.isArray((coordinates[0][0] as any)[0])) {
       // MultiPolygon
-      return coords.map((polygon: any) =>
-        polygon.map(processRing).join(' ')
-      ).join(' ');
+      return (coordinates as number[][][][]).map(polygon => {
+        return polygon.map(ring => {
+          const pathData = convertRing(ring);
+          return `M ${pathData} Z`;
+        }).join(' ');
+      }).join(' ');
+    } else if (coordinates[0] && Array.isArray(coordinates[0][0])) {
+      // Polygon
+      return (coordinates as number[][][]).map(ring => {
+        const pathData = convertRing(ring);
+        return `M ${pathData} Z`;
+      }).join(' ');
     }
+
+    return '';
   }
 
   /**
@@ -227,7 +232,7 @@ export class DistrictsMapRenderer {
     const mapGroup = svg.append('g')
       .attr('class', 'map-content');
 
-    // Calculate bounds using custom logic (matching frontend)
+    // Calculate bounds from GeoJSON (matching frontend exactly)
     const bounds = this.calculateBounds(this.districtsGeojson);
 
     // Create color scale
@@ -248,11 +253,11 @@ export class DistrictsMapRenderer {
       return valueMap.get(key);
     };
 
-    // Draw districts using custom projection
+    // Draw districts using custom projection (matching frontend exactly)
     this.districtsGeojson.features.forEach((feature: any) => {
       const value = getDistrictValue(feature.properties);
 
-      let fillColor = '#f0f0f0'; // Default gray for no data
+      let fillColor = 'white'; // Default white for no data (matching frontend)
 
       if (value !== undefined) {
         const t = (value - minValue) / (maxValue - minValue);
@@ -260,34 +265,29 @@ export class DistrictsMapRenderer {
         fillColor = interpolator(colorT);
       }
 
-      const pathData = this.coordinatesToPath(
-        feature.geometry.coordinates,
-        bounds,
-        width,
-        height
-      );
+      // Determine stroke color based on fill color darkness (matching frontend)
+      const strokeColor = (fillColor === 'white' || !isColorDark(fillColor))
+        ? '#0f172a'  // Dark stroke for light fills
+        : '#ffffff'; // White stroke for dark fills
+
+      const pathData = this.convertCoordinatesToPath(feature.geometry.coordinates, bounds, width, height);
 
       mapGroup.append('path')
         .attr('d', pathData)
         .attr('fill', fillColor)
-        .attr('stroke', '#ffffff')
+        .attr('stroke', strokeColor)
         .attr('stroke-width', 0.3);
     });
 
     // Draw state boundaries if requested
     if (showStateBoundaries && this.statesGeojson) {
       this.statesGeojson.features.forEach((feature: any) => {
-        const pathData = this.coordinatesToPath(
-          feature.geometry.coordinates,
-          bounds,
-          width,
-          height
-        );
+        const pathData = this.convertCoordinatesToPath(feature.geometry.coordinates, bounds, width, height);
 
         mapGroup.append('path')
           .attr('d', pathData)
           .attr('fill', 'none')
-          .attr('stroke', '#0f172a')
+          .attr('stroke', '#1f2937')
           .attr('stroke-width', 1.2);
       });
     }
@@ -328,31 +328,22 @@ export class DistrictsMapRenderer {
       legendTitle: string;
     }
   ): void {
-    const legendPosition = { x: 390, y: 200 }; // Districts legend position
-    const legendWidth = 180;
-    const legendHeight = 20;
+    const legendPosition = { x: 390, y: 200 }; // Districts legend position (desktop, non-mobile)
+    const legendWidth = 200;  // Match frontend exactly
+    const legendHeight = 15;  // Match frontend exactly
 
     const legendGroup = svg.append('g')
       .attr('class', 'legend')
       .attr('transform', `translate(${legendPosition.x}, ${legendPosition.y})`);
 
-    // Add legend background box (no border)
-    legendGroup.append('rect')
-      .attr('x', -10)
-      .attr('y', -35)
-      .attr('width', legendWidth + 20)
-      .attr('height', 90)
-      .attr('fill', 'white')
-      .attr('stroke', 'none')
-      .attr('rx', 5);
-
-    // Add title
+    // Add legend title (NO background box in frontend)
     legendGroup.append('text')
       .attr('x', legendWidth / 2)
-      .attr('y', -15)
+      .attr('y', -5)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('font-weight', 'bold')
+      .attr('font-size', '13px')
+      .attr('font-weight', '600')
+      .attr('fill', '#374151')
       .text(options.legendTitle);
 
     // Create horizontal gradient
@@ -377,35 +368,43 @@ export class DistrictsMapRenderer {
         .attr('stop-color', interpolator(t));
     }
 
-    // Add gradient rectangle (horizontal) - NO BORDER
+    // Add gradient rectangle with border (matching frontend exactly)
     legendGroup.append('rect')
       .attr('x', 0)
       .attr('y', 0)
       .attr('width', legendWidth)
       .attr('height', legendHeight)
       .style('fill', 'url(#districts-legend-gradient)')
-      .attr('stroke', 'none');
+      .attr('stroke', '#374151')
+      .attr('stroke-width', '0.5')
+      .attr('rx', '3');
 
-    // Add min, mean, max labels
+    // Add min, mean, max labels (matching frontend style exactly)
     legendGroup.append('text')
       .attr('x', 0)
-      .attr('y', legendHeight + 18)
+      .attr('y', 30)
       .attr('text-anchor', 'start')
-      .attr('font-size', '11px')
+      .attr('font-size', '12px')
+      .attr('font-weight', '500')
+      .attr('fill', '#374151')
       .text(roundToSignificantDigits(options.minValue));
 
     legendGroup.append('text')
       .attr('x', legendWidth / 2)
-      .attr('y', legendHeight + 18)
+      .attr('y', 30)
       .attr('text-anchor', 'middle')
-      .attr('font-size', '11px')
+      .attr('font-size', '12px')
+      .attr('font-weight', '500')
+      .attr('fill', '#374151')
       .text(roundToSignificantDigits(options.meanValue));
 
     legendGroup.append('text')
       .attr('x', legendWidth)
-      .attr('y', legendHeight + 18)
+      .attr('y', 30)
       .attr('text-anchor', 'end')
-      .attr('font-size', '11px')
+      .attr('font-size', '12px')
+      .attr('font-weight', '500')
+      .attr('fill', '#374151')
       .text(roundToSignificantDigits(options.maxValue));
   }
 }
