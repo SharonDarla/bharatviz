@@ -23,6 +23,20 @@ jobs:
           npm ci
           npm run build
 
+      - name: Prepare frontend directory on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LINODE_HOST }}
+          username: ${{ secrets.LINODE_USER }}
+          key: ${{ secrets.LINODE_SSH_KEY }}
+          port: ${{ secrets.LINODE_PORT || 22 }}
+          script: |
+            # Create directory if doesn't exist
+            mkdir -p /var/www/bharatviz/frontend
+
+            # Clean old files but keep directory structure
+            rm -rf /var/www/bharatviz/frontend/*
+
       - name: Deploy frontend to Linode
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -33,7 +47,8 @@ jobs:
           source: "dist/*"
           target: "/var/www/bharatviz/frontend/"
           strip_components: 1
-          rm: true
+          overwrite: true
+          rm: false
 
   deploy_server_to_linode:
     runs-on: ubuntu-latest
