@@ -1,105 +1,143 @@
 # BharatViz
 
-Fast interactive choropleth maps for India - Create customizable visualizations of state and district-level data.
+**Open-source choropleth map generator for India** - Create beautiful, interactive visualizations of state and district-level data in seconds.
 
-**Live Demo**: [bharatviz.saketlab.in](https://bharatviz.saketlab.in/)
+## Quick Links
 
-## Quick Start
+- **Web Application**: [bharatviz.saketlab.in](http://bharatviz.saketlab.in/)
+- **REST API**: [bharatviz.saketlab.in/api](http://bharatviz.saketlab.in/api/)
+- **API Documentation**: [server/README.md](server/README.md)
 
-### Online (Recommended)
-Visit [bharatviz.saketlab.in](https://bharatviz.saketlab.in/) and start creating maps immediately!
+## Supported Maps
 
-### Local Development
+### State-Level Maps
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/saketkc/bharatviz.git
-   cd bharatviz
-   ```
+Create choropleth maps for all Indian states and union territories.
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open in browser**
-   Navigate to `http://localhost:8080`
-
-## Data Format
-
-### State-level Data
-Your CSV should have exactly two columns:
+**CSV Format:**
 ```csv
 state,value
-Andhra Pradesh,45.2
-Assam,67.8
-Bihar,23.4
-...
+Maharashtra,75.8
+Karnataka,85.5
+Kerala,96.2
 ```
 
-### District-level Data
-Your CSV should have exactly three columns:
+### District-Level Maps
+
+Visualize data across all Indian districts with precise boundary mapping.
+
+**CSV Format:**
 ```csv
 state_name,district_name,value
 Telangana,Adilabad,45.2
 Uttar Pradesh,Agra,67.8
 Maharashtra,Ahmednagar,23.4
-...
 ```
 
-### Sample Data Files
-- [State template CSV](public/bharatviz-state-template.csv)
-- [District template CSV](public/bharatviz-district-template.csv)
-- [Demo dataset](public/districts_demo.csv)
+## Color Scales
+
+**Sequential**: Blues, Greens, Reds, Oranges, Purples, Pinks, Viridis, Plasma, Inferno, Magma
+
+**Diverging**: RdYlBu, RdYlGn, Spectral, BrBG, PiYG, PuOr
+
+## REST API
+
+Generate maps programmatically with the REST API:
+
+```bash
+curl -X POST http://bharatviz.saketlab.in/api/v1/states/map \
+  -H "Content-Type: application/json" \
+  -d '{
+    "data": [
+      {"state": "Maharashtra", "value": 75.8},
+      {"state": "Karnataka", "value": 85.5}
+    ],
+    "colorScale": "viridis",
+    "formats": ["png", "svg"]
+  }'
+```
+
+**Response**: JSON with base64-encoded images and metadata.
+
+See [API documentation](server/README.md) for complete reference with examples in Python, R, and Node.js.
+
+## Local Development
+
+### Prerequisites
+- Node.js 25.0+
+- npm
+
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/saketkc/bharatviz.git
+cd bharatviz
+
+# Install dependencies
+npm install
+
+# Start frontend development server
+npm run dev
+```
+
+Visit `http://localhost:8080`
+
+### API Server (Optional)
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+API runs at `http://localhost:3001`
+
+### Build
+
+```bash
+# Build frontend
+npm run build
+
+# Build server
+cd server
+npm run build
+```
 
 ## Project Structure
 
 ```
 bharatviz/
-├── src/
-│   ├── components/           # React components
-│   │   ├── IndiaMap.tsx     # State-level map component
-│   │   ├── IndiaDistrictsMap.tsx # District-level map component
-│   │   ├── FileUpload.tsx   # CSV file upload handler
-│   │   ├── ColorMapChooser.tsx # Color scheme selector
-│   │   └── ui/              # Reusable UI components
-│   ├── pages/               # Application pages
-│   ├── hooks/               # Custom React hooks
-│   └── lib/                 # Utility functions
-├── public/                  # Static assets and GeoJSON files
-│   ├── india_map_states.geojson        # State boundaries
-│   ├── India_LGD_Districts_simplified.geojson # District boundaries
-│   └── *.csv                # Template and demo files
-└── docs/                    # Documentation
+├── src/                    # Frontend React application
+│   ├── components/         # Map components and UI
+│   ├── lib/               # Utilities and helpers
+│   └── pages/             # Application pages
+├── server/                # REST API server
+│   ├── src/               # API source code
+│   └── public/            # GeoJSON data files
+└── public/                # Static assets and templates
 ```
-
 
 ## Contributing
 
-Contributions are welcome! Here's how you can help:
+Contributions are welcome! This is an open-source project built for the community.
 
-1. **Fork the repository**
-2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit changes**: `git commit -m 'Add amazing feature'`
-4. **Push to branch**: `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
+## Issues & Support
 
-## Bug Reports & Feature Requests
-
-Please use [GitHub Issues](https://github.com/saketkc/bharatviz/issues) for:
-- Bug reports
-- Feature requests
-- Documentation improvements
-- Questions and support
+Found a bug or have a feature request? Please use [GitHub Issues](https://github.com/saketkc/bharatviz/issues).
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
+## Acknowledgments
 
+- GeoJSON data from Government of India's LGD (Local Government Directory)
+- Built with [React](https://react.dev/), [D3.js](https://d3js.org/), and [Vite](https://vite.dev/)
+- Claude [Anthropic](https://www.anthropic.com/)
