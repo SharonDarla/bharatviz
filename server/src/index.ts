@@ -90,7 +90,7 @@ app.get('/', (req, res) => {
       ]
     },
     examples: {
-      curl: `curl -X POST http://localhost:${PORT}/api/v1/states/map \\
+      curl: `curl -X POST http://bharatviz.saketlab.in/api/v1/states/map \\
   -H "Content-Type: application/json" \\
   -d '{
     "data": [
@@ -130,9 +130,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 BharatViz API server running on http://localhost:${PORT}`);
-  console.log(`📊 Generate India maps at POST http://localhost:${PORT}/api/v1/states/map`);
-  console.log(`📖 API documentation at http://localhost:${PORT}/`);
+  console.log(`🚀 BharatViz API server running on http://bharatviz.saketlab.in`);
+  console.log(`📊 Generate India maps at POST http://bharatviz.saketlab.in/api/v1/states/map`);
+  console.log(`📖 API documentation at http://bharatviz.saketlab.in/`);
 });
 
 export default app;
