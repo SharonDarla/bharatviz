@@ -20,6 +20,6 @@ const controller = new MapController();
  *   formats?: ['png', 'svg', 'pdf']
  * }
  */
-router.post('/states/map', (req, res) => controller.generateStatesMap(req, res));
+router.post('/map', (req, res) => controller.generateStatesMap(req, res));
 
 export default router;
