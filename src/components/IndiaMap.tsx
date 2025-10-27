@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { ColorScale, ColorBarSettings } from './ColorMapChooser';
@@ -519,8 +519,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       
       pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
       pdf.save(`bharatviz-states-${Date.now()}.pdf`);
-      
+
     } catch (error) {
+      console.error('Error exporting PDF with html2canvas:', error);
       throw error;
     }
   };
@@ -1068,7 +1069,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       });
     }
   };
-  const handleLegendMouseMove = (e: React.MouseEvent) => {
+  const handleLegendMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragging) return;
     const svgRect = svgRef.current?.getBoundingClientRect();
     if (svgRect) {
@@ -1077,7 +1078,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         y: e.clientY - svgRect.top - dragOffset.y
       });
     }
-  };
+  }, [dragging, dragOffset]);
   const handleLegendMouseUp = () => setDragging(false);
 
   // Attach global mousemove/mouseup for drag
@@ -1091,7 +1092,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       window.removeEventListener('mousemove', handleMove);
       window.removeEventListener('mouseup', handleUp);
     };
-  }, [dragging, dragOffset]);
+  }, [dragging, dragOffset, handleLegendMouseMove]);
 
   if (!mapData) {
     return (
