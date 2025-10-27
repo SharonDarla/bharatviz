@@ -95,11 +95,14 @@ jobs:
             EOF
             fi
 
-            # Install dependencies (use npm install, not npm ci)
-            npm install --production
+            # Install ALL dependencies (need devDependencies for TypeScript build)
+            npm install
 
-            # Build
+            # Build TypeScript
             npm run build
+
+            # Remove devDependencies after build (production optimization)
+            npm prune --production
 
             # Restart PM2 processes
             pm2 restart bharatviz-api 2>/dev/null || pm2 start ecosystem.config.js --env production

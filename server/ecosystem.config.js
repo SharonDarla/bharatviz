@@ -1,7 +1,7 @@
 // PM2 Ecosystem Configuration for BharatViz API
 // https://pm2.keymetrics.io/docs/usage/application-declaration/
 
-module.exports = {
+export default {
   apps: [{
     name: 'bharatviz-api',
     script: './dist/index.js',
