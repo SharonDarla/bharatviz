@@ -1,3 +1,5 @@
+# Author: Saket Choudhary <saketc@iitb.ac.in>
+# License: MIT
 """
 BharatViz Python Client
 =======================
@@ -167,7 +169,6 @@ class BharatViz:
         >>> img = bv.generate_map(data, show=True)
         >>> bv.generate_map(data, save_path="map.png")
         """
-        # Convert DataFrame to list of dicts
         if isinstance(data, pd.DataFrame):
             # Ensure columns are named correctly
             if "state" not in data.columns or "value" not in data.columns:
@@ -183,18 +184,15 @@ class BharatViz:
                     )
             data = data[["state", "value"]].to_dict("records")
 
-        # Validate data
         if not data or len(data) == 0:
             raise BharatVizError("Data cannot be empty")
 
-        # Validate color scale
         if color_scale not in self.COLOR_SCALES:
             raise BharatVizError(
                 f"Invalid color scale '{color_scale}'. "
                 f"Choose from: {', '.join(self.COLOR_SCALES)}"
             )
 
-        # Prepare request
         request_body = {
             "data": data,
             "colorScale": color_scale,
@@ -206,7 +204,6 @@ class BharatViz:
             "formats": formats,
         }
 
-        # Make API request
         try:
             response = requests.post(
                 self.states_endpoint, json=request_body, timeout=30
@@ -215,7 +212,6 @@ class BharatViz:
         except requests.RequestException as e:
             raise BharatVizError(f"API request failed: {str(e)}")
 
-        # Parse response
         try:
             result = response.json()
         except ValueError:
@@ -225,13 +221,11 @@ class BharatViz:
             error_msg = result.get("error", {}).get("message", "Unknown error")
             raise BharatVizError(f"API error: {error_msg}")
 
-        # Get PNG export (default)
         png_export = next((e for e in result["exports"] if e["format"] == "png"), None)
 
         if not png_export:
             raise BharatVizError("PNG export not found in response")
 
-        # Decode image
         if not PIL_AVAILABLE:
             raise BharatVizError(
                 "PIL is required to handle images. Install with: pip install pillow"
@@ -240,12 +234,10 @@ class BharatViz:
         png_data = png_export["data"]
         image = Image.open(BytesIO(base64.b64decode(png_data)))
 
-        # Save if requested
         if save_path:
             image.save(save_path)
             print(f"Map saved to: {save_path}")
 
-        # Display if requested
         if show:
             if not MPL_AVAILABLE:
                 raise BharatVizError(
@@ -347,13 +339,10 @@ class BharatViz:
         >>> img = bv.generate_districts_map(data, map_type='LGD', show=True)
         >>> bv.generate_districts_map(data, save_path="districts_map.png")
         """
-        # Convert DataFrame to list of dicts
         if isinstance(data, pd.DataFrame):
-            # Ensure columns are named correctly
             required_cols = ["state", "district", "value"]
             if not all(col in data.columns for col in required_cols):
                 if len(data.columns) >= 3:
-                    # Assume first 3 columns are state, district, value
                     data = data.copy()
                     data.columns = required_cols + list(data.columns[3:])
                 else:
@@ -363,18 +352,15 @@ class BharatViz:
                     )
             data = data[required_cols].to_dict("records")
 
-        # Validate data
         if not data or len(data) == 0:
             raise BharatVizError("Data cannot be empty")
 
-        # Validate color scale
         if color_scale not in self.COLOR_SCALES:
             raise BharatVizError(
                 f"Invalid color scale '{color_scale}'. "
                 f"Choose from: {', '.join(self.COLOR_SCALES)}"
             )
 
-        # Validate map_type
         valid_map_types = ["LGD", "NFHS5", "NFHS4"]
         if map_type not in valid_map_types:
             raise BharatVizError(
@@ -382,7 +368,6 @@ class BharatViz:
                 f"Choose from: {', '.join(valid_map_types)}"
             )
 
-        # Prepare request
         request_body = {
             "data": data,
             "mapType": map_type,
@@ -395,7 +380,6 @@ class BharatViz:
             "formats": formats,
         }
 
-        # Make API request
         try:
             response = requests.post(
                 self.districts_endpoint,
@@ -416,13 +400,11 @@ class BharatViz:
             error_msg = result.get("error", {}).get("message", "Unknown error")
             raise BharatVizError(f"API error: {error_msg}")
 
-        # Get PNG export (default)
         png_export = next((e for e in result["exports"] if e["format"] == "png"), None)
 
         if not png_export:
             raise BharatVizError("PNG export not found in response")
 
-        # Decode image
         if not PIL_AVAILABLE:
             raise BharatVizError(
                 "PIL is required to handle images. Install with: pip install pillow"
@@ -431,12 +413,10 @@ class BharatViz:
         png_data = png_export["data"]
         image = Image.open(BytesIO(base64.b64decode(png_data)))
 
-        # Save if requested
         if save_path:
             image.save(save_path)
             print(f"Districts map saved to: {save_path}")
 
-        # Display if requested
         if show:
             if not MPL_AVAILABLE:
                 raise BharatVizError(
@@ -451,7 +431,6 @@ class BharatViz:
             plt.tight_layout()
             plt.show()
 
-        # Return results
         if return_all:
             return {
                 "image": image,

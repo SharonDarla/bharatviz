@@ -1,0 +1,411 @@
+---
+title: "Bharatviz demo"
+format: html
+---
+
+BharatViz api allows you to generate publication-ready India choropleth maps with minimal code (3 lines):
+
+```r
+library(R6)
+source("bharatviz.R")
+bv <- BharatViz$new()
+bv$save_all_formats(your_data, basename = "publication_map")
+```
+
+---
+
+Disclaimer: The notebook takes you through different uses cases of the API. Please note that all the values used in this demo are arbitrary. These values are very likely incorrect - they are only used for demonstrating the capability of BharatViz API and should not be used for drawing any insights.
+
+---
+
+## Installation
+
+```{r}
+# Install required packages if not already installed
+if (!require("R6")) install.packages("R6")
+if (!require("httr")) install.packages("httr")
+if (!require("jsonlite")) install.packages("jsonlite")
+if (!require("base64enc")) install.packages("base64enc")
+if (!require("png")) install.packages("png")
+
+library(R6)
+library(httr)
+library(jsonlite)
+library(base64enc)
+library(png)
+
+# Download the R client if not present
+if (!file.exists("bharatviz.R")) {
+  download.file(
+    "https://gist.githubusercontent.com/saketkc/7b227151bde59dfa31fd2b1dd15f0c67/raw/d13c9cdc7dd814a6be9d53483e4e48e3db6db9db/bhartviz.R",
+    "bharatviz.R",
+    quiet = TRUE
+  )
+}
+
+source("bharatviz.R")
+
+API_URL <- "https://bharatviz.saketlab.in"
+
+# Initialize client
+bv <- BharatViz$new(api_url = API_URL)
+```
+
+---
+
+# State level maps
+
+## Quickest way - from dictionary
+
+```{r}
+# Create data from a simple dictionary
+literacy_data <- list(
+  "Kerala" = 93.9,
+  "Delhi" = 86.3,
+  "Maharashtra" = 82.9,
+  "Tamil Nadu" = 80.3,
+  "Gujarat" = 79.3,
+  "Karnataka" = 75.6,
+  "Uttar Pradesh" = 69.7,
+  "Bihar" = 63.8,
+  "Rajasthan" = 67.1
+)
+
+# Convert and display with one line!
+quick_map(
+  from_dict(literacy_data),
+  title = "Literacy rate by state",
+  legend_title = "Percentage (%)",
+  color_scale = "greens"
+)
+```
+
+## From pandas dataFrame
+
+```{r}
+# Create dataframe with state data
+state_data <- data.frame(
+  state = c(
+    "Maharashtra",
+    "Kerala",
+    "Karnataka",
+    "Tamil Nadu",
+    "Gujarat",
+    "Rajasthan",
+    "Uttar Pradesh",
+    "West Bengal",
+    "Andhra Pradesh",
+    "Telangana"
+  ),
+  gdp_growth = c(7.8, 6.5, 8.3, 8.7, 8.1, 7.3, 6.8, 7.6, 7.8, 8.2)
+)
+
+print(head(state_data))
+
+# Generate map - dataframe is auto-ingested!
+result <- bv$generate_map(
+  state_data,
+  title = "State gdp growth rate (2023)",
+  legend_title = "% Growth",
+  color_scale = "blues"
+)
+bv$show_map(result)
+```
+
+## Save to png/svg/pdf
+
+```{r eval=FALSE}
+# Save all formats at once: PNG, SVG, PDF
+save_all_formats(
+  bv,
+  state_data,
+  basename = "state_gdp_growth",
+  title = "State gdp growth rate",
+  legend_title = "% Growth",
+  color_scale = "viridis"
+)
+```
+
+## Custom column names
+
+```{r}
+# Dataframe with custom column names
+custom_df <- data.frame(
+  state_name = c(
+    "Punjab",
+    "Haryana",
+    "Himachal Pradesh",
+    "Uttarakhand",
+    "Jharkhand"
+  ),
+  unemployment_rate = c(5.2, 4.8, 3.9, 4.5, 6.1)
+)
+
+# Convert using helper function
+data <- from_dataframe(
+  custom_df,
+  state_col = "state_name",
+  value_col = "unemployment_rate"
+)
+
+# Generate map
+result <- bv$generate_map(
+  data,
+  title = "Unemployment rate by state",
+  legend_title = "Percentage",
+  color_scale = "reds"
+)
+bv$show_map(result)
+```
+
+## Compare color scales
+
+```{r}
+# Compare multiple color scales side-by-side
+compare_scales(
+  bv,
+  state_data,
+  scales = c("spectral", "viridis", "plasma", "blues", "reds", "greens")
+)
+```
+
+---
+
+# District-level maps
+
+Currently, BharatViz supports three different district maps:
+
+- **[LGD](https://lgdirectory.gov.in/)**: Latest district boundaries (default)
+- **NFHS5**: NFHS-5 survey boundaries
+- **NFHS4**: NFHS-4 survey boundaries
+
+## Quick district map
+
+```{r}
+# Sample district data
+district_data <- list(
+  list(state = "Maharashtra", district = "Mumbai", value = 89.7),
+  list(state = "Maharashtra", district = "Mumbai Suburban", value = 90.9),
+  list(state = "Maharashtra", district = "Pune", value = 86.2),
+  list(state = "Maharashtra", district = "Nagpur", value = 89.5),
+  list(state = "Maharashtra", district = "Thane", value = 84.5),
+  list(state = "Karnataka", district = "Bengaluru Urban", value = 88.7),
+  list(state = "Karnataka", district = "Mysuru", value = 73.4),
+  list(state = "Karnataka", district = "Dharwad", value = 80.0),
+  list(state = "Kerala", district = "Thiruvananthapuram", value = 93.0),
+  list(state = "Kerala", district = "Kottayam", value = 97.2),
+  list(state = "Kerala", district = "Ernakulam", value = 95.7),
+  list(state = "Tamil Nadu", district = "Chennai", value = 90.2),
+  list(state = "Tamil Nadu", district = "Coimbatore", value = 84.2),
+  list(state = "Delhi", district = "Central", value = 86.3),
+  list(state = "Delhi", district = "South", value = 87.4)
+)
+
+# Display using quick function
+quick_districts_map(
+  district_data,
+  title = "District literacy rates",
+  legend_title = "Literacy %",
+  color_scale = "spectral",
+  map_type = "LGD"
+)
+```
+
+## Districts from dataframe
+
+```{r}
+# Create district dataframe
+districts_df <- data.frame(
+  state = c(
+    "Maharashtra",
+    "Maharashtra",
+    "Karnataka",
+    "Karnataka",
+    "Kerala",
+    "Kerala"
+  ),
+  district = c(
+    "Mumbai",
+    "Pune",
+    "Bengaluru Urban",
+    "Mysuru",
+    "Thiruvananthapuram",
+    "Kottayam"
+  ),
+  value = c(89.7, 86.2, 88.7, 73.4, 93.0, 97.2)
+)
+
+print(districts_df)
+
+# Generate districts map - dataframe is auto-converted!
+result <- bv$generate_districts_map(
+  districts_df,
+  map_type = "LGD",
+  title = "Sample district data",
+  legend_title = "Values",
+  color_scale = "viridis",
+  show_state_boundaries = TRUE
+)
+bv$show_map(result)
+```
+
+## Different district map types (LGD vs NFHS)
+
+```{r}
+# Same data, different boundary definitions (names)
+sample_districts <- list(
+  list(state = "Maharashtra", district = "Mumbai", value = 89.7),
+  list(state = "Karnataka", district = "Bengaluru Urban", value = 88.7),
+  list(state = "Kerala", district = "Thiruvananthapuram", value = 93.0),
+  list(state = "Tamil Nadu", district = "Chennai", value = 90.2),
+  list(state = "Delhi", district = "Central", value = 86.3)
+)
+
+result <- bv$generate_districts_map(
+  sample_districts,
+  map_type = "LGD",
+  title = "LGD district boundaries"
+)
+bv$show_map(result)
+
+# Generate with NFHS5 boundaries
+cat("\nGenerating NFHS5 map...\n")
+result <- bv$generate_districts_map(
+  sample_districts,
+  map_type = "NFHS5",
+  title = "NFHS-5 district boundaries"
+)
+bv$show_map(result)
+```
+
+## Custom column names for districts
+
+```{r}
+# Dataframe with custom column names
+custom_districts <- data.frame(
+  state_name = c("Maharashtra", "Maharashtra", "Kerala", "Kerala"),
+  district_name = c("Mumbai", "Pune", "Thiruvananthapuram", "Kottayam"),
+  infant_mortality = c(24.0, 28.0, 8.0, 7.0)
+)
+
+# Convert using helper function
+data <- from_dataframe_districts(
+  custom_districts,
+  state_col = "state_name",
+  district_col = "district_name",
+  value_col = "infant_mortality"
+)
+
+# Generate map
+result <- bv$generate_districts_map(
+  data,
+  title = "Infant mortality rate by district",
+  legend_title = "Per 1000 births",
+  color_scale = "reds",
+  invert_colors = TRUE # Lower is better
+)
+bv$show_map(result)
+```
+
+---
+
+# Advanced features
+
+## Get metadata
+
+```{r}
+# Generate map and get metadata
+result <- bv$generate_map(
+  state_data,
+  title = "Gdp growth with metadata",
+  formats = c("png", "svg", "pdf")
+)
+
+# Access metadata
+cat("Map statistics:\n")
+cat(sprintf("  Min value: %s\n", result$metadata$minValue))
+cat(sprintf("  Max value: %s\n", result$metadata$maxValue))
+cat(sprintf("  Mean value: %.2f\n", result$metadata$meanValue))
+cat(sprintf("  Color scale: %s\n", result$metadata$colorScale))
+```
+
+## Inverted color scales
+
+```{r}
+# For metrics where lower is better (e.g., unemployment, mortality)
+unemployment_data <- list(
+  "Kerala" = 4.2,
+  "Maharashtra" = 4.8,
+  "Karnataka" = 3.9,
+  "Bihar" = 7.5,
+  "Uttar Pradesh" = 6.1
+)
+
+result <- bv$generate_map(
+  from_dict(unemployment_data),
+  title = "Unemployment rate (Inverted scale)",
+  legend_title = "Percentage",
+  color_scale = "reds",
+  invert_colors = TRUE # Red for high unemployment
+)
+bv$show_map(result)
+```
+
+##  Hide labels for cleaner maps
+
+```{r}
+# Generate map without labels
+result <- bv$generate_map(
+  state_data,
+  title = "Clean map (No labels)",
+  color_scale = "blues",
+  hide_state_names = TRUE,
+  hide_values = TRUE
+)
+bv$show_map(result)
+```
+
+---
+
+# Quick Reference
+
+
+### States
+```r
+# From dictionary - quickest!
+quick_map(from_dict(list("Kerala" = 93.9)), title = "My map")
+
+# From dataframe
+result <- bv$generate_map(df)
+bv$show_map(result)
+
+# Save pdf
+save_all_formats(bv, data, basename = "my_map")
+```
+
+### Districts
+```r
+# From list
+quick_districts_map(data, title = "Districts", map_type = "LGD")
+
+# From dataframe
+result <- bv$generate_districts_map(df, map_type = "LGD")
+bv$show_map(result)
+
+# Save pdf
+save_all_formats_districts(bv, data, basename = "districts")
+```
+
+## Available color scales
+
+**Sequential:** `blues`, `greens`, `reds`, `oranges`, `purples`, `pinks`, `viridis`, `plasma`, `inferno`, `magma`
+
+**Diverging:** `spectral`, `rdylbu`, `rdylgn`, `brbg`, `piyg`, `puor`
+
+## Map types (Districts)
+
+- **LGD**: Latest Government of India district boundaries
+- **NFHS5**: National Family Health Survey 5 (2019-21)
+- **NFHS4**: National Family Health Survey 4 (2015-16)
+
+---
