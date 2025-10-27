@@ -88,7 +88,7 @@ class BharatViz:
         "magma",
     ]
 
-    def __init__(self, api_url: str = "http://bharatviz.saketlab.in"):
+    def __init__(self, api_url: str = "https://bharatviz.saketlab.in"):
         self.api_url = api_url.rstrip("/")
         self.states_endpoint = f"{self.api_url}/api/v1/states/map"
         self.districts_endpoint = f"{self.api_url}/api/v1/districts/map"
@@ -703,7 +703,7 @@ def quick_map(
     legend_title: str = "Values",
     color_scale: str = "spectral",
     save_path: Optional[str] = None,
-    api_url: str = "http://bharatviz.saketlab.in",
+    api_url: str = "https://bharatviz.saketlab.in",
 ):
     """
     Quick function to generate and display a state map.
@@ -751,7 +751,7 @@ def quick_districts_map(
     color_scale: str = "spectral",
     map_type: Literal["LGD", "NFHS5", "NFHS4"] = "LGD",
     save_path: Optional[str] = None,
-    api_url: str = "http://bharatviz.saketlab.in",
+    api_url: str = "https://bharatviz.saketlab.in",
 ):
     """
     Quick function to generate and display a districts map.
