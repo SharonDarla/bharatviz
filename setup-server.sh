@@ -57,22 +57,30 @@ sudo mkdir -p /var/www/bharatviz
 sudo chown -R bharatviz:bharatviz /var/www/bharatviz
 
 echo ""
-echo -e "${YELLOW}Step 6: Cloning repository...${NC}"
+echo -e "${YELLOW}Step 6: Setting up repository...${NC}"
 if [ -d "/var/www/bharatviz/.git" ]; then
-    echo "Repository already exists. Updating..."
+    echo "Git repository already exists. Updating..."
     cd /var/www/bharatviz
     git fetch origin
     git reset --hard origin/main
+elif [ -d "/var/www/bharatviz" ]; then
+    echo "Directory exists but not a git repo. Converting to git repository..."
+    cd /var/www/bharatviz
+    git init
+    git remote add origin https://github.com/saketkc/bharatviz.git || git remote set-url origin https://github.com/saketkc/bharatviz.git
+    git fetch origin
+    git reset --hard origin/main
+    git branch --set-upstream-to=origin/main main || git branch -M main
 else
     echo "Cloning repository..."
     cd /var/www
-    if [ -d "bharatviz" ]; then
-        sudo rm -rf bharatviz
-    fi
     git clone https://github.com/saketkc/bharatviz.git
     sudo chown -R bharatviz:bharatviz bharatviz
     cd bharatviz
 fi
+
+# Ensure proper ownership
+sudo chown -R bharatviz:bharatviz /var/www/bharatviz
 
 echo ""
 echo -e "${YELLOW}Step 7: Installing and building server...${NC}"

@@ -64,6 +64,14 @@ jobs:
           key: ${{ secrets.LINODE_SSH_KEY }}
           port: ${{ secrets.LINODE_PORT || 22 }}
           script: |
+            # Load NVM and set up Node.js environment
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # Set paths for Node.js binaries
+            NODE_BIN="$HOME/.nvm/versions/node/v25.0.0/bin"
+            export PATH="$NODE_BIN:$PATH"
+
             # Navigate to the project directory
             cd /var/www/bharatviz || exit 1
 
@@ -83,8 +91,8 @@ jobs:
             # Verify deployment
             sleep 5
             pm2 status bharatviz-api
-            
+
             # Test health endpoint
             curl -f http://localhost:3001/health || exit 1
-            
+
             echo "✅ Deployment successful!"
