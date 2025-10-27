@@ -30,7 +30,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
   LGD: {
     id: 'LGD',
     name: 'LGD',
-    displayName: 'LGD (Default)',
+    displayName: 'LGD',
     geojsonPath: '/India_LGD_districts.geojson',
     states: '/India_LGD_states.geojson',
     templateCsvPath: '/bharatviz-lgd-district-template.csv',
