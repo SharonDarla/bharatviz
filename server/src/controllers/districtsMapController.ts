@@ -3,13 +3,28 @@ import { DistrictsMapRequestSchema, type DistrictsMapRequest, type StatesMapResp
 import { DistrictsMapRenderer } from '../services/districtsMapRenderer.js';
 import { ExportService } from '../services/exportService.js';
 
+// Singleton instances to share GeoJSON data across requests
+let sharedRenderer: DistrictsMapRenderer | null = null;
+let sharedExportService: ExportService | null = null;
+
+/**
+ * Districts map controller
+ * Uses singleton pattern to reduce memory usage by sharing GeoJSON data
+ */
 export class DistrictsMapController {
   private renderer: DistrictsMapRenderer;
   private exportService: ExportService;
 
   constructor() {
-    this.renderer = new DistrictsMapRenderer();
-    this.exportService = new ExportService();
+    // Reuse shared instances to save memory
+    if (!sharedRenderer) {
+      sharedRenderer = new DistrictsMapRenderer();
+    }
+    if (!sharedExportService) {
+      sharedExportService = new ExportService();
+    }
+    this.renderer = sharedRenderer;
+    this.exportService = sharedExportService;
   }
 
   /**
@@ -76,6 +91,9 @@ export class DistrictsMapController {
           data: exportData,
           mimeType
         });
+
+        // Explicitly clear exportData to allow GC to reclaim memory
+        exportData = '';
       }
 
       // Send response

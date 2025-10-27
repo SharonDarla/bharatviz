@@ -13,11 +13,15 @@ module.exports = {
       NODE_ENV: 'production',
       PORT: 3001,
       //ALLOWED_ORIGINS: 'http://bharatviz.saketlab.in,https://bharatviz.saketlab.in,http://localhost:8080,http://localhost:5173, https://colab.research.google.com/'
-      ALLOWED_ORIGINS: '*'
+      ALLOWED_ORIGINS: '*',
+      // Memory optimization: limit Node.js heap size
+      NODE_OPTIONS: '--max-old-space-size=600 --optimize-for-size'
     },
 
-    // Restart strategy
-    max_memory_restart: '500M',
+    // Restart strategy - optimized for memory usage
+    // With optimizations, peak usage is ~289 MB per request
+    // Setting to 700M allows safe margin for concurrent requests
+    max_memory_restart: '700M',
     min_uptime: '10s',
     max_restarts: 10,
     autorestart: true,

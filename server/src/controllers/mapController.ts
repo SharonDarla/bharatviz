@@ -4,16 +4,28 @@ import { StatesMapRenderer } from '../services/mapRenderer.js';
 import { ExportService } from '../services/exportService.js';
 import { ZodError } from 'zod';
 
+// Singleton instances to share GeoJSON data across requests
+let sharedRenderer: StatesMapRenderer | null = null;
+let sharedExportService: ExportService | null = null;
+
 /**
  * Controller for map generation endpoints
+ * Uses singleton pattern to reduce memory usage by sharing GeoJSON data
  */
 export class MapController {
   private renderer: StatesMapRenderer;
   private exportService: ExportService;
 
   constructor() {
-    this.renderer = new StatesMapRenderer();
-    this.exportService = new ExportService();
+    // Reuse shared instances to save memory
+    if (!sharedRenderer) {
+      sharedRenderer = new StatesMapRenderer();
+    }
+    if (!sharedExportService) {
+      sharedExportService = new ExportService();
+    }
+    this.renderer = sharedRenderer;
+    this.exportService = sharedExportService;
   }
 
   /**
@@ -58,6 +70,9 @@ export class MapController {
           data: base64Data,
           mimeType: this.exportService.getMimeType(format)
         });
+
+        // Explicitly null the base64Data to allow GC to reclaim memory
+        base64Data = '';
       }
 
       // Prepare response

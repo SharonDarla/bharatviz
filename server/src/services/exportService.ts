@@ -1,5 +1,7 @@
 import sharp from 'sharp';
 import { jsPDF } from 'jspdf';
+// svg2pdf.js is a CommonJS module, import as default
+import svg2pdfModule from 'svg2pdf.js';
 
 /**
  * Export service for converting SVG to various formats
@@ -35,25 +37,28 @@ export class ExportService {
 
   /**
    * Convert SVG string to PNG (base64)
+   * High-quality 300 DPI export suitable for print
    */
   async svgToPNG(svgString: string): Promise<string> {
     // Extract SVG dimensions
     const { width, height } = this.extractSVGDimensions(svgString);
 
-    // Match frontend DPI scale: 300 DPI vs 96 DPI = 3.125x
+    // 300 DPI for high-quality print output
     const dpiScale = 300 / 96;
     const targetWidth = Math.round(width * dpiScale);
     const targetHeight = Math.round(height * dpiScale);
 
-    // Use sharp to convert SVG to PNG with high DPI
+    // Use sharp to convert SVG to PNG at 300 DPI
     const pngBuffer = await sharp(Buffer.from(svgString))
       .png({
         quality: 100,
-        compressionLevel: 9
+        compressionLevel: 6,  // Balance between size and speed
+        adaptiveFiltering: false
       })
       .resize(targetWidth, targetHeight, {
-        fit: 'fill',  // Exact dimensions, no letterboxing
-        background: { r: 255, g: 255, b: 255, alpha: 1 }
+        fit: 'fill',
+        background: { r: 255, g: 255, b: 255, alpha: 1 },
+        kernel: 'lanczos3'
       })
       .toBuffer();
 
@@ -70,20 +75,102 @@ export class ExportService {
 
   /**
    * Convert SVG string to PDF (base64)
+   * Attempts vector conversion, falls back to high-quality PNG if needed
    */
   async svgToPDF(svgString: string): Promise<string> {
-    // Extract SVG dimensions for correct aspect ratio
+    // Try vector PDF first
+    try {
+      return await this.svgToPDFVector(svgString);
+    } catch (error) {
+      // Vector conversion failed (likely JSDOM limitations with getBBox)
+      // Fall back to PNG-based PDF (still high quality at 300 DPI)
+      console.warn('Vector PDF conversion failed, using high-quality PNG fallback:', error);
+      return await this.svgToPDFRaster(svgString);
+    }
+  }
+
+  /**
+   * Convert SVG to PDF using vector graphics (preserves editability)
+   * Note: May fail with complex SVGs in Node.js environment
+   */
+  private async svgToPDFVector(svgString: string): Promise<string> {
     const { width, height } = this.extractSVGDimensions(svgString);
 
-    // First convert to PNG
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'pt',
+      format: 'a4',
+      compress: true
+    });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const margin = 40;
+
+    const availableWidth = pdfWidth - (2 * margin);
+    const availableHeight = pdfHeight - (2 * margin);
+
+    const svgAspectRatio = width / height;
+    const availableAspectRatio = availableWidth / availableHeight;
+
+    let scaledWidth, scaledHeight;
+    if (svgAspectRatio > availableAspectRatio) {
+      scaledWidth = availableWidth;
+      scaledHeight = availableWidth / svgAspectRatio;
+    } else {
+      scaledHeight = availableHeight;
+      scaledWidth = availableHeight * svgAspectRatio;
+    }
+
+    const x = (pdfWidth - scaledWidth) / 2;
+    const y = (pdfHeight - scaledHeight) / 2;
+
+    const { JSDOM } = await import('jsdom');
+    const dom = new JSDOM(`<!DOCTYPE html><html><body>${svgString}</body></html>`, {
+      url: 'http://localhost',
+      pretendToBeVisual: true,
+      resources: 'usable'
+    });
+
+    const svgElement = dom.window.document.querySelector('svg');
+    if (!svgElement) {
+      throw new Error('Invalid SVG: no SVG element found');
+    }
+
+    const originalDocument = (global as any).document;
+    const originalWindow = (global as any).window;
+
+    try {
+      (global as any).document = dom.window.document;
+      (global as any).window = dom.window;
+
+      const svg2pdf = (svg2pdfModule as any).svg2pdf || svg2pdfModule;
+      await svg2pdf(svgElement, pdf, { x, y, width: scaledWidth, height: scaledHeight });
+    } finally {
+      (global as any).document = originalDocument;
+      (global as any).window = originalWindow;
+    }
+
+    const pdfOutput = pdf.output('arraybuffer');
+    return Buffer.from(pdfOutput).toString('base64');
+  }
+
+  /**
+   * Convert SVG to PDF using high-quality PNG (300 DPI)
+   * More memory intensive but guaranteed to work
+   */
+  private async svgToPDFRaster(svgString: string): Promise<string> {
+    const { width, height } = this.extractSVGDimensions(svgString);
+
+    // Use 300 DPI for high-quality print output
     const pngBase64 = await this.svgToPNG(svgString);
     const pngDataUrl = `data:image/png;base64,${pngBase64}`;
 
-    // Create PDF
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
-      format: 'a4'
+      format: 'a4',
+      compress: true
     });
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -93,7 +180,6 @@ export class ExportService {
     const availableWidth = pdfWidth - (2 * margin);
     const availableHeight = pdfHeight - (2 * margin);
 
-    // Calculate image aspect ratio from SVG dimensions
     const imgAspectRatio = width / height;
     const availableAspectRatio = availableWidth / availableHeight;
 
@@ -109,9 +195,8 @@ export class ExportService {
     const x = (pdfWidth - imgWidth) / 2;
     const y = (pdfHeight - imgHeight) / 2;
 
-    pdf.addImage(pngDataUrl, 'PNG', x, y, imgWidth, imgHeight);
+    pdf.addImage(pngDataUrl, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
 
-    // Return as base64
     const pdfOutput = pdf.output('arraybuffer');
     return Buffer.from(pdfOutput).toString('base64');
   }

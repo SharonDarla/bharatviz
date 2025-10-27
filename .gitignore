@@ -297,3 +297,9 @@ rsconnect/
 *.png
 *.pdf
 *.svg
+
+# Memory testing scripts
+server/test-memory.js
+server/test-memory-detailed.js
+server/compare-memory.js
+server/compare-final.js
