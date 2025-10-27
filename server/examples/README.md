@@ -1,10 +1,10 @@
-# BharatViz Examples
+# Bharatviz Examples
 
 Interactive examples for using the BharatViz API - Run directly in your browser with Google Colab!
 
-## 🚀 Quick Start
+## Quick Start
 
-### Python Users (Google Colab)
+### Python users (Google colab)
 
 No installation required! Click any badge below to run examples in your browser:
 
@@ -14,7 +14,7 @@ No installation required! Click any badge below to run examples in your browser:
 
 [![Open Tutorial](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/jupyter_example.ipynb) **Tutorial** - Step-by-step Guide
 
-### R Users
+### R users
 
 Download and run the R Markdown demo:
 
@@ -38,18 +38,18 @@ rmarkdown::render("BharatViz_Demo.Rmd")
 
 ## Files
 
-### 📦 `bharatviz.py`
+### `bharatviz.py`
 **Python client library for BharatViz API** - Provides easy-to-use functions for generating India choropleth maps.
 
 **Features:**
-- ✅ **State & District maps** (LGD, NFHS4, NFHS5)
-- ✅ Auto-converts DataFrames and dictionaries
-- ✅ One-line map generation with `quick_map()` and `quick_districts_map()`
-- ✅ Save to PNG, SVG, PDF
-- ✅ Compare color scales side-by-side
-- ✅ Full customization options
+- **State & District maps** (LGD, NFHS4, NFHS5)
+- Auto-converts DataFrames and dictionaries
+- One-line map generation with `quick_map()` and `quick_districts_map()`
+- Save to PNG, SVG, PDF
+- Compare color scales side-by-side
+- Full customization options
 
-### 📓 `BharatViz_Complete_Demo.ipynb` ⭐ **NEW!**
+### `BharatViz_Complete_Demo.ipynb` **New!**
 **Comprehensive demo notebook with states AND districts!**
 
 Covers:
@@ -58,9 +58,9 @@ Covers:
 3. **PDF Export:** Publication-ready outputs
 4. **Advanced:** Metadata, inverted scales, comparisons
 
-**👉 START HERE!** This is the most complete demo.
+**Start here!** This is the most complete demo.
 
-### 📓 `bharatviz_demo.ipynb`
+### `bharatviz_demo.ipynb`
 **States-only minimal-code examples.**
 
 Covers:
@@ -72,23 +72,23 @@ Covers:
 6. Advanced customization
 7. Real-world CSV example
 
-### 📄 `jupyter_example.ipynb`
+### `jupyter_example.ipynb`
 Original detailed examples with full API usage.
 
 ---
 
-### 📦 `bharatviz.R` ⭐ **NEW!**
+### `bharatviz.R` **New!**
 **R client library for BharatViz API** - Full-featured R interface with R6 classes.
 
 **Features:**
-- ✅ **State & District maps** (LGD, NFHS4, NFHS5)
-- ✅ Works with data frames and named lists
-- ✅ One-line functions: `quick_map()` and `quick_districts_map()`
-- ✅ Save to PNG, SVG, PDF
-- ✅ Auto-detects column names
-- ✅ Full R6 class interface
+- **State & District maps** (LGD, NFHS4, NFHS5)
+- Works with data frames and named lists
+- One-line functions: `quick_map()` and `quick_districts_map()`
+- Save to PNG, SVG, PDF
+- Auto-detects column names
+- Full R6 class interface
 
-### 📓 `BharatViz_Demo.Rmd` ⭐ **NEW!**
+### `BharatViz_Demo.Rmd` **New!**
 **Comprehensive R Markdown demo for R users!**
 
 Covers:
@@ -97,19 +97,19 @@ Covers:
 3. **PDF Export:** Publication-ready outputs
 4. **Advanced:** Metadata, inverted scales, customization
 
-**👉 R USERS START HERE!**
+**R users start here!**
 
 ---
 
-## Quick Start
+ ## Quick start
 
-### 1. Install Dependencies
+### 1. Install dependencies
 
 ```bash
 pip install requests pillow pandas matplotlib
 ```
 
-### 2. Start the API Server
+### 2. Start the api server
 
 ```bash
 cd server
@@ -118,17 +118,17 @@ npm run dev
 
 Server runs on `http://localhost:3001`
 
-### 3. Run the Demo Notebook
+### 3. Run the demo notebook
 
 ```bash
 jupyter notebook bharatviz_demo.ipynb
 ```
 
-## Minimal Code Examples
+## Minimal code examples
 
-### State Maps
+### State maps
 
-#### From Dictionary (Simplest!)
+#### From dictionary (simplest!)
 
 ```python
 from bharatviz import BharatViz, quick_map
@@ -142,7 +142,7 @@ data = {
 quick_map(BharatViz.from_dict(data), title="Literacy Rate")
 ```
 
-#### From DataFrame
+#### From dataframe
 
 ```python
 import pandas as pd
@@ -157,16 +157,16 @@ bv = BharatViz()
 bv.generate_map(df, title="My Map", show=True)
 ```
 
-#### Save to PDF
+#### Save to pdf
 
 ```python
 # Save all formats (PNG, SVG, PDF)
 bv.save_all_formats(df, basename="india_map")
 ```
 
-### District Maps 🆕
+### District maps
 
-#### Quick District Map
+#### Quick district map
 
 ```python
 from bharatviz import quick_districts_map
@@ -202,13 +202,13 @@ bv.generate_districts_map(df, map_type='LGD', show=True)
 bv.save_all_formats(df, basename="districts_map", map_type="districts")
 ```
 
-### Compare Color Scales
+### Compare color scales
 
 ```python
 bv.compare_scales(data, scales=['spectral', 'viridis', 'plasma'])
 ```
 
-## API Reference
+## Api reference
 
 ### `BharatViz(api_url)`
 Main client class.
@@ -231,7 +231,7 @@ Generate a choropleth map.
 
 **Returns:** PIL Image or dict (if `return_all=True`)
 
-### Helper Functions
+### Helper functions
 
 #### `BharatViz.from_dataframe(df, state_col, value_col)`
 Convert DataFrame to API format.
@@ -273,7 +273,7 @@ Compare different color scales.
 bv.compare_scales(data, scales=['viridis', 'plasma', 'spectral'])
 ```
 
-## Color Scales
+## Color scales
 
 ### Sequential
 - `blues`, `greens`, `reds`, `oranges`, `purples`, `pinks`
@@ -282,9 +282,9 @@ bv.compare_scales(data, scales=['viridis', 'plasma', 'spectral'])
 ### Diverging
 - `spectral`, `rdylbu`, `rdylgn`, `brbg`, `piyg`, `puor`
 
-## Advanced Usage
+## Advanced usage
 
-### Get Metadata
+### Get metadata
 
 ```python
 metadata = bv.get_metadata(data)
@@ -292,7 +292,7 @@ print(f"Min: {metadata['minValue']}")
 print(f"Max: {metadata['maxValue']}")
 ```
 
-### Return All Formats
+### Return all formats
 
 ```python
 result = bv.generate_map(
@@ -306,7 +306,7 @@ exports = result['exports']  # All formats
 metadata = result['metadata']
 ```
 
-### Custom Styling
+### Custom styling
 
 ```python
 bv.generate_map(
@@ -323,7 +323,7 @@ bv.generate_map(
 
 ## Troubleshooting
 
-### API Not Running
+### Api not running
 
 **Error:** `API request failed: Connection refused`
 
@@ -333,7 +333,7 @@ cd server
 npm run dev
 ```
 
-### Missing Dependencies
+### Missing dependencies
 
 **Error:** `ModuleNotFoundError: No module named 'PIL'`
 
@@ -342,15 +342,15 @@ npm run dev
 pip install pillow matplotlib pandas requests
 ```
 
-### State Names Not Matching
+### State names not matching
 
 Make sure state names match exactly:
-- ✅ `Maharashtra`
-- ✅ `Tamil Nadu`
-- ❌ `Maharastra` (typo)
-- ❌ `TN` (abbreviation)
+- `Maharashtra`
+- `Tamil Nadu`
+- `Maharastra` (typo)
+- `TN` (abbreviation)
 
-## District Map Types
+## District map types
 
 BharatViz supports three district boundary definitions:
 
@@ -360,28 +360,28 @@ BharatViz supports three district boundary definitions:
 | **NFHS5** | NFHS-5 (2019-21) survey boundaries | Compare with NFHS-5 data |
 | **NFHS4** | NFHS-4 (2015-16) survey boundaries | Compare with NFHS-4 data |
 
-## Examples Directory Structure
+## Examples directory structure
 
 ```
 examples/
 ├── README.md                       # This file
-├── bharatviz.py                   # Python client library ⭐
+├── bharatviz.py                   # Python client library
 ├── test_bharatviz.py              # Test suite
-├── BharatViz_Complete_Demo.ipynb  # NEW! States + Districts (START HERE!) ⭐
+├── BharatViz_Complete_Demo.ipynb  # NEW! States + Districts (START HERE!)
 ├── bharatviz_demo.ipynb           # States-only minimal examples
 └── jupyter_example.ipynb          # Original detailed examples
 ```
 
 ## Support
 
-- **Complete Demo:** `BharatViz_Complete_Demo.ipynb` ⭐
+- **Complete Demo:** `BharatViz_Complete_Demo.ipynb`
 - **API Documentation:** `../README.md`
 - **Deployment Guide:** `../../DEPLOY_SIMPLE.md`
 - **API Health:** `http://localhost:3001/health`
 
 ---
 
-**Ready to start?** Open `BharatViz_Complete_Demo.ipynb` 🚀
+**Ready to start?** Open `BharatViz_Complete_Demo.ipynb`
 
 **From data to PDF in 3 lines:**
 ```python

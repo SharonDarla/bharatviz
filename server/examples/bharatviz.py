@@ -243,7 +243,7 @@ class BharatViz:
         # Save if requested
         if save_path:
             image.save(save_path)
-            print(f"✅ Map saved to: {save_path}")
+            print(f"Map saved to: {save_path}")
 
         # Display if requested
         if show:
@@ -434,7 +434,7 @@ class BharatViz:
         # Save if requested
         if save_path:
             image.save(save_path)
-            print(f"✅ Districts map saved to: {save_path}")
+            print(f"Districts map saved to: {save_path}")
 
         # Display if requested
         if show:
@@ -528,7 +528,7 @@ class BharatViz:
                 f.write(file_data)
 
             size_kb = len(file_data) / 1024
-            print(f"✅ Saved {filename} ({size_kb:.2f} KB)")
+            print(f"Saved {filename} ({size_kb:.2f} KB)")
 
     def compare_scales(
         self,

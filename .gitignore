@@ -293,3 +293,7 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+*.png
+*.pdf
+*.svg

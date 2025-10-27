@@ -1,8 +1,8 @@
-# BharatViz API Server
+# Bharatviz api server
 
 Generate beautiful India choropleth maps programmatically through a REST API. Perfect for data scientists, researchers, and developers working with Indian state-level data.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -26,7 +26,7 @@ npm run build
 npm start
 ```
 
-## 📡 API Reference
+## API Reference
 
 ### Endpoint
 
@@ -86,7 +86,7 @@ POST /api/v1/states/map
 **Diverging:**
 - `spectral`, `rdylbu`, `rdylgn`, `brbg`, `piyg`, `puor`
 
-## 📝 Examples
+## Examples
 
 ### cURL
 
@@ -194,7 +194,7 @@ png_data <- base64decode(result$exports[[1]]$data)
 writeBin(png_data, "map.png")
 ```
 
-## 🎯 Use Cases
+## Use Cases
 
 ### Data Science & Research
 - Generate maps directly from Jupyter notebooks
@@ -211,7 +211,7 @@ writeBin(png_data, "map.png")
 - CI/CD pipelines with geographic visualizations
 - Automated social media posts with maps
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 server/
@@ -238,7 +238,7 @@ server/
 - **jsPDF**: PDF generation
 - **Zod**: Request validation
 
-## 🧪 Testing
+## Testing
 
 Run the test script:
 
@@ -252,7 +252,7 @@ This will:
 3. Save generated PNG, SVG, and PDF files
 4. Display metadata and statistics
 
-## 🔒 Security
+## Security
 
 The API includes:
 - **Rate limiting**: 100 requests per 15 minutes per IP
@@ -270,7 +270,7 @@ PORT=3001
 ALLOWED_ORIGINS=https://yoursite.com,https://another.com
 ```
 
-## 📊 Performance
+## Performance
 
 - **Map Generation**: ~500-1000ms (first request, includes GeoJSON fetch)
 - **Subsequent Requests**: ~200-400ms (GeoJSON cached)
@@ -284,7 +284,7 @@ ALLOWED_ORIGINS=https://yoursite.com,https://another.com
 3. **Use PNG for display, SVG for editing**: Different formats for different needs
 4. **Batch requests**: Process multiple datasets in separate requests
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Server won't start
 
@@ -308,7 +308,7 @@ PORT=3002 npm run dev
 - SVG is vector format and scales infinitely
 - PDF uses raster PNG internally for compatibility
 
-## 🚢 Deployment
+## Deployment
 
 ### Docker
 
@@ -330,21 +330,21 @@ CMD ["npm", "start"]
 - **Google Cloud Run**: Use provided Dockerfile
 - **DigitalOcean App Platform**: Auto-detects npm scripts
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [Main BharatViz Web App](https://bharatviz.web.app)
 - [Jupyter Notebook Examples](./examples/jupyter_example.ipynb)
 - [GitHub Repository](https://github.com/saketkc/bharatviz)
 
-## 📄 License
+## License
 
 MIT License - see main repository for details
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please open issues or pull requests on the main repository.
 
-## 📧 Support
+## Support
 
 For questions or issues:
 - Open an issue on GitHub
