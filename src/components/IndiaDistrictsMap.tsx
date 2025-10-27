@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { scaleSequential } from 'd3-scale';
@@ -340,14 +340,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     }
   };
 
-  const handleLegendMouseMove = (e: MouseEvent) => {
+  const handleLegendMouseMove = useCallback((e: MouseEvent) => {
     if (!dragging || !svgRef.current) return;
     const svgRect = svgRef.current.getBoundingClientRect();
     setLegendPosition({
       x: e.clientX - svgRect.left - dragOffset.x,
       y: e.clientY - svgRect.top - dragOffset.y
     });
-  };
+  }, [dragging, dragOffset]);
 
   const handleLegendMouseUp = () => {
     setDragging(false);
@@ -362,7 +362,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         document.removeEventListener('mouseup', handleLegendMouseUp);
       };
     }
-  }, [dragging, dragOffset]);
+  }, [dragging, dragOffset, handleLegendMouseMove]);
 
   // Fix legend gradient for PDF export
   const fixDistrictsLegendGradient = (svgClone: SVGSVGElement) => {

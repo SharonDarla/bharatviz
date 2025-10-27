@@ -89,7 +89,7 @@ export class MapController {
         error: {
           message: 'Invalid request parameters',
           code: 'VALIDATION_ERROR',
-          details: error.errors
+          details: { validationErrors: error.errors }
         }
       };
       res.status(400).json(errorResponse);

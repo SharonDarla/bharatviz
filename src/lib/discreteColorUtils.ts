@@ -145,7 +145,7 @@ export function getDiscreteColorInfo(
   
   // Calculate display values for non-overlapping ranges
   let displayMinValue = minValue;
-  let displayMaxValue = maxValue;
+  const displayMaxValue = maxValue;
   
   if (dataAnalysis && !isFirstBin) {
     // For all bins except the first, adjust the min to be non-overlapping
@@ -285,7 +285,7 @@ export function getDiscreteLegendStops(
     // Add start stop
     // Calculate display boundaries for non-overlapping ranges
     let displayMin = boundaries[i];
-    let displayMax = boundaries[i + 1];
+    const displayMax = boundaries[i + 1];
     
     if (i > 0) { // Not the first bin
       if (dataAnalysis.isInteger) {

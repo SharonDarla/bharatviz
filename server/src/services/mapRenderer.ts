@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { StatesMapRequest } from '../types/index.js';
+import { StatesMapRequest, ColorScale } from '../types/index.js';
 import { getColorForValue, getD3ColorInterpolator } from '../utils/discreteColorUtils.js';
 import { isColorDark, roundToSignificantDigits } from '../utils/colorUtils.js';
 import {
@@ -13,6 +13,7 @@ import {
   MAP_DIMENSIONS,
   DEFAULT_LEGEND_POSITION
 } from '../utils/constants.js';
+import type { FeatureCollection, Feature, Geometry } from 'geojson';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,11 +23,25 @@ export interface MapData {
   value: number;
 }
 
+interface StateProperties {
+  state_name?: string;
+  NAME_1?: string;
+  name?: string;
+  ST_NM?: string;
+  [key: string]: unknown;
+}
+
+type StateFeature = Feature<Geometry, StateProperties>;
+type StateFeatureCollection = FeatureCollection<Geometry, StateProperties>;
+
+type D3Selection = d3.Selection<SVGSVGElement, unknown, null, undefined>;
+type D3GeoPath = d3.GeoPath<unknown, d3.GeoPermissibleObjects>;
+
 /**
  * Renders a state-level India map as SVG using D3 and JSDOM
  */
 export class StatesMapRenderer {
-  private geojsonData: any = null;
+  private geojsonData: StateFeatureCollection | null = null;
 
   constructor() {}
 
@@ -116,13 +131,13 @@ export class StatesMapRenderer {
     mapGroup.selectAll('path')
       .data(this.geojsonData.features)
       .join('path')
-      .attr('d', path as any)
-      .attr('fill', (d: any) => {
+      .attr('d', path as unknown as string)
+      .attr('fill', (d: StateFeature) => {
         const stateName = this.getStateName(d.properties);
         const value = dataMap.get(stateName);
         return getColorForValue(value, values, colorScale, invertColors);
       })
-      .attr('stroke', (d: any) => {
+      .attr('stroke', (d: StateFeature) => {
         const stateName = this.getStateName(d.properties);
         const value = dataMap.get(stateName);
         if (value === undefined) return '#0f172a';
@@ -137,13 +152,13 @@ export class StatesMapRenderer {
         .data(this.geojsonData.features)
         .join('text')
         .attr('class', 'state-label')
-        .attr('transform', (d: any) => {
+        .attr('transform', (d: StateFeature) => {
           const stateName = this.getStateName(d.properties);
           const centroid = path.centroid(d);
           const { x, y } = this.getStatePosition(stateName, centroid, d, path);
           return `translate(${x}, ${y})`;
         })
-        .attr('text-anchor', (d: any) => {
+        .attr('text-anchor', (d: StateFeature) => {
           const stateName = this.getStateName(d.properties);
           if (EXTERNAL_LABEL_STATES.includes(stateName)) {
             const centered = ['mizoram', 'lakshadweep', 'sikkim', 'andhra pradesh', 'karnataka', 'delhi', 'chandigarh', 'a & n islands', 'andaman and nicobar islands'];
@@ -155,7 +170,7 @@ export class StatesMapRenderer {
         .style('font-family', 'Arial, Helvetica, sans-serif')
         .style('font-weight', '600')
         .style('pointer-events', 'none')
-        .each((d: any, i: number, nodes: any) => {
+        .each((d: StateFeature, i: number, nodes: HTMLElement[]) => {
           const text = d3.select(nodes[i]);
           const stateName = this.getStateName(d.properties);
           const value = dataMap.get(stateName);
@@ -227,7 +242,7 @@ export class StatesMapRenderer {
    * Add legend to the map (matches frontend design exactly - horizontal gradient)
    */
   private addLegend(
-    svg: any,
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     options: {
       minValue: number;
       maxValue: number;
@@ -273,7 +288,7 @@ export class StatesMapRenderer {
       .attr('y1', '0%')
       .attr('y2', '0%');
 
-    const interpolator = getD3ColorInterpolator(options.colorScale as any);
+    const interpolator = getD3ColorInterpolator(options.colorScale as ColorScale);
 
     // Create gradient stops
     for (let i = 0; i <= 10; i++) {
@@ -321,8 +336,8 @@ export class StatesMapRenderer {
   /**
    * Get state name from GeoJSON properties
    */
-  private getStateName(properties: any): string {
-    const name = properties.state_name || properties.NAME_1 || properties.name || properties.ST_NM || '';
+  private getStateName(properties: Record<string, unknown>): string {
+    const name = String(properties.state_name || properties.NAME_1 || properties.name || properties.ST_NM || '');
     return name.toLowerCase().trim();
   }
 
@@ -353,7 +368,7 @@ export class StatesMapRenderer {
   /**
    * Get adjusted position for state labels (matches frontend exactly)
    */
-  private getStatePosition(stateName: string, centroid: [number, number], feature: any, path: any): { x: number; y: number } {
+  private getStatePosition(stateName: string, centroid: [number, number], feature: StateFeature, path: d3.GeoPath<unknown, d3.GeoPermissibleObjects>): { x: number; y: number } {
     let [x, y] = centroid;
 
     // External label states (positioned outside their boundaries)

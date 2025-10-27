@@ -35,7 +35,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         // For districts, filter based on both state_name and district_name
         const districtData = data as Array<{ state: string; district: string; value: number }>;
         return districtData.filter(row => {
-          return geojson.features.some((feature: any) =>
+          return geojson.features.some((feature: { properties: { district_name?: string; state_name?: string } }) =>
             row.district.toLowerCase().trim() === feature.properties.district_name?.toLowerCase().trim() &&
             row.state.toLowerCase().trim() === feature.properties.state_name?.toLowerCase().trim()
           );
@@ -44,7 +44,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         // For states, filter based on state_name
         const stateData = data as Array<{ state: string; value: number }>;
         return stateData.filter(row => {
-          return geojson.features.some((feature: any) => {
+          return geojson.features.some((feature: { properties: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }) => {
             const featureStateName = (feature.properties.state_name || feature.properties.NAME_1 || feature.properties.name || feature.properties.ST_NM)?.toLowerCase().trim();
             return row.state.toLowerCase().trim() === featureStateName;
           });

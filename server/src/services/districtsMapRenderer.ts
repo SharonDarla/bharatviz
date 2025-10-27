@@ -3,7 +3,8 @@ import * as d3 from 'd3';
 import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { DistrictsMapRequest } from '../types/index.js';
+import { DistrictsMapRequest, ColorScale } from '../types/index.js';
+import type { FeatureCollection, Feature, Geometry, Polygon, MultiPolygon } from 'geojson';
 import { getColorForValue, getD3ColorInterpolator } from '../utils/discreteColorUtils.js';
 import { isColorDark, roundToSignificantDigits } from '../utils/colorUtils.js';
 import { DEFAULT_LEGEND_POSITION, MAP_DIMENSIONS } from '../utils/constants.js';
@@ -45,8 +46,8 @@ export type DistrictMapType = 'LGD' | 'NFHS5' | 'NFHS4';
  * Renders district-level India maps as SVG using D3 and JSDOM
  */
 export class DistrictsMapRenderer {
-  private districtsGeojson: any = null;
-  private statesGeojson: any = null;
+  private districtsGeojson: GeoJSON.FeatureCollection | null = null;
+  private statesGeojson: GeoJSON.FeatureCollection | null = null;
   private currentMapType: DistrictMapType = 'LGD';
 
   constructor() {}
@@ -85,26 +86,33 @@ export class DistrictsMapRenderer {
   /**
    * Calculate geographic bounds from GeoJSON
    */
-  private calculateBounds(geojson: any): { minLng: number; maxLng: number; minLat: number; maxLat: number } {
+  private calculateBounds(geojson: GeoJSON.FeatureCollection): { minLng: number; maxLng: number; minLat: number; maxLat: number } {
     let minLng = Infinity;
     let maxLng = -Infinity;
     let minLat = Infinity;
     let maxLat = -Infinity;
 
-    const processCoordinates = (coords: any) => {
-      if (Array.isArray(coords[0])) {
-        coords.forEach(processCoordinates);
-      } else {
-        const [lng, lat] = coords;
-        minLng = Math.min(minLng, lng);
-        maxLng = Math.max(maxLng, lng);
-        minLat = Math.min(minLat, lat);
-        maxLat = Math.max(maxLat, lat);
+    const processCoordinates = (coords: unknown): void => {
+      if (Array.isArray(coords)) {
+        if (coords.length >= 2 && typeof coords[0] === 'number' && typeof coords[1] === 'number') {
+          // This is a coordinate pair [lng, lat]
+          const [lng, lat] = coords;
+          minLng = Math.min(minLng, lng);
+          maxLng = Math.max(maxLng, lng);
+          minLat = Math.min(minLat, lat);
+          maxLat = Math.max(maxLat, lat);
+        } else {
+          // This is an array of coordinates or arrays
+          coords.forEach(processCoordinates);
+        }
       }
     };
 
-    geojson.features.forEach((feature: any) => {
-      processCoordinates(feature.geometry.coordinates);
+    geojson.features.forEach((feature: Feature) => {
+      if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+        const geometry = feature.geometry as Polygon | MultiPolygon;
+        processCoordinates(geometry.coordinates);
+      }
     });
 
     return { minLng, maxLng, minLat, maxLat };
@@ -148,7 +156,7 @@ export class DistrictsMapRenderer {
    * Convert GeoJSON coordinates to SVG path data
    */
   private convertCoordinatesToPath(
-    coordinates: any,
+    coordinates: number[][] | number[][][] | number[][][][],
     bounds: { minLng: number; maxLng: number; minLat: number; maxLat: number },
     width: number,
     height: number
@@ -164,7 +172,7 @@ export class DistrictsMapRenderer {
     };
 
     // Check if it's a MultiPolygon
-    if (coordinates[0] && Array.isArray(coordinates[0][0]) && Array.isArray((coordinates[0][0] as any)[0])) {
+    if (coordinates[0] && Array.isArray(coordinates[0][0]) && Array.isArray(coordinates[0][0][0])) {
       // MultiPolygon
       return (coordinates as number[][][][]).map(polygon => {
         return polygon.map(ring => {
@@ -246,15 +254,15 @@ export class DistrictsMapRenderer {
     });
 
     // Helper function to get district value
-    const getDistrictValue = (properties: any): number | undefined => {
-      const stateName = (properties.state_name || properties.STATE || '').toLowerCase().trim();
-      const districtName = (properties.district_name || properties.DISTRICT || '').toLowerCase().trim();
+    const getDistrictValue = (properties: Record<string, unknown>): number | undefined => {
+      const stateName = String(properties.state_name || properties.STATE || '').toLowerCase().trim();
+      const districtName = String(properties.district_name || properties.DISTRICT || '').toLowerCase().trim();
       const key = `${stateName}|${districtName}`;
       return valueMap.get(key);
     };
 
     // Draw districts using custom projection (matching frontend exactly)
-    this.districtsGeojson.features.forEach((feature: any) => {
+    this.districtsGeojson.features.forEach((feature: Feature) => {
       const value = getDistrictValue(feature.properties);
 
       let fillColor = 'white'; // Default white for no data (matching frontend)
@@ -270,7 +278,11 @@ export class DistrictsMapRenderer {
         ? '#0f172a'  // Dark stroke for light fills
         : '#ffffff'; // White stroke for dark fills
 
-      const pathData = this.convertCoordinatesToPath(feature.geometry.coordinates, bounds, width, height);
+      let pathData = '';
+      if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+        const geometry = feature.geometry as Polygon | MultiPolygon;
+        pathData = this.convertCoordinatesToPath(geometry.coordinates, bounds, width, height);
+      }
 
       mapGroup.append('path')
         .attr('d', pathData)
@@ -281,8 +293,12 @@ export class DistrictsMapRenderer {
 
     // Draw state boundaries if requested
     if (showStateBoundaries && this.statesGeojson) {
-      this.statesGeojson.features.forEach((feature: any) => {
-        const pathData = this.convertCoordinatesToPath(feature.geometry.coordinates, bounds, width, height);
+      this.statesGeojson.features.forEach((feature: Feature) => {
+        let pathData = '';
+        if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+          const geometry = feature.geometry as Polygon | MultiPolygon;
+          pathData = this.convertCoordinatesToPath(geometry.coordinates, bounds, width, height);
+        }
 
         mapGroup.append('path')
           .attr('d', pathData)
@@ -318,7 +334,7 @@ export class DistrictsMapRenderer {
    * Add horizontal legend to the map
    */
   private addLegend(
-    svg: any,
+    svg: d3.Selection<SVGSVGElement, unknown, null, undefined>,
     options: {
       minValue: number;
       maxValue: number;
@@ -355,7 +371,7 @@ export class DistrictsMapRenderer {
       .attr('y1', '0%')
       .attr('y2', '0%');
 
-    const interpolator = getD3ColorInterpolator(options.colorScale as any);
+    const interpolator = getD3ColorInterpolator(options.colorScale as ColorScale);
 
     // Create gradient stops
     for (let i = 0; i <= 10; i++) {

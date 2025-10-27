@@ -93,15 +93,18 @@ export class DistrictsMapController {
 
       res.json(response);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error generating districts map:', error);
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate districts map';
+      const errorStack = error instanceof Error ? error.stack : undefined;
 
       res.status(500).json({
         success: false,
         error: {
-          message: error.message || 'Failed to generate districts map',
+          message: errorMessage,
           code: 'GENERATION_ERROR',
-          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+          details: process.env.NODE_ENV === 'development' ? errorStack : undefined
         }
       });
     }

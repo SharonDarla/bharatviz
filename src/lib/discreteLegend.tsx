@@ -120,7 +120,7 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
         
         // Calculate display values for non-overlapping ranges
         let displayMinValue = minValue;
-        let displayMaxValue = maxValue;
+        const displayMaxValue = maxValue;
         
         if (!isFirstBin) {
           // For all bins except the first, adjust the min to be non-overlapping
