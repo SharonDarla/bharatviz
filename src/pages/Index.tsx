@@ -106,9 +106,10 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="states">States</TabsTrigger>
             <TabsTrigger value="districts">Districts</TabsTrigger>
+            <TabsTrigger value="help">Help</TabsTrigger>
           </TabsList>
           
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
@@ -223,6 +224,135 @@ const Index = () => {
                     colorBarSettings={districtColorBarSettings}
                     onColorBarSettingsChange={setDistrictColorBarSettings}
                   />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`space-y-6 ${activeTab === 'help' ? 'block' : 'hidden'}`}>
+            <div className="max-w-4xl mx-auto p-6 space-y-8">
+              <div className="p-4 border-2 border-green-500 rounded-lg bg-green-50 dark:bg-green-950">
+                <h2 className="text-xl font-bold mb-2 text-green-800 dark:text-green-200">Privacy & Data Security</h2>
+                <p className="text-green-700 dark:text-green-300">
+                  <strong>Your data is never stored.</strong> All processing happens in your browser or transiently on our servers.
+                  We do not collect, store, or share any of your uploaded data.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Web Interface</h2>
+                  <p className="text-muted-foreground mb-4">
+                    BharatViz helps you create publication-ready choropleth maps of India at state and district levels with just a few clicks.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">1. Upload Your Data</h3>
+                      <p className="text-muted-foreground mb-2">Upload a CSV file with your data. Required columns:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li><strong>States:</strong> <code>state</code> and <code>value</code></li>
+                        <li><strong>Districts:</strong> <code>state_name</code>, <code>district_name</code>, and <code>value</code></li>
+                      </ul>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Download the CSV template or load demo data to get started quickly.
+                      </p>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">2. Customize Your Map</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                        <li><strong>Color Scale:</strong> Choose from sequential (blues, greens, viridis) or diverging (spectral, rdylbu) scales</li>
+                        <li><strong>Invert Colors:</strong> Flip the color mapping (useful when lower values are better)</li>
+                        <li><strong>Discrete vs Continuous:</strong> Use discrete bins or smooth gradients</li>
+                        <li><strong>Labels:</strong> Toggle state names and values on/off</li>
+                        <li><strong>District Maps:</strong> Choose between LGD, NFHS-5, or NFHS-4 boundaries</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">3. Export Your Map</h3>
+                      <p className="text-muted-foreground">Export in multiple formats:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                        <li><strong>PNG:</strong> High-resolution raster image (300 DPI)</li>
+                        <li><strong>SVG:</strong> Vector format for editing in Adobe Illustrator, Inkscape, etc.</li>
+                        <li><strong>PDF:</strong> Publication-ready format</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t">
+                  <h2 className="text-2xl font-bold mb-4">Programmatic Access (API)</h2>
+                  <p className="text-muted-foreground mb-4">
+                    The API supports state and district-level maps (LGD, NFHS-5, NFHS-4), all color scales, and exports to PNG, SVG, and PDF formats from Python or R.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Documentation & Examples</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                        <li>
+                          <a
+                            href="https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/BharatViz_demo.ipynb"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            Try Python notebook in Google Colab
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="https://rpubs.com/saketkc/bharatviz"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            View R notebook on RPubs
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">Python</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# Install dependencies
+pip install requests pillow pandas
+
+# Download client
+wget https://gist.githubusercontent.com/saketkc/\\
+  d448bf923abff490e755120e0cb62d3f/raw/bharatviz.py
+
+# Use in your code
+from bharatviz import BharatViz
+
+bv = BharatViz()
+data = [{"state": "Maharashtra", "value": 75.8}]
+bv.generate_map(data, title="My Map", show=True)
+bv.save_all_formats(data, basename="my_map")`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">R</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# Install dependencies
+install.packages(c("R6", "httr", "jsonlite", "base64enc", "png"))
+
+# Download client (auto-downloads if not present)
+source("https://gist.githubusercontent.com/saketkc/\\
+  7b227151bde59dfa31fd2b1dd15f0c67/raw/bharatviz.R")
+
+# Use in your code
+library(R6)
+bv <- BharatViz$new()
+data <- data.frame(state = c("Maharashtra", "Kerala"),
+                   value = c(75.8, 85.5))
+result <- bv$generate_map(data, title = "My Map")
+bv$show_map(result)`}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

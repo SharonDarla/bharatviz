@@ -352,9 +352,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          {mode === 'districts' 
-            ? 'Upload a CSV or TSV file with state, district, and value columns. The last column name becomes the color map title.'
-            : 'Upload a CSV or TSV file with state and value columns. The last column name becomes the color map title.'
+          {mode === 'districts'
+            ? 'Upload a CSV or TSV file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
+            : 'Upload a CSV or TSV file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
           }
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
