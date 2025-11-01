@@ -296,7 +296,7 @@ const Index = () => {
                       <ul className="list-disc list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
                         <li>
                           <a
-                            href="https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/BharatViz_demo.ipynb"
+                            href="https://colab.research.google.com/github/saketlab/bharatviz/blob/main/server/examples/BharatViz_demo.ipynb"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="underline hover:text-blue-900 dark:hover:text-blue-100"
