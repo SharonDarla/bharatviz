@@ -103,7 +103,10 @@ const Index = () => {
     <div className="min-h-screen bg-background p-3 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4">BharatViz - Fast choropleths for India</h1>
+          <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3">
+            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-8 sm:h-12 w-auto" />
+            <span>BharatViz - Fast choropleths for India</span>
+          </h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
