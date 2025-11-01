@@ -52,7 +52,7 @@ export class StatesMapRenderer {
     if (this.geojsonData) return;
 
     // Try to load from local file first
-    const geojsonPath = join(__dirname, '../../../public/india_map_states.geojson');
+    const geojsonPath = join(__dirname, '../../public/india_map_states.geojson');
 
     try {
       const geojsonContent = await readFile(geojsonPath, 'utf-8');

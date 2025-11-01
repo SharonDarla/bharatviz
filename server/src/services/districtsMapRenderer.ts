@@ -65,21 +65,33 @@ export class DistrictsMapRenderer {
     this.currentMapType = mapType;
 
     // Load districts GeoJSON
-    const districtsPath = join(__dirname, '../../../public', config.geojsonPath);
+    const districtsPath = join(__dirname, '../../public', config.geojsonPath);
     try {
       const districtsContent = await readFile(districtsPath, 'utf-8');
       this.districtsGeojson = JSON.parse(districtsContent);
     } catch (error) {
-      throw new Error(`Failed to load districts GeoJSON for ${mapType}: ${error}`);
+      // If local file doesn't exist, fetch from the live BharatViz site
+      console.log('Local districts GeoJSON not found, fetching from bharatviz.web.app...');
+      const response = await fetch(`https://bharatviz.web.app/${config.geojsonPath}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch districts GeoJSON: ${response.status} ${response.statusText}`);
+      }
+      this.districtsGeojson = await response.json();
     }
 
     // Load states GeoJSON (for boundaries)
-    const statesPath = join(__dirname, '../../../public', config.statesPath);
+    const statesPath = join(__dirname, '../../public', config.statesPath);
     try {
       const statesContent = await readFile(statesPath, 'utf-8');
       this.statesGeojson = JSON.parse(statesContent);
     } catch (error) {
-      throw new Error(`Failed to load states GeoJSON for ${mapType}: ${error}`);
+      // If local file doesn't exist, fetch from the live BharatViz site
+      console.log('Local states GeoJSON not found, fetching from bharatviz.web.app...');
+      const response = await fetch(`https://bharatviz.web.app/${config.statesPath}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch states GeoJSON: ${response.status} ${response.statusText}`);
+      }
+      this.statesGeojson = await response.json();
     }
   }
 

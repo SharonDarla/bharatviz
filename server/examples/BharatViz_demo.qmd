@@ -45,7 +45,7 @@ if (!file.exists("bharatviz.R")) {
 
 source("bharatviz.R")
 
-API_URL <- "https://bharatviz.saketlab.in"
+API_URL <- "https://bharatviz.saketlab.org"
 
 # Initialize client
 bv <- BharatViz$new(api_url = API_URL)
