@@ -71,6 +71,7 @@ data = {
     'Karnataka': 75.6
 }
 
+# Convert dict to list format
 quick_map(BharatViz.from_dict(data), title="Literacy Rate")
 ```
 

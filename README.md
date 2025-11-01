@@ -2,19 +2,19 @@
 
 **Open-source choropleth map generator for India** - Create beautiful, interactive visualizations of state and district-level data in seconds.
 
-## Quick Links
+## Quick links
 
-- **Web Application**: [bharatviz.saketlab.in](http://bharatviz.saketlab.in/)
-- **REST API**: [bharatviz.saketlab.in/api](http://bharatviz.saketlab.in/api/)
-- **API Documentation**: [server/README.md](server/README.md)
+- **Web application**: [bharatviz.saketlab.in](https://bharatviz.saketlab.in/)
+- **REST API**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.in/api/)
+- **API documentation**: [server/README.md](server/README.md)
 
-## Supported Maps
+## Supported maps
 
-### State-Level Maps
+### State-level maps
 
 Create choropleth maps for all Indian states and union territories.
 
-**CSV Format:**
+**CSV format:**
 ```csv
 state,value
 Maharashtra,75.8
@@ -22,11 +22,11 @@ Karnataka,85.5
 Kerala,96.2
 ```
 
-### District-Level Maps
+### District-level maps
 
 Visualize data across all Indian districts with precise boundary mapping.
 
-**CSV Format:**
+**CSV format:**
 ```csv
 state_name,district_name,value
 Telangana,Adilabad,45.2
@@ -34,18 +34,18 @@ Uttar Pradesh,Agra,67.8
 Maharashtra,Ahmednagar,23.4
 ```
 
-## Color Scales
+## Color scales
 
-**Sequential**: Blues, Greens, Reds, Oranges, Purples, Pinks, Viridis, Plasma, Inferno, Magma
+**Sequential**: blues, greens, reds, oranges, purples, pinks, viridis, plasma, inferno, magma
 
-**Diverging**: RdYlBu, RdYlGn, Spectral, BrBG, PiYG, PuOr
+**Diverging**: rdylbu, rdylgn, spectral, brbg, piyg, puor
 
 ## REST API
 
 Generate maps programmatically with the REST API:
 
 ```bash
-curl -X POST http://bharatviz.saketlab.in/api/v1/states/map \
+curl -X POST https://bharatviz.saketlab.in/api/v1/states/map \
   -H "Content-Type: application/json" \
   -d '{
     "data": [
@@ -61,17 +61,17 @@ curl -X POST http://bharatviz.saketlab.in/api/v1/states/map \
 
 See [API documentation](server/README.md) for complete reference with examples in Python, R, and Node.js.
 
-## Local Development
+## Local development
 
 ### Prerequisites
-- Node.js 25.0+
+- Node.js 18.0+
 - npm
 
 ### Setup
 
 ```bash
 # Clone repository
-git clone https://github.com/saketkc/bharatviz.git
+git clone https://github.com/saketlab/bharatviz.git
 cd bharatviz
 
 # Install dependencies
@@ -83,7 +83,7 @@ npm run dev
 
 Visit `http://localhost:8080`
 
-### API Server (Optional)
+### API server (optional)
 
 ```bash
 cd server
@@ -104,7 +104,7 @@ cd server
 npm run build
 ```
 
-## Project Structure
+## Project structure
 
 ```
 bharatviz/
@@ -128,9 +128,9 @@ Contributions are welcome! This is an open-source project built for the communit
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## Issues & Support
+## Issues & support
 
-Found a bug or have a feature request? Please use [GitHub Issues](https://github.com/saketkc/bharatviz/issues).
+Found a bug or have a feature request? Please use [GitHub Issues](https://github.com/saketlab/bharatviz/issues).
 
 ## License
 

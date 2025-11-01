@@ -18,10 +18,10 @@
   "homepage": "https://bharatviz.web.app",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/saketkc/bharatviz.git"
+    "url": "git+https://github.com/saketlab/bharatviz.git"
   },
   "bugs": {
-    "url": "https://github.com/saketkc/bharatviz/issues"
+    "url": "https://github.com/saketlab/bharatviz/issues"
   },
   "type": "module",
   "scripts": {
