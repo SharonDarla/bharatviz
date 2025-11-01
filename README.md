@@ -1,11 +1,11 @@
 # BharatViz
 
-**Open-source choropleth map generator for India** - Create beautiful, interactive visualizations of state and district-level data in seconds.
+**Open-source choropleth map generator for India** - Create clean choropleths of state and district-level data in seconds.
 
 ## Quick links
 
 - **Web application**: [bharatviz.saketlab.in](https://bharatviz.saketlab.in/)
-- **REST API**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.in/api/)
+- **REST api**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.in/api/)
 - **API documentation**: [server/README.md](server/README.md)
 
 ## Supported maps
