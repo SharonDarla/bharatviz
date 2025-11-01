@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { DISTRICT_MAP_TYPES, DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
+import { Github } from 'lucide-react';
 
 interface StateMapData {
   state: string;
@@ -354,13 +355,48 @@ bv$show_map(result)`}
                     </div>
                   </div>
                 </div>
+
+                <div className="pt-6 border-t">
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                      <Github className="h-5 w-5" />
+                      Open Source
+                    </h2>
+                    <p className="text-muted-foreground">
+                      BharatViz is open source and available on GitHub. Contributions, issues, and feedback are welcome!
+                    </p>
+                    <a
+                      href="https://github.com/saketlab/bharatviz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-3 text-primary underline hover:text-primary/80"
+                    >
+                      https://github.com/saketlab/bharatviz
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </Tabs>
       </div>
       <footer className="w-full text-center text-xs text-muted-foreground mt-8 mb-2">
-        © 2025 Saket Choudhary | <a href="http://saketlab.in/" target="_blank" rel="noopener noreferrer" className="underline">Saket Lab</a>
+        <div className="flex flex-col items-center gap-2">
+          <div>
+            © 2025 Saket Choudhary | <a href="http://saketlab.in/" target="_blank" rel="noopener noreferrer" className="underline">Saket Lab</a>
+          </div>
+          <div className="flex items-center gap-1">
+            <a
+              href="https://github.com/saketlab/bharatviz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <Github className="h-4 w-4" />
+              <span>saketlab/bharatviz</span>
+            </a>
+          </div>
+        </div>
       </footer>
     </div>
   );
