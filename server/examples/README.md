@@ -1,107 +1,39 @@
 # Bharatviz Examples
 
-Interactive examples for using the BharatViz API - Run directly in your browser with Google Colab!
+Interactive examples for using the BharatViz API - Run directly in your browser with Google Colab or Rstudio!
 
 ## Quick Start
 
 ### Python users (Google colab)
 
-No installation required! Click any badge below to run examples in your browser:
+No installation required!
 
-[![Open Complete Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/BharatViz_Complete_Demo.ipynb) **Complete Demo** - States & Districts
 
-[![Open Quick Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/bharatviz_demo.ipynb) **Quick Demo** - State Maps Only
+[![Open Quick Demo](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/BharatViz_demo.ipynb) 
 
-[![Open Tutorial](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/saketkc/bharatviz/blob/main/server/examples/jupyter_example.ipynb) **Tutorial** - Step-by-step Guide
 
 ### R users
 
-Download and run the R Markdown demo:
-
+Download and run the R Markdown demo: https://rpubs.com/saketkc/bharatviz
 ```r
 # Download files
 download.file(
-  "https://raw.githubusercontent.com/saketkc/bharatviz/main/server/examples/bharatviz.R",
+  "https://gist.githubusercontent.com/saketkc/7b227151bde59dfa31fd2b1dd15f0c67/raw/bharatviz.R",
   "bharatviz.R"
 )
 download.file(
-  "https://raw.githubusercontent.com/saketkc/bharatviz/main/server/examples/BharatViz_Demo.Rmd",
-  "BharatViz_Demo.Rmd"
+  "https://raw.githubusercontent.com/saketkc/bharatviz/main/server/examples/BharatViz_demo.qmd",
+  "BharatViz_demo.qmd"
 )
 
 # Install dependencies
 install.packages(c("httr", "jsonlite", "base64enc", "R6", "png", "rmarkdown"))
 
 # Render the notebook
-rmarkdown::render("BharatViz_Demo.Rmd")
+quarto render BharatViz_demo.qmd
 ```
 
-## Files
-
-### `bharatviz.py`
-**Python client library for BharatViz API** - Provides easy-to-use functions for generating India choropleth maps.
-
-**Features:**
-- **State & District maps** (LGD, NFHS4, NFHS5)
-- Auto-converts DataFrames and dictionaries
-- One-line map generation with `quick_map()` and `quick_districts_map()`
-- Save to PNG, SVG, PDF
-- Compare color scales side-by-side
-- Full customization options
-
-### `BharatViz_Complete_Demo.ipynb` **New!**
-**Comprehensive demo notebook with states AND districts!**
-
-Covers:
-1. **States:** From dict, DataFrame, custom columns
-2. **Districts:** LGD/NFHS maps, CSV import, custom columns
-3. **PDF Export:** Publication-ready outputs
-4. **Advanced:** Metadata, inverted scales, comparisons
-
-**Start here!** This is the most complete demo.
-
-### `bharatviz_demo.ipynb`
-**States-only minimal-code examples.**
-
-Covers:
-1. One-line map generation
-2. DataFrame auto-conversion
-3. Custom column names
-4. Saving maps (PNG, SVG, PDF)
-5. Comparing color scales
-6. Advanced customization
-7. Real-world CSV example
-
-### `jupyter_example.ipynb`
-Original detailed examples with full API usage.
-
----
-
-### `bharatviz.R` **New!**
-**R client library for BharatViz API** - Full-featured R interface with R6 classes.
-
-**Features:**
-- **State & District maps** (LGD, NFHS4, NFHS5)
-- Works with data frames and named lists
-- One-line functions: `quick_map()` and `quick_districts_map()`
-- Save to PNG, SVG, PDF
-- Auto-detects column names
-- Full R6 class interface
-
-### `BharatViz_Demo.Rmd` **New!**
-**Comprehensive R Markdown demo for R users!**
-
-Covers:
-1. **States:** From named lists, data frames, custom columns
-2. **Districts:** LGD/NFHS maps, CSV import
-3. **PDF Export:** Publication-ready outputs
-4. **Advanced:** Metadata, inverted scales, customization
-
-**R users start here!**
-
----
-
- ## Quick start
+## Quick start to run server locally
 
 ### 1. Install dependencies
 
@@ -121,7 +53,7 @@ Server runs on `http://localhost:3001`
 ### 3. Run the demo notebook
 
 ```bash
-jupyter notebook bharatviz_demo.ipynb
+jupyter notebook BharatViz_demo.ipynb
 ```
 
 ## Minimal code examples
@@ -160,7 +92,7 @@ bv.generate_map(df, title="My Map", show=True)
 #### Save to pdf
 
 ```python
-# Save all formats (PNG, SVG, PDF)
+# Save all formats (png, svg, pdf)
 bv.save_all_formats(df, basename="india_map")
 ```
 
@@ -180,7 +112,7 @@ data = [
 quick_districts_map(data, title="District Literacy", map_type='LGD')
 ```
 
-#### From DataFrame
+#### From dataframe
 
 ```python
 from bharatviz import BharatViz
@@ -195,11 +127,12 @@ bv = BharatViz()
 bv.generate_districts_map(df, map_type='LGD', show=True)
 ```
 
-#### Save District Map to PDF
+#### Save district map to pdf
 
 ```python
-# Save all formats for district map
-bv.save_all_formats(df, basename="districts_map", map_type="districts")
+# Generate with all formats
+result = bv.generate_districts_map(df, map_type='LGD', formats=['png', 'svg', 'pdf'])
+bv.save_all(result, basename="districts_map")
 ```
 
 ### Compare color scales
@@ -208,24 +141,24 @@ bv.save_all_formats(df, basename="districts_map", map_type="districts")
 bv.compare_scales(data, scales=['spectral', 'viridis', 'plasma'])
 ```
 
-## Api reference
+## API reference
 
 ### `BharatViz(api_url)`
 Main client class.
 
 **Parameters:**
-- `api_url` (str): API server URL. Default: `"http://localhost:3001"`
+- `api_url` (str): API server URL. Default: `"https://bharatviz.saketlab.in"`
 
 ### `generate_map(data, **options)`
 Generate a choropleth map.
 
 **Parameters:**
-- `data`: List of dicts or DataFrame with 'state' and 'value'
+- `data`: List of dicts or dataframe with 'state' and 'value'
 - `title` (str): Map title
 - `legend_title` (str): Legend label
 - `color_scale` (str): Color scheme (see below)
 - `show` (bool): Display in notebook
-- `save_path` (str): Save PNG to path
+- `save_path` (str): Save png to path
 - `formats` (list): Export formats `['png', 'svg', 'pdf']`
 - `figsize` (tuple): Display size `(width, height)`
 
@@ -234,7 +167,7 @@ Generate a choropleth map.
 ### Helper functions
 
 #### `BharatViz.from_dataframe(df, state_col, value_col)`
-Convert DataFrame to API format.
+Convert dataframe to API format.
 
 ```python
 data = BharatViz.from_dataframe(
@@ -259,7 +192,7 @@ quick_map(data, title="Literacy Rate", save_path="map.png")
 ```
 
 #### `save_all_formats(data, basename, **options)`
-Save PNG, SVG, and PDF at once.
+Save png, svg, and pdf at once.
 
 ```python
 bv.save_all_formats(data, basename="my_map")
@@ -360,32 +293,3 @@ BharatViz supports three district boundary definitions:
 | **NFHS5** | NFHS-5 (2019-21) survey boundaries | Compare with NFHS-5 data |
 | **NFHS4** | NFHS-4 (2015-16) survey boundaries | Compare with NFHS-4 data |
 
-## Examples directory structure
-
-```
-examples/
-├── README.md                       # This file
-├── bharatviz.py                   # Python client library
-├── test_bharatviz.py              # Test suite
-├── BharatViz_Complete_Demo.ipynb  # NEW! States + Districts (START HERE!)
-├── bharatviz_demo.ipynb           # States-only minimal examples
-└── jupyter_example.ipynb          # Original detailed examples
-```
-
-## Support
-
-- **Complete Demo:** `BharatViz_Complete_Demo.ipynb`
-- **API Documentation:** `../README.md`
-- **Deployment Guide:** `../../DEPLOY_SIMPLE.md`
-- **API Health:** `http://localhost:3001/health`
-
----
-
-**Ready to start?** Open `BharatViz_Complete_Demo.ipynb`
-
-**From data to PDF in 3 lines:**
-```python
-from bharatviz import BharatViz
-bv = BharatViz()
-bv.save_all_formats(your_data, basename="publication_map")
-```
