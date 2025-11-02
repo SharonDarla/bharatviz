@@ -330,9 +330,16 @@ wget https://gist.githubusercontent.com/saketkc/be4371057a1d5e096fc1d57669ae5ad8
 from bharatviz import BharatViz
 
 bv = BharatViz()
+# States map
 data = [{"state": "Maharashtra", "value": 75.8}]
 bv.generate_map(data, title="My Map", show=True)
-bv.save_all_formats(data, basename="my_map")`}
+
+# Districts map (LGD)
+dist_data = [{"state_name": "Telangana", "district_name": "Adilabad", "value": 45.2}]
+bv.generate_districts_map(dist_data, map_type="LGD", show=True)
+
+# Districts map (NFHS5)
+bv.generate_districts_map(dist_data, map_type="NFHS5", show=True)`}
                       </pre>
                     </div>
 
@@ -348,10 +355,17 @@ source("https://gist.githubusercontent.com/saketkc/7b227151bde59dfa31fd2b1dd15f0
 # Use in your code
 library(R6)
 bv <- BharatViz$new()
-data <- data.frame(state = c("Maharashtra", "Kerala"),
-                   value = c(75.8, 85.5))
+# States map
+data <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
 result <- bv$generate_map(data, title = "My Map")
-bv$show_map(result)`}
+bv$show_map(result)
+
+# Districts map (LGD)
+dist_data <- data.frame(state_name = "Telangana", district_name = "Adilabad", value = 45.2)
+bv$generate_districts_map(dist_data, map_type = "LGD", show = TRUE)
+
+# Districts map (NFHS5)
+bv$generate_districts_map(dist_data, map_type = "NFHS5", show = TRUE)`}
                       </pre>
                     </div>
                   </div>
