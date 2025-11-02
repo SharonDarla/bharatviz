@@ -1,4 +1,19 @@
-# BharatViz R Client
+@description Generate a state-level choropleth map
+    #' @param data Data frame with 'state' and 'value' columns, or named list
+    #' @param title Map title
+    #' @param legend_title Legend label
+    #' @param color_scale Color scale name
+    #' @param invert_colors Invert color scale
+    #' @param hide_state_names Hide state labels
+    #' @param hide_values Hide value labels
+    #' @param formats Export formats (default: "png")
+    #' @return List with image data and metadata
+    generate_map = function(data,
+                           title = "BharatViz",
+                           legend_title = "Values",
+                           color_scale = "spectral",
+                           invert_colors = FALSE,
+                           hide_state_names = # BharatViz R Client
 # Generate India choropleth maps using the BharatViz API
 #
 # Author: Saket Choudhary <saketc@iitb.ac.in>
@@ -28,22 +43,7 @@ BharatViz <- R6::R6Class(
       message("API URL: ", self$api_url)
     },
 
-    #' @description Generate a state-level choropleth map
-    #' @param data Data frame with 'state' and 'value' columns, or named list
-    #' @param title Map title
-    #' @param legend_title Legend label
-    #' @param color_scale Color scale name
-    #' @param invert_colors Invert color scale
-    #' @param hide_state_names Hide state labels
-    #' @param hide_values Hide value labels
-    #' @param formats Export formats (default: "png")
-    #' @return List with image data and metadata
-    generate_map = function(data,
-                           title = "BharatViz",
-                           legend_title = "Values",
-                           color_scale = "spectral",
-                           invert_colors = FALSE,
-                           hide_state_names = FALSE,
+    #' FALSE,
                            hide_values = FALSE,
                            formats = "png") {
 
