@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BharatViz - Fast choropleths for India</title>
-    <meta name="description" content="An app for fast choropleths for India." />
+    <meta name="description" content="Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors, instant visualization, and export to PNG/SVG/PDF." />
     <meta name="author" content="Saket Choudhary">
     <meta name="twitter:creator" content="@saketkc">
 
     <meta property="og:title" content="BharatViz - Fast choropleths for India" />
-    <meta properpty="og:description" content="An app for fast choropleths for India." />
+    <meta property="og:description" content="Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors, instant visualization, and export to PNG/SVG/PDF." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
 
@@ -17,6 +17,37 @@
     <meta name="twitter:site" content="@saketkc" />
     <meta name="twitter:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "BharatViz",
+      "description": "Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors and export options.",
+      "url": "https://bharatviz.saketlab.in",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Person",
+        "name": "Saket Lab",
+        "sameAs": "https://twitter.com/saketkc"
+      },
+      "featureList": [
+        "State-level choropleth maps",
+        "District-level choropleth maps", 
+        "15+ color scales",
+        "PNG/SVG/PDF export",
+        "REST API",
+        "Customizable legends"
+      ]
+    }
+    </script>
     
     <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-6VF7K3MEZH"></script>
