@@ -324,8 +324,7 @@ const Index = () => {
 pip install requests pillow pandas
 
 # Download client
-wget https://gist.githubusercontent.com/saketkc/\\
-  d448bf923abff490e755120e0cb62d3f/raw/bharatviz.py
+wget https://gist.githubusercontent.com/saketkc/be4371057a1d5e096fc1d57669ae5ad8/raw/955c89854ebf969f428702496e9a87d7ff771617/bharatviz.py
 
 # Use in your code
 from bharatviz import BharatViz
@@ -343,9 +342,8 @@ bv.save_all_formats(data, basename="my_map")`}
 {`# Install dependencies
 install.packages(c("R6", "httr", "jsonlite", "base64enc", "png"))
 
-# Download client (auto-downloads if not present)
-source("https://gist.githubusercontent.com/saketkc/\\
-  7b227151bde59dfa31fd2b1dd15f0c67/raw/bharatviz.R")
+# Source client
+source("https://gist.githubusercontent.com/saketkc/7b227151bde59dfa31fd2b1dd15f0c67/raw/d13c9cdc7dd814a6be9d53483e4e48e3db6db9db/bhartviz.R")
 
 # Use in your code
 library(R6)
