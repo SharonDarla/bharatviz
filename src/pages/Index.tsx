@@ -362,10 +362,12 @@ bv$show_map(result)
 
 # Districts map (LGD)
 dist_data <- data.frame(state_name = "Telangana", district_name = "Adilabad", value = 45.2)
-bv$generate_districts_map(dist_data, map_type = "LGD", show = TRUE)
+result_lgd <- bv$generate_districts_map(dist_data, map_type = "LGD")
+bv$show_map(result_lgd)
 
 # Districts map (NFHS5)
-bv$generate_districts_map(dist_data, map_type = "NFHS5", show = TRUE)`}
+result_nfhs5 <- bv$generate_districts_map(dist_data, map_type = "NFHS5")
+bv$show_map(result_nfhs5)`}
                       </pre>
                     </div>
                   </div>
