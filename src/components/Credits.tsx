@@ -12,7 +12,7 @@ interface CreditSource {
 const Credits: React.FC = () => {
   const sources: CreditSource[] = [
     {
-      title: 'BharatMap Service - Admin Boundary',
+      title: 'BharatMap service - state boundaries',
       description: 'Government of India mapping service providing official administrative boundaries',
       url: 'https://mapservice.gov.in/gismapservice/rest/services/BharatMapService/Admin_Boundary_GramPanchayat/MapServer/0',
       usedFor: ['States map boundaries'],
@@ -21,7 +21,7 @@ const Credits: React.FC = () => {
       ]
     },
     {
-      title: 'BharatMap Service - Village Boundaries',
+      title: 'BharatMap service - district boundaries',
       description: 'Government of India mapping service with detailed administrative boundaries',
       url: 'https://mapservice.gov.in/gismapservice/rest/login?redirect=https%3A//mapservice.gov.in/gismapservice/rest/services/BharatMapService/Admin_Boundary_Village/MapServer/1',
       usedFor: ['LGD district boundaries'],
@@ -53,7 +53,7 @@ const Credits: React.FC = () => {
       ]
     },
     {
-      title: 'Spatial Data Repository - DHS Program',
+      title: 'Spatial data repository - DHS program',
       description: 'Demographic and Health Surveys spatial data repository with health survey district boundaries',
       url: 'https://spatialdata.dhsprogram.com/home/',
       usedFor: ['NFHS-4 district boundaries', 'NFHS-5 district boundaries'],
