@@ -64,7 +64,7 @@ export class StatesMapRenderer {
       if (!response.ok) {
         throw new Error(`Failed to fetch GeoJSON: ${response.status} ${response.statusText}`);
       }
-      this.geojsonData = await response.json();
+      this.geojsonData = await response.json() as StateFeatureCollection;
     }
   }
 

@@ -76,7 +76,7 @@ export class DistrictsMapRenderer {
       if (!response.ok) {
         throw new Error(`Failed to fetch districts GeoJSON: ${response.status} ${response.statusText}`);
       }
-      this.districtsGeojson = await response.json();
+      this.districtsGeojson = await response.json() as GeoJSON.FeatureCollection;
     }
 
     // Load states GeoJSON (for boundaries)
@@ -91,7 +91,7 @@ export class DistrictsMapRenderer {
       if (!response.ok) {
         throw new Error(`Failed to fetch states GeoJSON: ${response.status} ${response.statusText}`);
       }
-      this.statesGeojson = await response.json();
+      this.statesGeojson = await response.json() as GeoJSON.FeatureCollection;
     }
   }
 
