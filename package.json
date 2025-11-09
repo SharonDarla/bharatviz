@@ -32,7 +32,9 @@
     "preview": "vite preview",
     "deploy": "npm run build && NODE_OPTIONS=\"--no-deprecation\" firebase deploy --only hosting",
     "deploy:preview": "npm run build && firebase hosting:channel:deploy preview --only hosting",
-    "sitemap": "node scripts/generate-sitemap.js"
+    "sitemap": "node scripts/generate-sitemap.js",
+    "generate:sheets": "node scripts/generate-google-sheets.js",
+    "update:config-sheets": "node scripts/update-config-with-sheets.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

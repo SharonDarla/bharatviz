@@ -2,6 +2,7 @@ import React from 'react';
 import { ColorBarSettings, ColorScale } from '@/components/ColorMapChooser';
 import { createDiscreteBins, getD3ColorInterpolator } from '@/lib/discreteColorUtils';
 import { formatLegendValue } from '@/lib/colorUtils';
+import { getDiscreteLegendDimensions } from '@/lib/discreteLegendUtils';
 
 interface DiscreteLegendProps {
   data: number[];
@@ -47,7 +48,6 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
 
   const rectWidth = isMobile ? 24 : 32;  // Much more square-shaped
   const rectHeight = isMobile ? 20 : 28;  // Slightly taller for better proportion
-  const totalHeight = binCount * (rectHeight + 4) - 4; // 4px spacing between rectangles
 
   return (
     <g
@@ -181,19 +181,3 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
     </g>
   );
 };
-
-// Helper function to calculate discrete legend dimensions
-export function getDiscreteLegendDimensions(
-  binCount: number,
-  isMobile: boolean = false
-): { width: number; height: number } {
-  const rectWidth = isMobile ? 24 : 32;
-  const rectHeight = isMobile ? 20 : 28;
-  const textWidth = isMobile ? 80 : 120; // More space for range text
-  const totalHeight = binCount * (rectHeight + 4) - 4;
-  
-  return {
-    width: rectWidth + textWidth + 6, // 6px padding for text
-    height: totalHeight
-  };
-}

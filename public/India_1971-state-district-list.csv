@@ -1,0 +1,358 @@
+"state_name","district_name","id"
+"Andaman and Nicobar Islands","Andaman and  Nicobar Islands",1
+"Andhra Pradesh","Adilabad",17
+"Andhra Pradesh","Anantapur",11
+"Andhra Pradesh","Chittoor",9
+"Andhra Pradesh","Cuddapah",10
+"Andhra Pradesh","East Godavari",3
+"Andhra Pradesh","Guntur",6
+"Andhra Pradesh","Hyderabad",14
+"Andhra Pradesh","Karimnagar",18
+"Andhra Pradesh","Khammam",20
+"Andhra Pradesh","Krishna",5
+"Andhra Pradesh","Kurnool",12
+"Andhra Pradesh","Mahbubnagar",13
+"Andhra Pradesh","Medak",15
+"Andhra Pradesh","Nalgonda",21
+"Andhra Pradesh","Nellore",8
+"Andhra Pradesh","Nizamabad",16
+"Andhra Pradesh","Ongole",7
+"Andhra Pradesh","Srikakulam",1
+"Andhra Pradesh","Visakhapatnam",2
+"Andhra Pradesh","Warangal",19
+"Andhra Pradesh","West Godavari",4
+"Arunachal Pradesh","Kameng",1
+"Arunachal Pradesh","Lohit",4
+"Arunachal Pradesh","Siang",3
+"Arunachal Pradesh","Subansiri",2
+"Arunachal Pradesh","Tirap",5
+"Assam","Cachar",9
+"Assam","Darrang",3
+"Assam","Goalpara",1
+"Assam","Kamrup",2
+"Assam","Lakhimpur",6
+"Assam","Mikir Hills",7
+"Assam","North Cachar Hills",8
+"Assam","Nowgong",4
+"Assam","Sibsagar",5
+"Bihar","Bhagalpur",9
+"Bihar","Champaran",5
+"Bihar","Darbhanga",7
+"Bihar","Dhanbad",16
+"Bihar","Gaya",2
+"Bihar","Hazaribagh",14
+"Bihar","Monghyr",8
+"Bihar","Muzaffarpur",6
+"Bihar","Palamau",13
+"Bihar","Patna",1
+"Bihar","Purnea",11
+"Bihar","Ranchi",15
+"Bihar","Saharsa",10
+"Bihar","Santal Parganas",12
+"Bihar","Saran",4
+"Bihar","Shahabad",3
+"Bihar","Singhbhum",17
+"Chandigarh","Chandigarh",1
+"Dadra and Nagar Haveli","Dadra and Nagar Haveli",1
+"Delhi","Delhi",1
+"Goa, Daman and Diu","Daman",2
+"Goa, Daman and Diu","Diu",3
+"Goa, Daman and Diu","Goa",1
+"Gujarat","Ahmadabad",12
+"Gujarat","Amreli",5
+"Gujarat","Banas Kantha",8
+"Gujarat","Bharuch",16
+"Gujarat","Bhavnagar",4
+"Gujarat","Gandhinagar",11
+"Gujarat","Jamnagar",1
+"Gujarat","Junagadh",6
+"Gujarat","Kheda",13
+"Gujarat","Kutch",7
+"Gujarat","Mahesana",10
+"Gujarat","Panch Mahals",14
+"Gujarat","Rajkot",2
+"Gujarat","Sabar Kantha",9
+"Gujarat","Surat",17
+"Gujarat","Surendranagar",3
+"Gujarat","The Dangs",19
+"Gujarat","Vadodara",15
+"Gujarat","Valsad",18
+"Haryana","Ambala",1
+"Haryana","Gurgaon",4
+"Haryana","Hisar",6
+"Haryana","Jind",7
+"Haryana","Karnal",2
+"Haryana","Mahendragarh",5
+"Haryana","Rohtak",3
+"Himachal Pradesh","Bilaspur",6
+"Himachal Pradesh","Chamba",1
+"Himachal Pradesh","Kangra",2
+"Himachal Pradesh","Kinnaur",10
+"Himachal Pradesh","Kulu",4
+"Himachal Pradesh","Lahul and Spiti",5
+"Himachal Pradesh","Mahasu",7
+"Himachal Pradesh","Mandi",3
+"Himachal Pradesh","Simla",8
+"Himachal Pradesh","Sirmaur",9
+"Jammu and Kashmir","Anantnag",1
+"Jammu and Kashmir","Baramula",3
+"Jammu and Kashmir","Doda",5
+"Jammu and Kashmir","Jammu",7
+"Jammu and Kashmir","Kathua",8
+"Jammu and Kashmir","Ladakh",4
+"Jammu and Kashmir","Punch",10
+"Jammu and Kashmir","Rajauri",9
+"Jammu and Kashmir","Srinagar",2
+"Jammu and Kashmir","Udhampur",6
+"Kerala","Alleppey",8
+"Kerala","Cannanore",1
+"Kerala","Ernakulam",6
+"Kerala","Kottayam",7
+"Kerala","Kozhikode",2
+"Kerala","Malappuram",3
+"Kerala","Palghat",4
+"Kerala","Quilon",9
+"Kerala","Trichur",5
+"Kerala","Trivandrum",10
+"Laccadive, Minicoy and Amindivi Islands","Laccadive, Minicoy and  Amindivi Islands",1
+"Madhya Pradesh","Balaghat",37
+"Madhya Pradesh","Bastar",43
+"Madhya Pradesh","Betul",29
+"Madhya Pradesh","Bhind",2
+"Madhya Pradesh","Bilaspur",39
+"Madhya Pradesh","Chhatarpur",8
+"Madhya Pradesh","Chhindwara",35
+"Madhya Pradesh","Damoh",31
+"Madhya Pradesh","Datia",4
+"Madhya Pradesh","Dewas",20
+"Madhya Pradesh","Dhar",18
+"Madhya Pradesh","Durg",41
+"Madhya Pradesh","Guna",6
+"Madhya Pradesh","Gwalior",3
+"Madhya Pradesh","Hoshangabad",28
+"Madhya Pradesh","Indore",19
+"Madhya Pradesh","Jabalpur",32
+"Madhya Pradesh","Jhabua",17
+"Madhya Pradesh","Khandwa",22
+"Madhya Pradesh","Khargone",21
+"Madhya Pradesh","Mandla",34
+"Madhya Pradesh","Mandsaur",14
+"Madhya Pradesh","Morena",1
+"Madhya Pradesh","Narsimhapur",33
+"Madhya Pradesh","Panna",9
+"Madhya Pradesh","Raigarh",40
+"Madhya Pradesh","Raipur",42
+"Madhya Pradesh","Raisen",27
+"Madhya Pradesh","Rajgarh",24
+"Madhya Pradesh","Ratlam",15
+"Madhya Pradesh","Rewa",11
+"Madhya Pradesh","Sagar",30
+"Madhya Pradesh","Satna",10
+"Madhya Pradesh","Sehore",26
+"Madhya Pradesh","Seoni",36
+"Madhya Pradesh","Shahdol",12
+"Madhya Pradesh","Shajapur",23
+"Madhya Pradesh","Shivpuri",5
+"Madhya Pradesh","Sidhi",13
+"Madhya Pradesh","Surguja",38
+"Madhya Pradesh","Tikamgarh",7
+"Madhya Pradesh","Ujjain",16
+"Madhya Pradesh","Vidisha",25
+"Maharashtra","Ahmednagar",8
+"Maharashtra","Akola",20
+"Maharashtra","Amravati",21
+"Maharashtra","Aurangabad",14
+"Maharashtra","Bhandara",25
+"Maharashtra","Bhir",16
+"Maharashtra","Buldhana",19
+"Maharashtra","Chandrapur",26
+"Maharashtra","Dhulia",6
+"Maharashtra","Greater Bombay",1
+"Maharashtra","Jalgaon",7
+"Maharashtra","Kolaba",3
+"Maharashtra","Kolhapur",13
+"Maharashtra","Nagpur",24
+"Maharashtra","Nanded",17
+"Maharashtra","Nasik",5
+"Maharashtra","Osmanabad",18
+"Maharashtra","Parbhani",15
+"Maharashtra","Poona",9
+"Maharashtra","Ratnagiri",4
+"Maharashtra","Sangli",11
+"Maharashtra","Satara",10
+"Maharashtra","Sholapur",12
+"Maharashtra","Thana",2
+"Maharashtra","Wardha",23
+"Maharashtra","Yeotmal",22
+"Manipur","Manipur Central",4
+"Manipur","Manipur East",5
+"Manipur","Manipur North",1
+"Manipur","Manipur South",3
+"Manipur","Manipur West",2
+"Meghalaya","Garo Hills",1
+"Meghalaya","United Khasi and Jaintia Hills",2
+"Mizoram","Mizoram",1
+"Mysore","Bangalore",1
+"Mysore","Belgaum",2
+"Mysore","Bellary",3
+"Mysore","Bidar",4
+"Mysore","Bijapur",5
+"Mysore","Chikmagalur",6
+"Mysore","Chitradurga",7
+"Mysore","Coorg",8
+"Mysore","Dharwar",9
+"Mysore","Gulbarga",10
+"Mysore","Hassan",11
+"Mysore","Kolar",12
+"Mysore","Mandya",13
+"Mysore","Mysore",14
+"Mysore","North Kanara",15
+"Mysore","Raichur",16
+"Mysore","Shimoga",17
+"Mysore","South Kanara",18
+"Mysore","Tumkur",19
+"Nagaland","Kohima",1
+"Nagaland","Mokokchung",2
+"Nagaland","Tuensang",3
+"Orissa","Balasore",5
+"Orissa","Baudh Khondmals",8
+"Orissa","Bolangir",9
+"Orissa","Cuttack",6
+"Orissa","Dhenkanal",7
+"Orissa","Ganjam",12
+"Orissa","Kalahandi",10
+"Orissa","Keonjhar",3
+"Orissa","Koraput",11
+"Orissa","Mayurbhanj",4
+"Orissa","Puri",13
+"Orissa","Sambalpur",1
+"Orissa","Sundargarh",2
+"Pondicherry","Karaikal",2
+"Pondicherry","Mahe",3
+"Pondicherry","Pondicherry",1
+"Pondicherry","Yanam",4
+"Punjab","Amritsar",2
+"Punjab","Bhatinda",11
+"Punjab","Firozpur",3
+"Punjab","Gurdaspur",1
+"Punjab","Hoshiarpur",7
+"Punjab","Jullundur",5
+"Punjab","Kapurthala",6
+"Punjab","Ludhiana",4
+"Punjab","Patiala",9
+"Punjab","Ropar",8
+"Punjab","Sangrur",10
+"Rajasthan","Ajmer",10
+"Rajasthan","Alwar",5
+"Rajasthan","Banswara",23
+"Rajasthan","Barmer",16
+"Rajasthan","Bharatpur",6
+"Rajasthan","Bhilwara",19
+"Rajasthan","Bikaner",2
+"Rajasthan","Bundi",24
+"Rajasthan","Chittaurgarh",21
+"Rajasthan","Churu",3
+"Rajasthan","Dungarpur",22
+"Rajasthan","Ganganagar",1
+"Rajasthan","Jaipur",8
+"Rajasthan","Jaisalmer",12
+"Rajasthan","Jalor",17
+"Rajasthan","Jhalawar",26
+"Rajasthan","Jhunjhunun",4
+"Rajasthan","Jodhpur",13
+"Rajasthan","Kota",25
+"Rajasthan","Nagaur",14
+"Rajasthan","Pali",15
+"Rajasthan","Sawai Madhopur",7
+"Rajasthan","Sikar",9
+"Rajasthan","Sirohi",18
+"Rajasthan","Tonk",11
+"Rajasthan","Udaipur",20
+"Sikkim","Sikkim",1
+"Tamil Nadu","Chengalpattu",2
+"Tamil Nadu","Coimbatore",7
+"Tamil Nadu","Dharmapuri",5
+"Tamil Nadu","Kanniyakumari",14
+"Tamil Nadu","Madras",1
+"Tamil Nadu","Madurai",9
+"Tamil Nadu","Nilgiris",8
+"Tamil Nadu","North Arcot",3
+"Tamil Nadu","Ramanathapuram",12
+"Tamil Nadu","Salem",6
+"Tamil Nadu","South Arcot",4
+"Tamil Nadu","Thanjavur",11
+"Tamil Nadu","Tiruchirapalli",10
+"Tamil Nadu","Tirunelveli",13
+"Tripura","North Tripura",2
+"Tripura","South Tripura",3
+"Tripura","West Tripura",1
+"Uttar Pradesh","Agra",22
+"Uttar Pradesh","Aligarh",20
+"Uttar Pradesh","Allahabad",29
+"Uttar Pradesh","Almora",6
+"Uttar Pradesh","Azamgarh",49
+"Uttar Pradesh","Bahraich",40
+"Uttar Pradesh","Ballia",51
+"Uttar Pradesh","Banda",33
+"Uttar Pradesh","Bara Banki",42
+"Uttar Pradesh","Bareilly",12
+"Uttar Pradesh","Basti",46
+"Uttar Pradesh","Bijnor",8
+"Uttar Pradesh","Budaun",10
+"Uttar Pradesh","Bulandshahr",19
+"Uttar Pradesh","Chamoli",2
+"Uttar Pradesh","Dehra Dun",15
+"Uttar Pradesh","Deoria",48
+"Uttar Pradesh","Etah",23
+"Uttar Pradesh","Etawah",26
+"Uttar Pradesh","Faizabad",43
+"Uttar Pradesh","Farrukhabad",25
+"Uttar Pradesh","Fatehpur",28
+"Uttar Pradesh","Garhwal",4
+"Uttar Pradesh","Ghazipur",52
+"Uttar Pradesh","Gonda",41
+"Uttar Pradesh","Gorakhpur",47
+"Uttar Pradesh","Hamirpur",32
+"Uttar Pradesh","Hardoi",36
+"Uttar Pradesh","Jalaun",31
+"Uttar Pradesh","Jaunpur",50
+"Uttar Pradesh","Jhansi",30
+"Uttar Pradesh","Kanpur",27
+"Uttar Pradesh","Kheri",34
+"Uttar Pradesh","Lucknow",38
+"Uttar Pradesh","Mainpuri",24
+"Uttar Pradesh","Mathura",21
+"Uttar Pradesh","Meerut",18
+"Uttar Pradesh","Mirzapur",54
+"Uttar Pradesh","Moradabad",9
+"Uttar Pradesh","Muzaffarnagar",17
+"Uttar Pradesh","Naini Tal",7
+"Uttar Pradesh","Pilibhit",13
+"Uttar Pradesh","Pithoragarh",5
+"Uttar Pradesh","Pratapgarh",45
+"Uttar Pradesh","Rae Bareli",39
+"Uttar Pradesh","Rampur",11
+"Uttar Pradesh","Saharanpur",16
+"Uttar Pradesh","Shahjahanpur",14
+"Uttar Pradesh","Sitapur",35
+"Uttar Pradesh","Sultanpur",44
+"Uttar Pradesh","Tehri Garhwal",3
+"Uttar Pradesh","Unnao",37
+"Uttar Pradesh","Uttar Kashi",1
+"Uttar Pradesh","Varanasi",53
+"West Bengal","Bankura",14
+"West Bengal","Birbhum",13
+"West Bengal","Burdwan",12
+"West Bengal","Calcutta",10
+"West Bengal","Cooch Behar",3
+"West Bengal","Darjeeling",1
+"West Bengal","Hooghly",11
+"West Bengal","Howrah",9
+"West Bengal","Jalpaiguri",2
+"West Bengal","Malda",5
+"West Bengal","Midnapore",15
+"West Bengal","Murshidabad",6
+"West Bengal","Nadia",7
+"West Bengal","Purulia",16
+"West Bengal","Twenty Four Parganas",8
+"West Bengal","West Dinajpur",4

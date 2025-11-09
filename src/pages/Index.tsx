@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { DISTRICT_MAP_TYPES, DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
+import Credits from '@/components/Credits';
 import { Github } from 'lucide-react';
 
 interface StateMapData {
@@ -110,10 +111,11 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="states">States</TabsTrigger>
             <TabsTrigger value="districts">Districts</TabsTrigger>
             <TabsTrigger value="help">Help</TabsTrigger>
+            <TabsTrigger value="credits">Credits</TabsTrigger>
           </TabsList>
           
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
@@ -394,6 +396,10 @@ bv$show_map(result_nfhs5)`}
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className={`space-y-6 ${activeTab === 'credits' ? 'block' : 'hidden'}`}>
+            <Credits />
           </div>
         </Tabs>
       </div>

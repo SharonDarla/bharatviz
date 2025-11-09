@@ -137,17 +137,21 @@ export class ExportService {
       throw new Error('Invalid SVG: no SVG element found');
     }
 
-    const originalDocument = (global as any).document;
-    const originalWindow = (global as any).window;
+    const originalDocument = (global as { document?: Document }).document;
+    const originalWindow = (global as { window?: Window }).window;
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).document = dom.window.document;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).window = dom.window;
 
-      const svg2pdf = (svg2pdfModule as any).svg2pdf || svg2pdfModule;
+      const svg2pdf = (svg2pdfModule as unknown as (svg: SVGElement, pdf: jsPDF, options: Record<string, number>) => Promise<jsPDF>);
       await svg2pdf(svgElement, pdf, { x, y, width: scaledWidth, height: scaledHeight });
     } finally {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).document = originalDocument;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).window = originalWindow;
     }
 
