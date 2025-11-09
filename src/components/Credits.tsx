@@ -166,38 +166,13 @@ const Credits: React.FC = () => {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors underline text-sm"
                 >
-                  Visit Source
+                  Visit source
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </div>
             </div>
           </div>
         ))}
-      </div>
-
-      <div className="border-t pt-6">
-        <h2 className="text-xl font-bold mb-4">Technology Stack</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="border rounded-lg p-4 bg-muted/50">
-            <h3 className="font-semibold mb-2">Frontend</h3>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• React - UI framework</li>
-              <li>• D3.js - Data visualization</li>
-              <li>• Tailwind CSS - Styling</li>
-              <li>• shadcn/ui - UI components</li>
-            </ul>
-          </div>
-
-          <div className="border rounded-lg p-4 bg-muted/50">
-            <h3 className="font-semibold mb-2">Build & Tools</h3>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Vite - Build tool</li>
-              <li>• TypeScript - Type safety</li>
-              <li>• jsPDF - PDF export</li>
-              <li>• html2canvas - Screenshot export</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );
