@@ -70,13 +70,15 @@ const Credits: React.FC = () => {
       <div className="border rounded-lg p-6 bg-muted/50">
         <h2 className="text-xl font-bold mb-3">About BharatViz</h2>
         <p className="text-muted-foreground mb-4">
-          BharatViz is an open-source tool for creating fast, interactive choropleths (thematic maps) of India at state and district levels. BharatViz is made possible by the community efforts of collating shapefiles (geojsons) for India across the years. Sources and contributors are mentioned below. We thank all the contributors for generating and sharing the shape files!
+          BharatViz is an open-source tool for creating fast, interactive choropleths (thematic maps) of India at state and district levels. 
         </p>
       </div>
 
       <div className="border rounded-lg p-6 bg-primary/5 border-primary/20">
         <h2 className="text-lg font-bold mb-3">Special Thanks</h2>
         <p className="text-muted-foreground">
+			  BharatViz is made possible by the community efforts of collating shapefiles (geojsons) for India across the years. 
+			  Sources and contributors are mentioned below. We thank all the contributors for generating and sharing the shape files!
           In particular, we would like to thank{' '}
           <a
             href="https://github.com/ramSeraph/"
@@ -111,7 +113,7 @@ const Credits: React.FC = () => {
             rel="noopener noreferrer"
             className="text-primary hover:text-primary/80 underline transition-colors"
           >
-            India State Stores
+            India State Stories
           </a>
           .
         </p>
