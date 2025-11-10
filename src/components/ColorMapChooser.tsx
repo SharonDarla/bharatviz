@@ -26,6 +26,10 @@ interface ColorMapChooserProps {
   onHideValuesChange?: (hide: boolean) => void;
   showStateBoundaries?: boolean;
   onShowStateBoundariesChange?: (show: boolean) => void;
+  hideDistrictNames?: boolean;
+  onHideDistrictNamesChange?: (hide: boolean) => void;
+  hideDistrictValues?: boolean;
+  onHideDistrictValuesChange?: (hide: boolean) => void;
   colorBarSettings?: ColorBarSettings;
   onColorBarSettingsChange?: (settings: ColorBarSettings) => void;
 }
@@ -52,7 +56,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, colorBarSettings, onColorBarSettingsChange }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -238,6 +242,26 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
               onChange={e => onShowStateBoundariesChange(e.target.checked)}
             />
             Show state boundaries
+          </label>
+        )}
+        {hideDistrictNames !== undefined && onHideDistrictNamesChange && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={hideDistrictNames}
+              onChange={e => onHideDistrictNamesChange(e.target.checked)}
+            />
+            Hide district names
+          </label>
+        )}
+        {hideDistrictValues !== undefined && onHideDistrictValuesChange && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={hideDistrictValues}
+              onChange={e => onHideDistrictValuesChange(e.target.checked)}
+            />
+            Hide district values
           </label>
         )}
       </div>

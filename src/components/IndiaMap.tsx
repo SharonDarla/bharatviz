@@ -43,7 +43,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
 
-  // Legend state
   const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>(DEFAULT_LEGEND_POSITION.STATES);
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -56,19 +55,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [legendMean, setLegendMean] = useState('');
   const [legendMax, setLegendMax] = useState('');
   const [hoveredState, setHoveredState] = useState<{ state: string; value?: number } | null>(null);
-  
-  // Main title state
+
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
-  
+
   const isMobile = useIsMobile();
 
-  // Update legend position when mobile state changes
   useEffect(() => {
     setLegendPosition(isMobile ? { x: -10, y: 160 } : DEFAULT_LEGEND_POSITION.STATES);
   }, [isMobile]);
 
-  // Update legend title when dataTitle changes
   useEffect(() => {
     if (dataTitle) {
       setLegendTitle(dataTitle);

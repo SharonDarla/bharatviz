@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, useCallback, useMemo } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { scaleSequential } from 'd3-scale';
@@ -6,10 +6,12 @@ import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCo
 import { extent } from 'd3-array';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
+import polylabel from 'polylabel';
 import { type ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
 import { DiscreteLegend } from '@/lib/discreteLegend';
+import { createRotationCalculator, isPointInPolygon } from '@/lib/rotationUtils';
 
 interface DistrictMapData {
   state: string;
@@ -26,6 +28,13 @@ interface IndiaDistrictsMapProps {
   colorBarSettings?: ColorBarSettings;
   geojsonPath?: string;
   statesGeojsonPath?: string;
+  selectedState?: string; // Optional: if provided, only show this state's districts
+  gistUrlProvider?: (stateName: string) => string | null; // Optional: function to get gist URL for a state
+  hideDistrictNames?: boolean; // Optional: hide district name labels (defaults to true)
+  hideDistrictValues?: boolean; // Optional: hide district value labels
+  onHideDistrictNamesChange?: (hidden: boolean) => void; // Callback when hiding district names
+  onHideDistrictValuesChange?: (hidden: boolean) => void; // Callback when hiding district values
+  enableRotation?: boolean; // Optional: enable expensive rotation calculation (defaults to false)
 }
 
 export interface IndiaDistrictsMapRef {
@@ -38,8 +47,11 @@ export interface IndiaDistrictsMapRef {
 interface GeoJSONFeature {
   type: string;
   properties: {
-    state_name: string;
-    district_name: string;
+    state_name?: string;
+    district_name?: string;
+    NAME_1?: string;
+    name?: string;
+    ST_NM?: string;
   };
   geometry: {
     type: 'Polygon' | 'MultiPolygon';
@@ -81,7 +93,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   showStateBoundaries = true,
   colorBarSettings,
   geojsonPath = '/India_LGD_Districts_simplified.geojson',
-  statesGeojsonPath = '/India_LGD_states.geojson'
+  statesGeojsonPath = '/India_LGD_states.geojson',
+  selectedState,
+  gistUrlProvider,
+  hideDistrictNames = true,
+  hideDistrictValues = false,
+  onHideDistrictNamesChange,
+  onHideDistrictValuesChange,
+  enableRotation = false
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -89,8 +108,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
-  
-  // Legend state
+
   const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>({ x: 390, y: 200 });
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -103,23 +121,31 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [legendMax, setLegendMax] = useState('');
   const [editingMean, setEditingMean] = useState(false);
 
+  const [labelPositions, setLabelPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const [draggingLabel, setDraggingLabel] = useState<{ districtKey: string; offset: { x: number; y: number } } | null>(null);
+  const [labelDragOffset, setLabelDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const rotationCalculator = useRef(createRotationCalculator());
   const isMobile = useIsMobile();
 
-  // Update legend position when mobile state changes
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: -10, y: 160 } : { x: 390, y: 200 });
-  }, [isMobile]);
+    if (isMobile) {
+      setLegendPosition({ x: -10, y: 160 });
+    } else if (selectedState) {
+      setLegendPosition({ x: 550, y: 100 });
+    } else {
+      setLegendPosition({ x: 390, y: 200 });
+    }
+  }, [isMobile, selectedState]);
 
-  // Update legend title when dataTitle changes
   useEffect(() => {
     if (dataTitle) {
       setLegendTitle(dataTitle);
     }
   }, [dataTitle]);
 
-  // Update legend values when data changes
   useEffect(() => {
     if (data.length > 0) {
       const values = data.map(d => d.value).filter(v => !isNaN(v));
@@ -137,29 +163,63 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   }, [data]);
 
   useEffect(() => {
-    Promise.all([
-      fetch(geojsonPath).then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+    const loadGeoData = async () => {
+      try {
+        let districtsData;
+
+        if (gistUrlProvider && selectedState) {
+          const gistUrl = gistUrlProvider(selectedState);
+          if (gistUrl) {
+            const response = await fetch(gistUrl);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            districtsData = await response.json();
+          } else {
+            const response = await fetch(geojsonPath);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            districtsData = await response.json();
+          }
+        } else {
+          const response = await fetch(geojsonPath);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          districtsData = await response.json();
         }
-        return response.json();
-      }),
-      fetch(statesGeojsonPath).then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+
+        const statesResponse = await fetch(statesGeojsonPath);
+        if (!statesResponse.ok) {
+          throw new Error(`HTTP error! status: ${statesResponse.status}`);
         }
-        return response.json();
-      })
-    ])
-      .then(([districtsData, statesDataResponse]) => {
-        setGeojsonData(districtsData);
+        const statesDataResponse = await statesResponse.json();
+
+        let filteredDistrictsData = districtsData;
+        if (selectedState) {
+          filteredDistrictsData = {
+            ...districtsData,
+            features: districtsData.features.filter(
+              (feature: GeoJSONFeature) => feature.properties.state_name === selectedState
+            )
+          };
+        }
+
+        setGeojsonData(filteredDistrictsData);
         setStatesData(statesDataResponse);
-        calculateBounds(districtsData);
-      })
-      .catch(error => {
-        // GeoJSON loading failed - component will show loading state
-      });
-  }, [geojsonPath, statesGeojsonPath]);
+        calculateBounds(filteredDistrictsData);
+      } catch (error) {
+        console.error('Failed to load GeoJSON data:', error);
+      }
+    };
+
+    loadGeoData();
+  }, [geojsonPath, statesGeojsonPath, selectedState, gistUrlProvider]);
+
+  useEffect(() => {
+    rotationCalculator.current.clearCache();
+  }, [geojsonData]);
 
   const calculateBounds = (data: { features: GeoJSONFeature[] }) => {
     let minLng = Infinity, maxLng = -Infinity;
@@ -194,15 +254,421 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     setBounds({ minLng, maxLng, minLat, maxLat });
   };
 
-  // D3 gradient for legend (only for continuous mode)
+  const isPointInPolygon = (point: { lng: number; lat: number }, polygon: number[][]): boolean => {
+    const [lng, lat] = [point.lng, point.lat];
+    let inside = false;
+    const epsilon = 1e-10;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+
+      const onEdge = Math.abs(yi - yj) < epsilon ?
+        Math.abs(lat - yi) < epsilon && Math.min(xi, xj) <= lng && lng <= Math.max(xi, xj) :
+        false;
+
+      if (onEdge) return true;
+
+      const intersect = ((yi > lat) !== (yj > lat))
+          && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  };
+
+  const isValidLabelPosition = (
+    position: { lng: number; lat: number },
+    polygon: number[][]
+  ): boolean => {
+    return isPointInPolygon(position, polygon);
+  };
+
+  const isPointInFeature = (point: { lng: number; lat: number }, feature: GeoJSONFeature): boolean => {
+    if (feature.geometry.type === 'MultiPolygon') {
+      return feature.geometry.coordinates.some(polygon => 
+        isPointInPolygon(point, polygon[0] as number[][])
+      );
+    } else if (feature.geometry.type === 'Polygon') {
+      return isPointInPolygon(point, feature.geometry.coordinates[0] as number[][]);
+    }
+    return false;
+  };
+
+  const calculateDistrictBounds = (feature: GeoJSONFeature): {
+    minLng: number; maxLng: number; minLat: number; maxLat: number;
+    width: number; height: number;
+  } => {
+    let minLng = Infinity, maxLng = -Infinity;
+    let minLat = Infinity, maxLat = -Infinity;
+
+    const processCoordinates = (coords: number[] | number[][]) => {
+      if (Array.isArray(coords[0])) {
+        (coords as number[][]).forEach(processCoordinates);
+      } else {
+        const [lng, lat] = coords as number[];
+        minLng = Math.min(minLng, lng);
+        maxLng = Math.max(maxLng, lng);
+        minLat = Math.min(minLat, lat);
+        maxLat = Math.max(maxLat, lat);
+      }
+    };
+
+    if (feature.geometry.type === 'MultiPolygon') {
+      feature.geometry.coordinates.forEach(polygon => {
+        (polygon as number[][][]).forEach(ring => {
+          processCoordinates(ring);
+        });
+      });
+    } else if (feature.geometry.type === 'Polygon') {
+      (feature.geometry.coordinates as number[][][]).forEach(ring => {
+        processCoordinates(ring);
+      });
+    }
+
+    return {
+      minLng, maxLng, minLat, maxLat,
+      width: maxLng - minLng,
+      height: maxLat - minLat
+    };
+  };
+
+  const calculateDistrictArea = (feature: GeoJSONFeature): number => {
+    let area = 0;
+
+    const calculatePolygonArea = (coords: number[][]): number => {
+      let polygonArea = 0;
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [lng1, lat1] = coords[i];
+        const [lng2, lat2] = coords[i + 1];
+        polygonArea += (lng1 * lat2) - (lng2 * lat1);
+      }
+      return Math.abs(polygonArea) / 2;
+    };
+
+    if (feature.geometry.type === 'MultiPolygon') {
+      feature.geometry.coordinates.forEach(polygon => {
+        area += calculatePolygonArea(polygon[0] as number[][]);
+      });
+    } else if (feature.geometry.type === 'Polygon') {
+      area += calculatePolygonArea(feature.geometry.coordinates[0] as number[][]);
+    }
+
+    return area;
+  };
+
+  const calculateArea = (ring: number[][]): number => {
+    let s = 0.0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      s += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+    }
+    return 0.5 * s;
+  };
+
+  const calculateSinglePolygonCentroid = (ring: number[][]): [number, number] => {
+    const c: [number, number] = [0, 0];
+    for (let i = 0; i < ring.length - 1; i++) {
+      const cross = ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+      c[0] += (ring[i][0] + ring[i + 1][0]) * cross;
+      c[1] += (ring[i][1] + ring[i + 1][1]) * cross;
+    }
+    const a = calculateArea(ring);
+    c[0] /= a * 6;
+    c[1] /= a * 6;
+    return c;
+  };
+
+  const calculateDistrictCentroid = (feature: GeoJSONFeature): { lng: number; lat: number } | null => {
+    const geometry = feature.geometry;
+
+    if (geometry.type === 'Polygon') {
+      const ring = (geometry.coordinates as number[][][])[0];
+      const [lng, lat] = calculateSinglePolygonCentroid(ring);
+      return { lng, lat };
+    } else if (geometry.type === 'MultiPolygon') {
+      const coordinates = geometry.coordinates as number[][][][];
+      let largestPolygon = coordinates[0];
+      let largestArea = calculateArea(coordinates[0][0]);
+
+      for (let i = 1; i < coordinates.length; i++) {
+        const polygonArea = calculateArea(coordinates[i][0]);
+        if (polygonArea > largestArea) {
+          largestArea = polygonArea;
+          largestPolygon = coordinates[i];
+        }
+      }
+
+      const ring = largestPolygon[0];
+      const [lng, lat] = calculateSinglePolygonCentroid(ring);
+      return { lng, lat };
+    }
+
+    return null;
+  };
+
+  // Calculate convex hull using Graham scan algorithm
+  const calculateConvexHull = (points: number[][]): number[][] => {
+    if (points.length <= 3) return points;
+
+    // Sort points lexicographically (first by x, then by y)
+    const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    // Cross product of vectors OA and OB
+    const cross = (o: number[], a: number[], b: number[]): number => {
+      return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    };
+
+    // Build lower hull
+    const lower: number[][] = [];
+    for (let i = 0; i < sorted.length; i++) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], sorted[i]) <= 0) {
+        lower.pop();
+      }
+      lower.push(sorted[i]);
+    }
+
+    // Build upper hull
+    const upper: number[][] = [];
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], sorted[i]) <= 0) {
+        upper.pop();
+      }
+      upper.push(sorted[i]);
+    }
+
+    // Remove last point of each half because it's repeated
+    lower.pop();
+    upper.pop();
+
+    return lower.concat(upper);
+  };
+
+  // Calculate medoid of a set of points (point that minimizes sum of distances to all other points)
+  const calculateMedoid = (points: number[][]): number[] => {
+    if (points.length === 0) return [0, 0];
+    if (points.length === 1) return points[0];
+
+    let minTotalDistance = Infinity;
+    let medoid = points[0];
+
+    for (let i = 0; i < points.length; i++) {
+      let totalDistance = 0;
+      for (let j = 0; j < points.length; j++) {
+        const dx = points[i][0] - points[j][0];
+        const dy = points[i][1] - points[j][1];
+        totalDistance += Math.sqrt(dx * dx + dy * dy);
+      }
+
+      if (totalDistance < minTotalDistance) {
+        minTotalDistance = totalDistance;
+        medoid = points[i];
+      }
+    }
+
+    return medoid;
+  };
+
+  // Calculate principal axis angle using covariance matrix
+  const calculatePrincipalAxisAngle = (feature: GeoJSONFeature): number => {
+    const geometry = feature.geometry;
+    let coordinates: number[][] = [];
+    let centroidX = 0, centroidY = 0;
+
+    if (geometry.type === 'Polygon') {
+      coordinates = (geometry.coordinates as number[][][])[0];
+      const [lng, lat] = calculateSinglePolygonCentroid(coordinates);
+      centroidX = lng;
+      centroidY = lat;
+    } else if (geometry.type === 'MultiPolygon') {
+      // For MultiPolygon, use the largest polygon
+      let largestPolygon = (geometry.coordinates[0] as number[][][])[0];
+      let maxArea = 0;
+
+      (geometry.coordinates as number[][][][]).forEach(polygon => {
+        const ring = (polygon as number[][][])[0];
+        const a = Math.abs(calculateArea(ring));
+
+        if (a > maxArea) {
+          maxArea = a;
+          largestPolygon = ring;
+        }
+      });
+
+      coordinates = largestPolygon;
+      const [lng, lat] = calculateSinglePolygonCentroid(coordinates);
+      centroidX = lng;
+      centroidY = lat;
+    }
+
+    if (coordinates.length < 2) return 0;
+
+    // Calculate covariance matrix elements
+    let cov_xx = 0, cov_yy = 0, cov_xy = 0;
+    coordinates.forEach(([x, y]) => {
+      const dx = x - centroidX;
+      const dy = y - centroidY;
+      cov_xx += dx * dx;
+      cov_yy += dy * dy;
+      cov_xy += dx * dy;
+    });
+
+    // Normalize
+    const n = coordinates.length;
+    cov_xx /= n;
+    cov_yy /= n;
+    cov_xy /= n;
+
+    // Calculate eigenvalues and eigenvectors
+    // For 2x2 matrix, the eigenvector of the largest eigenvalue is the principal axis
+    const trace = cov_xx + cov_yy;
+    const det = cov_xx * cov_yy - cov_xy * cov_xy;
+    const discriminant = Math.sqrt(trace * trace / 4 - det);
+    const lambda1 = trace / 2 + discriminant; // Largest eigenvalue
+
+    // Eigenvector corresponding to lambda1
+    let vx, vy;
+    if (Math.abs(cov_xy) > 1e-10) {
+      vx = lambda1 - cov_yy;
+      vy = cov_xy;
+    } else if (Math.abs(cov_xx - cov_yy) > 1e-10) {
+      vx = cov_xy;
+      vy = lambda1 - cov_xx;
+    } else {
+      vx = 1;
+      vy = 0;
+    }
+
+    // Normalize eigenvector
+    const len = Math.sqrt(vx * vx + vy * vy);
+    if (len > 1e-10) {
+      vx /= len;
+      vy /= len;
+    }
+
+    // Calculate angle in degrees
+    const angle = Math.atan2(vy, vx) * (180 / Math.PI);
+    return angle;
+  };
+
+  // same projection logic as projectCoordinate()
+  const geoToScreen = (lng: number, lat: number): { x: number; y: number } => {
+    const mapWidth = isMobile ? 320 : 760;
+    const mapHeight = isMobile ? 400 : 850;
+    const offsetXParam = isMobile ? 55 : 45;
+    const offsetYParam = isMobile ? 15 : 20;
+
+    if (!bounds) return { x: 0, y: 0 };
+
+    const geoWidth = bounds.maxLng - bounds.minLng;
+    const geoHeight = bounds.maxLat - bounds.minLat;
+    const geoAspectRatio = geoWidth / geoHeight;
+
+    const canvasAspectRatio = mapWidth / mapHeight;
+
+    let projectionWidth = mapWidth;
+    let projectionHeight = mapHeight;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (geoAspectRatio > canvasAspectRatio) {
+      projectionHeight = mapWidth / geoAspectRatio;
+      offsetY = (mapHeight - projectionHeight) / 2;
+    } else {
+      projectionWidth = mapHeight * geoAspectRatio;
+      offsetX = (mapWidth - projectionWidth) / 2;
+    }
+
+    offsetX += offsetXParam;
+    offsetY += offsetYParam;
+
+    const x = ((lng - bounds.minLng) / geoWidth) * projectionWidth + offsetX;
+    const y = ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY;
+
+    return { x, y };
+  };
+
+  const isPointInsideDistrict = (
+    screenPoint: { x: number; y: number },
+    feature: GeoJSONFeature
+  ): boolean => {
+    if (!bounds) return false;
+
+    const mapWidth = isMobile ? 320 : 760;
+    const mapHeight = isMobile ? 400 : 850;
+    const offsetXParam = isMobile ? 55 : 45;
+    const offsetYParam = isMobile ? 15 : 20;
+
+    let polygonCoords: number[][] = [];
+    if (feature.geometry.type === 'MultiPolygon') {
+      polygonCoords = (feature.geometry.coordinates[0] as number[][][])[0];
+    } else if (feature.geometry.type === 'Polygon') {
+      polygonCoords = (feature.geometry.coordinates as number[][][])[0];
+    }
+
+    if (polygonCoords.length === 0) return false;
+
+    const geoWidth = bounds.maxLng - bounds.minLng;
+    const geoHeight = bounds.maxLat - bounds.minLat;
+    const geoAspectRatio = geoWidth / geoHeight;
+    const canvasAspectRatio = mapWidth / mapHeight;
+
+    let projectionWidth = mapWidth;
+    let projectionHeight = mapHeight;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    if (geoAspectRatio > canvasAspectRatio) {
+      projectionHeight = mapWidth / geoAspectRatio;
+      offsetY = (mapHeight - projectionHeight) / 2;
+    } else {
+      projectionWidth = mapHeight * geoAspectRatio;
+      offsetX = (mapWidth - projectionWidth) / 2;
+    }
+
+    offsetX += offsetXParam;
+    offsetY += offsetYParam;
+
+    const screenPolygon = polygonCoords.map(([lng, lat]) => [
+      ((lng - bounds.minLng) / geoWidth) * projectionWidth + offsetX,
+      ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY
+    ]);
+
+    // Check if point is inside the polygon
+    return isPointInPolygon([screenPoint.x, screenPoint.y], screenPolygon);
+  };
+
+  const wouldLabelsOverlap = (
+    pos1: { x: number; y: number }, text1: string, fontSize1: number,
+    pos2: { x: number; y: number }, text2: string, fontSize2: number
+  ): boolean => {
+    const textWidth1 = text1.length * fontSize1 * 0.6;
+    const textWidth2 = text2.length * fontSize2 * 0.6;
+    const textHeight1 = fontSize1 * 1.2;
+    const textHeight2 = fontSize2 * 1.2;
+
+    const rect1 = {
+      left: pos1.x - textWidth1 / 2,
+      right: pos1.x + textWidth1 / 2,
+      top: pos1.y - textHeight1 / 2,
+      bottom: pos1.y + textHeight1 / 2
+    };
+
+    const rect2 = {
+      left: pos2.x - textWidth2 / 2,
+      right: pos2.x + textWidth2 / 2,
+      top: pos2.y - textHeight2 / 2,
+      bottom: pos2.y + textHeight2 / 2
+    };
+
+    return !(rect1.right < rect2.left || rect1.left > rect2.right ||
+             rect1.bottom < rect2.top || rect1.top > rect2.bottom);
+  };
+
   useEffect(() => {
-    
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
-    // Always remove existing gradient first
     svg.selectAll('#districts-legend-gradient').remove();
-    
-    // If no data or discrete mode, don't create gradient
+
     if (data.length === 0 || colorBarSettings?.isDiscrete) {
       return;
     }
@@ -328,7 +794,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     setHoveredDistrict(null);
   };
 
-  // Drag handlers for legend
   const handleLegendMouseDown = (e: React.MouseEvent) => {
     setDragging(true);
     const svgRect = svgRef.current?.getBoundingClientRect();
@@ -364,11 +829,51 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     }
   }, [dragging, dragOffset, handleLegendMouseMove]);
 
-  // Fix legend gradient for PDF export
+  const handleLabelMouseDown = (e: React.MouseEvent, districtKey: string, currentX: number, currentY: number) => {
+    e.stopPropagation();
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (svgRect) {
+      setDraggingLabel({
+        districtKey,
+        offset: {
+          x: e.clientX - (svgRect.left + currentX),
+          y: e.clientY - (svgRect.top + currentY)
+        }
+      });
+    }
+  };
+
+  const handleLabelMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggingLabel || !svgRef.current) return;
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const newPosition = {
+      x: e.clientX - svgRect.left - draggingLabel.offset.x,
+      y: e.clientY - svgRect.top - draggingLabel.offset.y
+    };
+
+    const newPositions = new Map(labelPositions);
+    newPositions.set(draggingLabel.districtKey, newPosition);
+    setLabelPositions(newPositions);
+  }, [draggingLabel, labelPositions]);
+
+  const handleLabelMouseUp = () => {
+    setDraggingLabel(null);
+  };
+
+  useEffect(() => {
+    if (draggingLabel) {
+      document.addEventListener('mousemove', handleLabelMouseMove);
+      document.addEventListener('mouseup', handleLabelMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleLabelMouseMove);
+        document.removeEventListener('mouseup', handleLabelMouseUp);
+      };
+    }
+  }, [draggingLabel, handleLabelMouseMove]);
+
   const fixDistrictsLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
-    
-    // Get the available color scales from the component
+
     const colorScales = {
       spectral: (t: number) => d3.interpolateSpectral(1 - t), 
       rdylbu: d3.interpolateRdYlBu,
@@ -388,7 +893,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       magma: d3.interpolateMagma
     };
 
-    const getColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
+    const getLocalColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
       if (value === undefined || !dataExtent || isNaN(value)) return '#d1d5db';
 
       const [minVal, maxVal] = dataExtent;
@@ -460,11 +965,9 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     gradients.forEach(gradient => gradient.remove());
   };
 
-  // Fallback PDF export method
   const exportDistrictsFallbackPDF = async () => {
     if (!svgRef.current) return;
-    
-    // Use the same high-quality approach as PNG export
+
     const svg = svgRef.current;
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement('canvas');
@@ -657,10 +1160,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         
         // Use svg2pdf.js for true vector conversion
         await svg2pdf(svgClone, pdf, {
-          xOffset: x,
-          yOffset: y,
-          scale: scale,
-          preserveAspectRatio: 'xMidYMid meet',
+          x: x,
+          y: y,
           width: finalWidth,
           height: finalHeight
         });
@@ -689,6 +1190,31 @@ Chittoor,50`;
       saveAs(blob, 'districts-template.csv');
     }
   }));
+
+  // PERFORMANCE OPTIMIZATION: Memoize expensive district label calculations
+  // This prevents recalculating for every render (must be before early return)
+  const { districtLabelData, maxArea, minArea, districtDataMap } = useMemo(() => {
+    if (!geojsonData) return { districtLabelData: [], maxArea: 0, minArea: 0, districtDataMap: new Map() };
+
+    // Create a map for O(1) district data lookup instead of O(n) array search
+    const map = new Map<string, number | undefined>();
+    data.forEach(d => {
+      const key = `${d.state.toLowerCase().trim()}|${d.district.toLowerCase().trim()}`;
+      map.set(key, d.value);
+    });
+
+    // Calculate min and max area once instead of for every feature
+    let max = 0;
+    let min = Infinity;
+    const labels = geojsonData.features.map(feature => {
+      const area = calculateDistrictArea(feature);
+      if (area > max) max = area;
+      if (area < min) min = area;
+      return { feature, area };
+    });
+
+    return { districtLabelData: labels, maxArea: max, minArea: min === Infinity ? 0 : min, districtDataMap: map };
+  }, [geojsonData, data]);
 
   if (!geojsonData || !bounds) {
     return (
@@ -743,8 +1269,226 @@ Chittoor,50`;
                 );
               })}
               
+              {/* District Name Labels - OPTIMIZED with dragging and values */}
+              {((!hideDistrictNames && !hideDistrictValues) || (!hideDistrictNames) || (!hideDistrictValues)) && districtLabelData.length > 0 && (
+                <g className="district-labels">
+                  {districtLabelData.map(({ feature, area }, index) => {
+                    const districtName = feature.properties.district_name || '';
+                    const stateName = feature.properties.state_name || '';
+                    if (!districtName) return null;
+
+                    // Calculate bounds for rotation purposes
+                    const bounds = calculateDistrictBounds(feature);
+
+                    // Extract polygon coordinates in GeoJSON format [lng, lat]
+                    let polygonCoords: number[][][] = [];
+                    if (feature.geometry.type === 'MultiPolygon') {
+                      // For MultiPolygon, find the largest polygon by area to use with polylabel
+                      const allPolygons = feature.geometry.coordinates as number[][][][];
+                      let largestPolygon = allPolygons[0];
+                      let largestArea = calculateArea(allPolygons[0][0]);
+
+                      for (let i = 1; i < allPolygons.length; i++) {
+                        const polygonArea = calculateArea(allPolygons[i][0]);
+                        if (polygonArea > largestArea) {
+                          largestArea = polygonArea;
+                          largestPolygon = allPolygons[i];
+                        }
+                      }
+
+                      polygonCoords = largestPolygon;
+                    } else if (feature.geometry.type === 'Polygon') {
+                      polygonCoords = feature.geometry.coordinates as number[][][];
+                    }
+
+                    // Calculate font size first (needed for text fitting validation)
+                    const minFontSize = isMobile ? 6 : 7;
+                    const maxFontSize = isMobile ? 16 : 18;
+
+                    // Normalize area to 0-1 range
+                    const areaRange = maxArea - minArea;
+                    const normalizedArea = areaRange > 0 ? (area - minArea) / areaRange : 0.5;
+
+                    // Apply non-linear scaling (square root) to make the progression smoother
+                    // Smaller districts get proportionally smaller fonts
+                    const scaledArea = Math.sqrt(normalizedArea);
+
+                    // Map scaled area to font size range, then apply 0.65 scaling factor
+                    const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
+                    const finalFontSize = baseFinalFontSize * 0.65;
+
+                    const optimalPoint = polylabel(polygonCoords, 0.00000001);
+
+                    // Calculate principal axis angle for text rotation
+                    const principalAxisAngle = calculatePrincipalAxisAngle(feature);
+
+                    // Validate positions and use fallback chain
+                    // Priority: centroid (most reliable) → polylabel → bounding box center
+                    const outerRing = polygonCoords[0];
+                    const textRotationAngle = 0;
+
+                    // Calculate fallback positions upfront
+                    const centroid = calculateDistrictCentroid(feature);
+                    const districtBounds = calculateDistrictBounds(feature);
+                    const boundingBoxCenter = {
+                      lng: (districtBounds.minLng + districtBounds.maxLng) / 2,
+                      lat: (districtBounds.minLat + districtBounds.maxLat) / 2
+                    };
+                    const polylabelPoint = { lng: optimalPoint[0], lat: optimalPoint[1] };
+
+                    // Use centroid first (mathematically guaranteed to be inside for simple polygons)
+                    // For complex polygons with islands, we use the largest polygon's centroid
+                    let positionCoords = centroid;
+                    let positionSource = 'centroid';
+
+                    // Only use polylabel if centroid is not available or validation fails
+                    if (!centroid) {
+                      if (isValidLabelPosition(polylabelPoint, outerRing)) {
+                        positionCoords = polylabelPoint;
+                        positionSource = 'polylabel';
+                      } else if (isValidLabelPosition(boundingBoxCenter, outerRing)) {
+                        positionCoords = boundingBoxCenter;
+                        positionSource = 'bounding-box-center';
+                      } else {
+                        // Final fallback: use polylabel anyway
+                        positionCoords = polylabelPoint;
+                        positionSource = 'polylabel-fallback';
+                      }
+                    }
+
+                    const polylabelScreen = geoToScreen(positionCoords.lng, positionCoords.lat);
+                    const centroidScreen = centroid ? geoToScreen(centroid.lng, centroid.lat) : null;
+                    const boundingBoxCenterScreen = geoToScreen(boundingBoxCenter.lng, boundingBoxCenter.lat);
+
+                    // Calculate left offset for text positioning
+                    // Estimate character width as 0.6 * font size
+                    const charWidthPixels = finalFontSize * 0.6;
+                    const textWidthPixels = charWidthPixels * districtName.length;
+                    // Offset text to start more left (shift by entire text width)
+                    const leftOffsetPixels = textWidthPixels;
+
+                    // Use polylabel center for text positioning, but shifted left along x-axis and down along y-axis
+                    // Use full text width offset for x-axis, but half for y-axis
+                    let labelPosition = {
+                      x: polylabelScreen.x - leftOffsetPixels,
+                      y: polylabelScreen.y + leftOffsetPixels / 2
+                    };
+
+                    // Calculate convex hull medoid and polygon boundary medoid
+                    let medoidScreen = null;
+                    let polygonMedianScreen = null;
+
+                    if (feature.geometry.type === 'Polygon') {
+                      const outerRing = (feature.geometry.coordinates as number[][][])[0];
+                      const convexHull = calculateConvexHull(outerRing);
+                      const medoid = calculateMedoid(convexHull);
+                      medoidScreen = geoToScreen(medoid[0], medoid[1]);
+
+                      // Also calculate medoid of the polygon boundary itself (concave)
+                      const polygonMedian = calculateMedoid(outerRing);
+                      polygonMedianScreen = geoToScreen(polygonMedian[0], polygonMedian[1]);
+                    } else if (feature.geometry.type === 'MultiPolygon') {
+                      const allCoordinates: number[][] = [];
+                      (feature.geometry.coordinates as number[][][][]).forEach(polygon => {
+                        const ring = polygon[0];
+                        allCoordinates.push(...ring);
+                      });
+                      const convexHull = calculateConvexHull(allCoordinates);
+                      const medoid = calculateMedoid(convexHull);
+                      medoidScreen = geoToScreen(medoid[0], medoid[1]);
+
+                      // Also calculate medoid of all polygon boundaries
+                      const polygonMedian = calculateMedoid(allCoordinates);
+                      polygonMedianScreen = geoToScreen(polygonMedian[0], polygonMedian[1]);
+                    }
+
+                    // Apply custom position if user has dragged the label
+                    const districtKey = `${stateName}|${districtName}`;
+                    const customPosition = labelPositions.get(districtKey);
+                    if (customPosition) {
+                      labelPosition = customPosition;
+                    }
+
+                    // Fast O(1) lookup using memoized map instead of array search
+                    const lookupKey = `${stateName.toLowerCase().trim()}|${districtName.toLowerCase().trim()}`;
+                    const districtValue = districtDataMap.get(lookupKey);
+                    const fillColor = getDistrictColorForValue(districtValue, dataExtent);
+
+                    // Text color based on fill color (same logic as State tab)
+                    const textColor = (fillColor === 'white' || !isColorDark(fillColor)) ? "#0f172a" : "#ffffff";
+
+                    // For Individual State tab, always show district names
+                    if (hideDistrictNames) return null;
+
+                    // Calculate principal axis but no rotation for now (0 degrees)
+                    // Use polylabel's visual center as the label position
+                    const rotationAngle = 0;
+                    const transform = `translate(${labelPosition.x}, ${labelPosition.y}) rotate(${rotationAngle})`;
+
+                    return (
+                      <g key={`label-group-${index}`} transform={transform}>
+                        {/* District name */}
+                        <text
+                          x={0}
+                          y={-finalFontSize / 2}
+                          textAnchor="start"
+                          dominantBaseline="middle"
+                          style={{
+                            fontFamily: 'Arial, Helvetica, sans-serif',
+                            fontSize: `${finalFontSize}px`,
+                            fontWeight: '600',
+                            fill: textColor,
+                            pointerEvents: 'auto',
+                            userSelect: 'none',
+                            cursor: draggingLabel?.districtKey === districtKey ? 'grabbing' : 'grab',
+                            opacity: 1
+                          }}
+                          onMouseDown={(e) => handleLabelMouseDown(e, districtKey, labelPosition.x, labelPosition.y)}
+                        >
+                          {districtName}
+                        </text>
+                        {/* District value - only show if data exists */}
+                        {districtValue !== undefined && (
+                          <text
+                            x={0}
+                            y={finalFontSize / 2}
+                            textAnchor="start"
+                            dominantBaseline="middle"
+                            style={{
+                              fontFamily: 'Arial, Helvetica, sans-serif',
+                              fontSize: `${finalFontSize * 0.7}px`,
+                              fontWeight: '400',
+                              fill: textColor,
+                              pointerEvents: 'none',
+                              userSelect: 'none',
+                              opacity: 0.8
+                            }}
+                          >
+                            {roundToSignificantDigits(districtValue)}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </g>
+              )}
+
               {/* State boundaries overlay */}
-              {showStateBoundaries && statesData && statesData.features.map((stateFeature, index) => {
+              {showStateBoundaries && statesData && statesData.features
+                .filter(stateFeature => {
+                  // If selectedState is provided, only show that state's boundary
+                  if (selectedState) {
+                    // Check various possible state name properties in the GeoJSON
+                    const stateName = stateFeature.properties.state_name || 
+                                     stateFeature.properties.NAME_1 || 
+                                     stateFeature.properties.name || 
+                                     stateFeature.properties.ST_NM;
+                    return stateName === selectedState;
+                  }
+                  // If no selectedState, show all state boundaries (for Districts tab)
+                  return true;
+                })
+                .map((stateFeature, index) => {
                 const mapWidth = isMobile ? 320 : 760;
                 const mapHeight = isMobile ? 400 : 850;
                 const path = convertCoordinatesToPath(stateFeature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
@@ -960,6 +1704,7 @@ Chittoor,50`;
                 )}
               </div>
             )}
+
     </div>
   );
 });
