@@ -152,7 +152,7 @@
 "Gujarat","The Dangs",23
 "Gujarat","Vadodara",19
 "Gujarat","Valsad",25
-"Gujarat",NA,0
+"Gujarat","Unknown",0
 "Haryana","Ambala",2
 "Haryana","Bhiwani",13
 "Haryana","Faridabad",19
@@ -346,7 +346,7 @@
 "Manipur","Tamenglong",2
 "Manipur","Thoubal",5
 "Manipur","Ukhrul",8
-"Manipur",NA,0
+"Manipur","Unknown",0
 "Meghalaya","East Garo Hills",2
 "Meghalaya","East Khasi Hills",6
 "Meghalaya","Jaintia Hills",7
@@ -592,4 +592,4 @@
 "West Bengal","Puruliya",14
 "West Bengal","South Twenty Four  Parganas",18
 "West Bengal","Uttar Dinajpur",4
-NA,NA,0
+"Unknown","Unknown",0

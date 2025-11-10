@@ -36,7 +36,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-1941-states.geojson',
     templateCsvPath: '/bharatviz-India-1941-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1Fm12cpjf_yRpLd7ZhYvmkxmt7O2oPjjHTDopp0lGMBU/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1IbYD6Jar-OsOj_Fv_DzccmjD7EXp4jXxB8mb-hO7kdg/edit?usp=sharing',
     description: '1941 Census district boundaries - Pre-independence India'
   },
   '1951': {
@@ -47,7 +47,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-1951-states.geojson',
     templateCsvPath: '/bharatviz-India-1951-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1fMjB_Fbsyu-GLggSW50wTwlV2nu6zdyySf3jKRD1j14/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/11PIHVyjUaVcMFGVM_6Vul5OipdZBoFVdXVsGnic1yig/edit?usp=sharing',
     description: '1951 Census district boundaries - First Census of independent India'
   },
   '1961': {
@@ -58,7 +58,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-1961-states.geojson',
     templateCsvPath: '/bharatviz-India-1961-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1O8xxLlKiMC8K7j2wbh9aoacwAU9D4YzFsuz9xieiHco/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1N39YT8SlZdumAysINgvdPvoAA2Y-Ux1-00TXXnSLK1E/edit?usp=sharing',
     description: '1961 Census district boundaries'
   },
   '1971': {
@@ -69,7 +69,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-1971-states.geojson',
     templateCsvPath: '/bharatviz-India-1971-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1y-Qn8hFQEo6kW8qkBVbT8Hhlm_XDx7QXh4siYnpJXMM/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1pZs-9-vfIhhTSJ6tQnjdKlFRxboJyPOsz9w_H8oT280/edit?usp=sharing',
     description: '1971 Census district boundaries'
   },
   '1981': {
@@ -80,7 +80,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-1981-states.geojson',
     templateCsvPath: '/bharatviz-India-1981-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1c0dgecVFSOL2V-eZ-SaJF8QZV-q4_FpJ8eMuPh9z6Eg/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1R0_5WOMIqt4I4CTQsDKLZMO92B-hg_u5vDnH9rZmuGc/edit?usp=sharing',
     description: '1981 Census district boundaries'
   },
   '1991': {
@@ -91,7 +91,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-1991-states.geojson',
     templateCsvPath: '/bharatviz-India-1991-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1GLe11QBFbV682JJ0-6Ztb6sUGAz9jZwB6arxl1b5uso/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1W9f1qAe9yCGi9S5yBk8oYw07xENJRq1IFBQn_4GsM2A/edit?usp=sharing',
     description: '1991 Census district boundaries'
   },
   '2011': {
@@ -102,7 +102,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-2011-states.geojson',
     templateCsvPath: '/bharatviz-India-2011-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1TGYcK7UFpOAqTdoDOJpwu4U5rgBNipveQU9TUxV_AhA/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1MSk8z_EeoYslsSsiFc8E0U-WIgUfrB_bBccilQ1w-o4/edit?usp=sharing',
     description: '2011 Census district boundaries - Current administrative boundaries'
   },
   '2001': {
@@ -113,7 +113,7 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     states: '/India-2001-states.geojson',
     templateCsvPath: '/bharatviz-India-2001-template.csv',
     demoDataPath: '/districts_demo.csv',
-    googleSheetLink: 'https://docs.google.com/spreadsheets/d/13K4P9qauC1MEsbPPM_va6e5AH22zFL5G9QbNCXoy_zw/edit?usp=sharing',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/16R9_SYFUSECOxvY22Va-itATZ4kNjDxZd_7BicnF8MA/edit?usp=sharing',
     description: '2001 Census district boundaries'
   },
 
