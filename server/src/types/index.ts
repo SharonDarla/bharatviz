@@ -75,6 +75,39 @@ export const DistrictsMapRequestSchema = z.object({
 
 export type DistrictsMapRequest = z.infer<typeof DistrictsMapRequestSchema>;
 
+// State-District map request (single state with districts)
+export const StateDistrictMapRequestSchema = z.object({
+  data: z.array(z.object({
+    state: z.string(),
+    district: z.string(),
+    value: z.number()
+  })).min(1, 'At least one data point is required'),
+
+  state: z.string().min(1, 'State name is required'),
+
+  mapType: z.enum(DistrictMapTypes).optional().default('LGD'),
+
+  colorScale: z.enum(ColorScales).optional().default('spectral'),
+
+  invertColors: z.boolean().optional().default(false),
+
+  hideValues: z.boolean().optional().default(false),
+
+  mainTitle: z.string().optional().default('BharatViz'),
+
+  legendTitle: z.string().optional().default('Values'),
+
+  colorBarSettings: z.object({
+    mode: z.enum(['continuous', 'discrete']).default('continuous'),
+    binCount: z.number().min(2).max(20).optional().default(5),
+    customBoundaries: z.array(z.number()).optional()
+  }).optional(),
+
+  formats: z.array(z.enum(['png', 'svg', 'pdf'])).optional().default(['png'])
+});
+
+export type StateDistrictMapRequest = z.infer<typeof StateDistrictMapRequestSchema>;
+
 // Response types
 export interface MapExportResult {
   format: 'png' | 'svg' | 'pdf';

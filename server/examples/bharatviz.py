@@ -438,6 +438,184 @@ class BharatViz:
 
         return image
 
+    def generate_state_districts_map(
+        self,
+        data: Union[List[Dict], pd.DataFrame],
+        state: str,
+        map_type: Literal["LGD", "NFHS5", "NFHS4"] = "LGD",
+        title: str = "BharatViz State Districts",
+        legend_title: str = "Values",
+        color_scale: Literal[
+            "spectral",
+            "rdylbu",
+            "rdylgn",
+            "brbg",
+            "piyg",
+            "puor",
+            "blues",
+            "greens",
+            "reds",
+            "oranges",
+            "purples",
+            "pinks",
+            "viridis",
+            "plasma",
+            "inferno",
+            "magma",
+        ] = "spectral",
+        invert_colors: bool = False,
+        hide_values: bool = False,
+        formats: List[Literal["png", "svg", "pdf"]] = ["png"],
+        show: bool = False,
+        save_path: Optional[str] = None,
+        return_all: bool = False,
+        figsize: tuple = (12, 12),
+    ):
+        """
+        Generate India state-districts choropleth map (single state).
+
+        Parameters
+        ----------
+        data : list of dict or DataFrame
+            Data with 'state', 'district' and 'value' columns/keys
+        state : str
+            State name to display (e.g., 'Rajasthan')
+        map_type : str
+            District map type: 'LGD' (default), 'NFHS5', or 'NFHS4'
+        title : str
+            Main title for the map
+        legend_title : str
+            Title for the color legend
+        color_scale : str
+            Color scale to use (see COLOR_SCALES)
+        invert_colors : bool
+            Whether to invert the color scale
+        hide_values : bool
+            Hide value labels
+        formats : list of str
+            Export formats to generate
+        show : bool
+            Display the map (requires matplotlib)
+        save_path : str, optional
+            Path to save the PNG file
+        return_all : bool
+            Return all export formats instead of just image
+        figsize : tuple
+            Figure size for display (width, height)
+
+        Returns
+        -------
+        PIL.Image or dict
+            Image object if return_all=False, otherwise dict with all exports
+
+        Examples
+        --------
+        >>> bv = BharatViz()
+        >>> data = [{"state": "Rajasthan", "district": "Jaipur", "value": 75.5}]
+        >>> img = bv.generate_state_districts_map(data, state='Rajasthan', map_type='LGD', show=True)
+        >>> bv.generate_state_districts_map(data, state='Rajasthan', save_path="rajasthan.png")
+        """
+        if isinstance(data, pd.DataFrame):
+            required_cols = ["state", "district", "value"]
+            if not all(col in data.columns for col in required_cols):
+                if len(data.columns) >= 3:
+                    data = data.copy()
+                    data.columns = required_cols + list(data.columns[3:])
+                else:
+                    raise BharatVizError(
+                        f"DataFrame must have 'state', 'district' and 'value' columns. "
+                        f"Got: {list(data.columns)}"
+                    )
+            data = data[required_cols].to_dict("records")
+
+        if not data or len(data) == 0:
+            raise BharatVizError("Data cannot be empty")
+
+        if color_scale not in self.COLOR_SCALES:
+            raise BharatVizError(
+                f"Invalid color scale '{color_scale}'. "
+                f"Choose from: {', '.join(self.COLOR_SCALES)}"
+            )
+
+        valid_map_types = ["LGD", "NFHS5", "NFHS4"]
+        if map_type not in valid_map_types:
+            raise BharatVizError(
+                f"Invalid map_type '{map_type}'. "
+                f"Choose from: {', '.join(valid_map_types)}"
+            )
+
+        request_body = {
+            "data": data,
+            "state": state,
+            "mapType": map_type,
+            "colorScale": color_scale,
+            "invertColors": invert_colors,
+            "hideValues": hide_values,
+            "mainTitle": title,
+            "legendTitle": legend_title,
+            "formats": formats,
+        }
+
+        try:
+            response = requests.post(
+                f"{self.api_url}/api/v1/districts/state-districts/map",
+                json=request_body,
+                timeout=60,  # State-districts can take a moment
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise BharatVizError(f"API request failed: {str(e)}")
+
+        # Parse response
+        try:
+            result = response.json()
+        except ValueError:
+            raise BharatVizError("Invalid JSON response from API")
+
+        if not result.get("success"):
+            error_msg = result.get("error", {}).get("message", "Unknown error")
+            raise BharatVizError(f"API error: {error_msg}")
+
+        png_export = next((e for e in result["exports"] if e["format"] == "png"), None)
+
+        if not png_export:
+            raise BharatVizError("PNG export not found in response")
+
+        if not PIL_AVAILABLE:
+            raise BharatVizError(
+                "PIL is required to handle images. Install with: pip install pillow"
+            )
+
+        png_data = png_export["data"]
+        image = Image.open(BytesIO(base64.b64decode(png_data)))
+
+        if save_path:
+            image.save(save_path)
+            print(f"State-districts map saved to: {save_path}")
+
+        if show:
+            if not MPL_AVAILABLE:
+                raise BharatVizError(
+                    "matplotlib is required to display images. "
+                    "Install with: pip install matplotlib"
+                )
+
+            plt.figure(figsize=figsize)
+            plt.imshow(image)
+            plt.axis("off")
+            plt.title(title, fontsize=16, pad=20)
+            plt.tight_layout()
+            plt.show()
+
+        if return_all:
+            return {
+                "image": image,
+                "exports": result["exports"],
+                "metadata": result["metadata"],
+            }
+
+        return image
+
     def get_metadata(self, data: Union[List[Dict], pd.DataFrame]) -> Dict:
         """
         Get metadata about the data without generating a map.

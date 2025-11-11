@@ -34,7 +34,8 @@ library(jsonlite)
 library(base64enc)
 library(png)
 
-# Download the R client if not present
+
+# # Download the R client if not present
 if (!file.exists("bharatviz.R")) {
   download.file(
     "https://gist.githubusercontent.com/saketkc/7b227151bde59dfa31fd2b1dd15f0c67/raw/d13c9cdc7dd814a6be9d53483e4e48e3db6db9db/bhartviz.R",
@@ -309,6 +310,105 @@ bv$show_map(result)
 
 ---
 
+# State-District maps
+
+Display districts of a single state with different boundary definitions. Useful for detailed regional analysis.
+
+## Rajasthan with LGD boundaries
+
+```{r}
+# Debug: Check if bv is available and has the method
+cat("=== DEBUG START ===\n")
+cat("Class of bv:", class(bv), "\n")
+cat("generate_state_districts_map exists:", "generate_state_districts_map" %in% names(bv), "\n")
+cat("=== DEBUG END ===\n")
+```
+
+```{r}
+# District data for Rajasthan only
+rajasthan_districts <- data.frame(
+  state = rep("Rajasthan", 5),
+  district = c("Jaipur", "Jodhpur", "Udaipur", "Ajmer", "Bikaner"),
+  literacy_rate = c(75.5, 68.2, 71.3, 70.1, 67.9)
+)
+
+# Generate state-district map using LGD boundaries
+result <- bv$generate_state_districts_map(
+  rajasthan_districts,
+  state = "Rajasthan",
+  map_type = "LGD",
+  title = "Rajasthan: Literacy rate by district (LGD)",
+  legend_title = "Literacy %",
+  color_scale = "blues"
+)
+bv$show_map(result)
+```
+
+## Rajasthan with NFHS5 boundaries
+
+```{r}
+# Same district data with NFHS5 boundaries
+
+result <- bv$generate_state_districts_map(
+  rajasthan_districts,
+  state = "Rajasthan",
+  map_type = "NFHS5",
+  title = "Rajasthan: Literacy rate by district (NFHS5)",
+  legend_title = "Literacy %",
+  color_scale = "blues"
+)
+bv$show_map(result)
+# Code reference
+```
+
+## Rajasthan with NFHS4 boundaries
+
+```{r}
+# Same data with NFHS4 boundaries
+result <- bv$generate_state_districts_map(
+  rajasthan_districts,
+  state = "Rajasthan",
+  map_type = "NFHS4",
+  title = "Rajasthan: Literacy rate by district (NFHS4)",
+  legend_title = "Literacy %",
+  color_scale = "blues"
+)
+bv$show_map(result)
+```
+
+## Compare different map types for same state
+
+```{r}
+# how boundaries changed between surveys
+result_lgd <- bv$generate_state_districts_map(
+  rajasthan_districts,
+  state = "Rajasthan",
+  map_type = "LGD",
+  title = "LGD Boundaries"
+)
+bv$show_map(result_lgd)
+
+# NFHS5
+result_nfhs5 <- bv$generate_state_districts_map(
+  rajasthan_districts,
+  state = "Rajasthan",
+  map_type = "NFHS5",
+  title = "NFHS5 Boundaries"
+)
+bv$show_map(result_nfhs5)
+
+# NFHS4
+result_nfhs4 <- bv$generate_state_districts_map(
+  rajasthan_districts,
+  state = "Rajasthan",
+  map_type = "NFHS4",
+  title = "NFHS4 Boundaries"
+)
+bv$show_map(result_nfhs4)
+```
+
+---
+
 # Advanced features
 
 ## Get metadata
@@ -394,6 +494,20 @@ bv$show_map(result)
 
 # Save pdf
 save_all_formats_districts(bv, data, basename = "districts")
+```
+
+### State-District (Single State)
+```r
+# Districts of a single state
+result <- bv$generate_state_districts_map(
+  df,
+  state = "Rajasthan",
+  map_type = "LGD"
+)
+bv$show_map(result)
+
+# Save pdf
+save_all_formats_state_districts(bv, data, state = "Rajasthan", basename = "rajasthan")
 ```
 
 ## Available color scales
