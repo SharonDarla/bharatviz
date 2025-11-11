@@ -151,6 +151,66 @@ BharatViz <- R6::R6Class(
       return(result)
     },
 
+    #' @description Generate a state-district choropleth map (single state)
+    #' @param data Data frame with 'state', 'district', and 'value' columns
+    #' @param state State name to display
+    #' @param map_type District boundary type: "LGD", "NFHS5", or "NFHS4"
+    #' @param title Map title
+    #' @param legend_title Legend label
+    #' @param color_scale Color scale name
+    #' @param invert_colors Invert color scale
+    #' @param formats Export formats (default: "png")
+    #' @return List with image data and metadata
+    generate_state_districts_map = function(data,
+                                           state,
+                                           map_type = "LGD",
+                                           title = "BharatViz",
+                                           legend_title = "Values",
+                                           color_scale = "spectral",
+                                           invert_colors = FALSE,
+                                           formats = "png") {
+
+      # Convert data to required format
+      if (is.data.frame(data)) {
+        data_list <- private$df_districts_to_list(data)
+      } else {
+        data_list <- data
+      }
+
+      # Prepare request body
+      body <- list(
+        data = data_list,
+        state = state,
+        mapType = map_type,
+        mainTitle = title,
+        legendTitle = legend_title,
+        colorScale = color_scale,
+        invertColors = invert_colors,
+        formats = as.list(formats)
+      )
+
+      # Make API request
+      response <- POST(
+        url = paste0(self$api_url, "/api/v1/districts/state-districts/map"),
+        body = body,
+        encode = "json",
+        content_type_json()
+      )
+
+      # Check response
+      if (status_code(response) != 200) {
+        stop("API request failed: ", content(response, "text"))
+      }
+
+      result <- content(response, "parsed")
+
+      if (!result$success) {
+        stop("Map generation failed: ", result$error$message)
+      }
+
+      return(result)
+    },
+
     #' @description Display a map in R graphics device
     #' @param result Result from generate_map() or generate_districts_map()
     #' @param format Format to display (default: "png")

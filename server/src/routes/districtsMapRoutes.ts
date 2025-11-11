@@ -5,6 +5,24 @@ const router = Router();
 const controller = new DistrictsMapController();
 
 /**
+ * POST /state-districts/map
+ * Generate state-district-level choropleth map (single state with districts)
+ *
+ * Request body:
+ * {
+ *   "data": [{"state": "...", "district": "...", "value": ...}],
+ *   "state": "...",                         // Required: which state to display
+ *   "mapType": "LGD" | "NFHS5" | "NFHS4",  // Optional, default: "LGD"
+ *   "colorScale": "...",                    // Optional
+ *   "invertColors": false,                  // Optional
+ *   "mainTitle": "...",                     // Optional
+ *   "legendTitle": "...",                   // Optional
+ *   "formats": ["png", "svg", "pdf"]        // Optional
+ * }
+ */
+router.post('/state-districts/map', (req, res) => controller.generateStateDistrictsMap(req, res));
+
+/**
  * POST /districts/map
  * Generate district-level choropleth map
  *

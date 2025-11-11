@@ -64,6 +64,25 @@ app.get('/', (req, res) => {
           formats: 'Array<"png" | "svg" | "pdf"> - Optional (default: ["png"])'
         }
       },
+      'POST /api/v1/districts/state-districts/map': {
+        description: 'Generate state-district-level choropleth map (single state)',
+        requestBody: {
+          data: 'Array<{ state: string, district: string, value: number }> - Required',
+          state: 'string - Required: which state to display',
+          mapType: 'string - Optional: "LGD" | "NFHS5" | "NFHS4" (default: LGD)',
+          colorScale: 'string - Optional (default: spectral)',
+          invertColors: 'boolean - Optional (default: false)',
+          hideValues: 'boolean - Optional (default: false)',
+          mainTitle: 'string - Optional (default: BharatViz)',
+          legendTitle: 'string - Optional (default: Values)',
+          formats: 'Array<"png" | "svg" | "pdf"> - Optional (default: ["png"])'
+        },
+        availableMapTypes: {
+          LGD: 'Local Government Directory (LGD) district boundaries',
+          NFHS5: 'NFHS-5 survey district boundaries',
+          NFHS4: 'NFHS-4 survey district boundaries'
+        }
+      },
       'POST /api/v1/districts/map': {
         description: 'Generate district-level choropleth map',
         requestBody: {
