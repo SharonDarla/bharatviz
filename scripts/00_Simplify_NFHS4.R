@@ -2,6 +2,30 @@ library(tidyverse)
 library(here)
 library(sf)
 library(rmapshaper)
+z <- read_sf("~/github/India_NFHS_shapefiles/output/nfhs5_2_with_pok.geojson")
+z$state_name <- z$OTHREGNA
+z$district_name <- z$REGNAME
+z$reg_code <- z$REGCODE
+
+z <- read_sf("public/LGD_Districts.geojsonl")
+z$state_name <- z$stname
+z$district_name <- z$dtname
+#z$lgd_code <- z$
+
+st_write(z, here("public/LGD_Districts.geojson"),
+         driver = "GeoJSON",
+         delete_dsn = TRUE)
+
+z <- read_sf("~/github/India_NFHS_shapefiles/output/nfhs4_2_with_pok.geojson")
+ggplot(z) + geom_sf()
+z$state_name <- z$OTHREGNA
+z$district_name <- z$REGNAME
+z$reg_code <- z$REGCODE
+st_write(z, here("public/India_NFHS4_districts.geojson"),
+         driver = "GeoJSON",
+         delete_dsn = TRUE)
+
+
 lgd.district.map <- st_read(here("public/India_NFHS4_districts.geojson"))
 lgd.district.map$district_name <- lgd.district.map$REGNAME
 lgd.district.map$state_name <- lgd.district.map$OTHREGNA
