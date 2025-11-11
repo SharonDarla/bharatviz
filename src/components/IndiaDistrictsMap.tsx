@@ -1431,7 +1431,7 @@ Chittoor,50`;
                         <text
                           x={0}
                           y={-finalFontSize / 2}
-                          textAnchor="start"
+                          textAnchor="middle"
                           dominantBaseline="middle"
                           style={{
                             fontFamily: 'Arial, Helvetica, sans-serif',
@@ -1452,7 +1452,7 @@ Chittoor,50`;
                           <text
                             x={0}
                             y={finalFontSize / 2}
-                            textAnchor="start"
+                            textAnchor="middle"
                             dominantBaseline="middle"
                             style={{
                               fontFamily: 'Arial, Helvetica, sans-serif',
