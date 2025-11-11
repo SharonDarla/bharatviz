@@ -178,7 +178,7 @@ const Index = () => {
           <TabsList className="grid w-full grid-cols-5 mb-6">
             <TabsTrigger value="states">States</TabsTrigger>
             <TabsTrigger value="districts">Districts</TabsTrigger>
-            <TabsTrigger value="state-districts">Individual State</TabsTrigger>
+            <TabsTrigger value="state-districts">State-District</TabsTrigger>
             <TabsTrigger value="help">Help</TabsTrigger>
             <TabsTrigger value="credits">Credits</TabsTrigger>
           </TabsList>
