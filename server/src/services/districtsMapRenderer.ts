@@ -42,6 +42,15 @@ export const DISTRICT_MAP_TYPES = {
 
 export type DistrictMapType = 'LGD' | 'NFHS5' | 'NFHS4';
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 /**
  * Renders district-level India maps as SVG using D3 and JSDOM
  */
@@ -214,6 +223,7 @@ export class DistrictsMapRenderer {
       data,
       colorScale = 'spectral',
       invertColors = false,
+      hideDistrictNames = false,
       hideValues = false,
       mainTitle = 'BharatViz',
       legendTitle = 'Values',
@@ -295,6 +305,36 @@ export class DistrictsMapRenderer {
         })
       : this.districtsGeojson.features;
 
+    // Helper function to calculate centroid of a polygon
+    const calculateCentroid = (coordinates: number[][] | number[][][] | number[][][][], type: string): [number, number] | null => {
+      let sumX = 0, sumY = 0, count = 0;
+
+      const processRing = (ring: number[][]): void => {
+        ring.forEach(coord => {
+          sumX += coord[0];
+          sumY += coord[1];
+          count++;
+        });
+      };
+
+      try {
+        if (type === 'Polygon') {
+          const polygonCoords = coordinates as number[][][];
+          processRing(polygonCoords[0]);
+        } else if (type === 'MultiPolygon') {
+          const multiCoords = coordinates as number[][][][];
+          multiCoords.forEach(polygon => {
+            processRing(polygon[0]);
+          });
+        }
+
+        if (count === 0) return null;
+        return [sumX / count, sumY / count];
+      } catch (e) {
+        return null;
+      }
+    };
+
     // Draw districts using custom projection (matching frontend exactly)
     featuresToRender.forEach((feature: Feature) => {
       const value = getDistrictValue(feature.properties);
@@ -324,6 +364,70 @@ export class DistrictsMapRenderer {
         .attr('stroke', strokeColor)
         .attr('stroke-width', 0.3);
     });
+
+    // Add district labels and values (if not hidden)
+    if (!hideDistrictNames || !hideValues) {
+      featuresToRender.forEach((feature: Feature) => {
+        const value = getDistrictValue(feature.properties);
+
+        if (value === undefined) return;
+
+        let centroid: [number, number] | null = null;
+        if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+          const geometry = feature.geometry as Polygon | MultiPolygon;
+          centroid = calculateCentroid(geometry.coordinates, feature.geometry.type);
+        }
+
+        if (!centroid) return;
+
+        // Project centroid to canvas coordinates
+        const [x, y] = this.projectCoordinate(centroid[0], centroid[1], bounds, width, height);
+
+        const districtName = String(feature.properties?.district_name || feature.properties?.DISTRICT || '');
+        const fillColor = (() => {
+          const t = (value - minValue) / (maxValue - minValue);
+          const colorT = invertColors ? (1 - t) : t;
+          return interpolator(colorT);
+        })();
+
+        const textColor = (fillColor === 'white' || !isColorDark(fillColor)) ? '#0f172a' : '#ffffff';
+
+        // Smaller font size for districts
+        const fontSize = 9;
+
+        // Build tspan elements based on what should be shown
+        let tspanElements = '';
+        let currentDy = 0;
+
+        if (!hideDistrictNames) {
+          tspanElements += `<tspan x="${x}" dy="${currentDy}">${escapeHtml(districtName)}</tspan>`;
+          currentDy = 13;
+        }
+
+        if (!hideValues) {
+          tspanElements += `<tspan x="${x}" dy="${currentDy}">${roundToSignificantDigits(value)}</tspan>`;
+        }
+
+        // Only append if there's content to show
+        if (tspanElements) {
+          const textElement = mapGroup.append('text')
+            .attr('x', x)
+            .attr('y', y)
+            .attr('text-anchor', 'middle')
+            .attr('dominant-baseline', 'middle')
+            .attr('font-size', `${fontSize}px`)
+            .attr('font-weight', '600')
+            .attr('fill', textColor)
+            .style('pointer-events', 'none');
+
+          // Insert tspan elements by modifying the DOM directly
+          const textNode = textElement.node();
+          if (textNode) {
+            textNode.innerHTML = tspanElements;
+          }
+        }
+      });
+    }
 
     // Draw state boundaries if requested
     if (showStateBoundaries && this.statesGeojson) {

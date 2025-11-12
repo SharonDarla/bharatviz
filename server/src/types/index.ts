@@ -56,6 +56,8 @@ export const DistrictsMapRequestSchema = z.object({
 
   invertColors: z.boolean().optional().default(false),
 
+  hideDistrictNames: z.boolean().optional().default(false),
+
   hideValues: z.boolean().optional().default(false),
 
   mainTitle: z.string().optional().default('BharatViz'),
@@ -93,6 +95,8 @@ export const StateDistrictMapRequestSchema = z.object({
   colorScale: z.enum(ColorScales).optional().default('spectral'),
 
   invertColors: z.boolean().optional().default(false),
+
+  hideDistrictNames: z.boolean().optional().default(false),
 
   hideValues: z.boolean().optional().default(false),
 

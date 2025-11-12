@@ -69,6 +69,7 @@ export class DistrictsMapController {
         mapType: request.mapType,
         colorScale: request.colorScale,
         invertColors: request.invertColors,
+        hideDistrictNames: request.hideDistrictNames,
         hideValues: request.hideValues,
         mainTitle: request.mainTitle,
         legendTitle: request.legendTitle,
