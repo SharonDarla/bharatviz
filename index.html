@@ -2,50 +2,139 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BharatViz - Fast choropleths for India</title>
-    <meta name="description" content="Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors, instant visualization, and export to PNG/SVG/PDF." />
-    <meta name="author" content="Saket Choudhary">
-    <meta name="twitter:creator" content="@saketkc">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
 
-    <meta property="og:title" content="BharatViz - Fast choropleths for India" />
-    <meta property="og:description" content="Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors, instant visualization, and export to PNG/SVG/PDF." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+    <!-- Primary Meta Tags -->
+    <title>BharatViz - Create Interactive Choropleth Maps of India</title>
+    <meta name="title" content="BharatViz - Create Interactive Choropleth Maps of India" />
+    <meta name="description" content="BharatViz: Create beautiful, interactive choropleth maps of India with state and district-level data. Free web tool with 15+ color scales, instant visualization, and export to PNG/SVG/PDF. Perfect for data journalists, researchers, and analysts." />
+    <meta name="keywords" content="India maps, choropleth, data visualization, geojson, district maps, state maps, interactive maps, map maker, D3.js, data journalism, Indian cartography, geographical data, data analysis, REST API" />
+    <meta name="author" content="Saket Choudhary" />
+    <meta name="creator" content="Saket Choudhary" />
+    <meta name="language" content="English" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="bingbot" content="index, follow" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
 
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://bharatviz.saketlab.in/" />
+
+    <!-- Social Media Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@saketkc" />
+    <meta name="twitter:creator" content="@saketkc" />
+    <meta name="twitter:title" content="BharatViz - Interactive Choropleth Maps for India" />
+    <meta name="twitter:description" content="Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors, instant visualization, and export options." />
     <meta name="twitter:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+    <meta name="twitter:image:alt" content="BharatViz logo" />
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bharatviz.saketlab.in/" />
+    <meta property="og:title" content="BharatViz - Interactive Choropleth Maps for India" />
+    <meta property="og:description" content="Create beautiful choropleth maps of India with state and district-level data. Free online visualization tool with customizable color scales and multiple export formats." />
+    <meta property="og:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+    <meta property="og:image:alt" content="BharatViz - Create India Maps" />
+    <meta property="og:site_name" content="BharatViz" />
+
+    <!-- Favicon and Icons -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/bharatviz_favicon.png" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+
+    <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- Preconnect to External Resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+    <link rel="preconnect" href="https://www.google-analytics.com" />
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
     
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "BharatViz",
+      "url": "https://bharatviz.saketlab.in",
+      "logo": "https://bharatviz.saketlab.in/bharatviz_favicon.png",
+      "description": "BharatViz - Interactive choropleth map visualization tool for India",
+      "sameAs": [
+        "https://twitter.com/saketkc",
+        "https://github.com/saketlab/bharatviz"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "Support",
+        "url": "https://github.com/saketlab/bharatviz/issues"
+      }
+    }
+    </script>
+
+    <!-- Structured Data: Web Application -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "BharatViz",
-      "description": "Create beautiful choropleth maps of India with state and district data. Free online tool with customizable colors and export options.",
+      "alternateName": "Bharat Viz",
+      "description": "Create beautiful, interactive choropleth maps of India with state and district-level data. Free online tool with 15+ color scales, instant visualization, and export to PNG/SVG/PDF.",
       "url": "https://bharatviz.saketlab.in",
-      "applicationCategory": "ProductivityApplication",
-      "operatingSystem": "Web Browser",
+      "applicationCategory": ["Multimedia", "Productivity"],
+      "operatingSystem": "All",
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "USD"
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock"
       },
       "creator": {
         "@type": "Person",
-        "name": "Saket Lab",
-        "sameAs": "https://twitter.com/saketkc"
+        "name": "Saket Choudhary",
+        "url": "https://twitter.com/saketkc",
+        "sameAs": ["https://github.com/saketkc"]
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Saket Choudhary"
       },
       "featureList": [
         "State-level choropleth maps",
-        "District-level choropleth maps", 
-        "15+ color scales",
+        "District-level choropleth maps",
+        "State-District mode for focused regional analysis",
+        "15+ color scales including Viridis and Spectral",
         "PNG/SVG/PDF export",
-        "REST API",
-        "Customizable legends"
-      ]
+        "REST API for programmatic access",
+        "Customizable legends and titles",
+        "Discrete and continuous color mapping",
+        "Multiple district boundary types (LGD, NFHS4, NFHS5)",
+        "Real-time data visualization"
+      ],
+      "screenshot": "https://bharatviz.saketlab.in/bharatviz_favicon.png",
+      "softwareVersion": "1.0.0",
+      "license": "https://opensource.org/licenses/MIT",
+      "sourceCodeRepository": "https://github.com/saketlab/bharatviz"
+    }
+    </script>
+
+    <!-- Structured Data: Schema for Knowledge Graph -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CreativeWork",
+      "name": "BharatViz",
+      "description": "Interactive data visualization tool for creating choropleth maps of India",
+      "url": "https://bharatviz.saketlab.in",
+      "author": {
+        "@type": "Person",
+        "name": "Saket Choudhary"
+      },
+      "keywords": "India, maps, choropleth, data visualization, geojson, district, state, interactive"
     }
     </script>
     
