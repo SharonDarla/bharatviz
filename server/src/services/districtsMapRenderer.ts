@@ -241,9 +241,9 @@ export class DistrictsMapRenderer {
     const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
     const document = dom.window.document;
 
-    // Canvas dimensions (matching frontend exactly: 800x890)
+    // Canvas dimensions
     const width = 800;
-    const height = 890;
+    const height = state ? 1100 : 890;
 
     const svg = d3.select(document.body)
       .append('svg')
