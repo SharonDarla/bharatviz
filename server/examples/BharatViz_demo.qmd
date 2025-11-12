@@ -34,8 +34,7 @@ library(jsonlite)
 library(base64enc)
 library(png)
 
-
-# # Download the R client if not present
+# Download the R client if not present
 if (!file.exists("bharatviz.R")) {
   download.file(
     "https://gist.githubusercontent.com/saketkc/7b227151bde59dfa31fd2b1dd15f0c67/raw/d13c9cdc7dd814a6be9d53483e4e48e3db6db9db/bhartviz.R",
@@ -43,8 +42,7 @@ if (!file.exists("bharatviz.R")) {
     quiet = TRUE
   )
 }
-
-source("bharatviz.R")
+source("bhartviz.R")
 
 API_URL <- "https://bharatviz.saketlab.org"
 
@@ -521,5 +519,6 @@ save_all_formats_state_districts(bv, data, state = "Rajasthan", basename = "raja
 - **LGD**: Latest Government of India district boundaries
 - **NFHS5**: National Family Health Survey 5 (2019-21)
 - **NFHS4**: National Family Health Survey 4 (2015-16)
+- **Census**: Census of India 1941-2011 boundaries
 
 ---

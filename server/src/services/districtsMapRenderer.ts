@@ -217,7 +217,8 @@ export class DistrictsMapRenderer {
       hideValues = false,
       mainTitle = 'BharatViz',
       legendTitle = 'Values',
-      showStateBoundaries = true
+      showStateBoundaries = true,
+      state
     } = request;
 
     // Calculate statistics
@@ -252,8 +253,21 @@ export class DistrictsMapRenderer {
     const mapGroup = svg.append('g')
       .attr('class', 'map-content');
 
+    // For state-district maps, filter geojson to only that state
+    let geojsonForBounds = this.districtsGeojson;
+    if (state) {
+      const stateNormalized = state.toLowerCase().trim();
+      geojsonForBounds = {
+        ...this.districtsGeojson,
+        features: this.districtsGeojson.features.filter((feature: Feature) => {
+          const featureStateName = String(feature.properties?.state_name || feature.properties?.STATE || '').toLowerCase().trim();
+          return featureStateName === stateNormalized;
+        })
+      };
+    }
+
     // Calculate bounds from GeoJSON (matching frontend exactly)
-    const bounds = this.calculateBounds(this.districtsGeojson);
+    const bounds = this.calculateBounds(geojsonForBounds);
 
     // Create color scale
     const interpolator = getD3ColorInterpolator(colorScale);
@@ -273,8 +287,16 @@ export class DistrictsMapRenderer {
       return valueMap.get(key);
     };
 
+    // For state-district maps, only render the specified state's districts
+    const featuresToRender = state
+      ? this.districtsGeojson.features.filter((feature: Feature) => {
+          const featureStateName = String(feature.properties?.state_name || feature.properties?.STATE || '').toLowerCase().trim();
+          return featureStateName === state.toLowerCase().trim();
+        })
+      : this.districtsGeojson.features;
+
     // Draw districts using custom projection (matching frontend exactly)
-    this.districtsGeojson.features.forEach((feature: Feature) => {
+    featuresToRender.forEach((feature: Feature) => {
       const value = getDistrictValue(feature.properties);
 
       let fillColor = 'white'; // Default white for no data (matching frontend)
@@ -305,7 +327,15 @@ export class DistrictsMapRenderer {
 
     // Draw state boundaries if requested
     if (showStateBoundaries && this.statesGeojson) {
-      this.statesGeojson.features.forEach((feature: Feature) => {
+      // For state-district maps, only show the specified state's boundary
+      const statesToRender = state
+        ? this.statesGeojson.features.filter((feature: Feature) => {
+            const featureStateName = String(feature.properties?.state_name || feature.properties?.STATE || '').toLowerCase().trim();
+            return featureStateName === state.toLowerCase().trim();
+          })
+        : this.statesGeojson.features;
+
+      statesToRender.forEach((feature: Feature) => {
         let pathData = '';
         if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
           const geometry = feature.geometry as Polygon | MultiPolygon;
