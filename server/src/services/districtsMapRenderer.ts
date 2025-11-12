@@ -386,9 +386,9 @@ export class DistrictsMapRenderer {
       legendTitle: string;
     }
   ): void {
-    const legendPosition = { x: 390, y: 200 }; // Districts legend position (desktop, non-mobile)
-    const legendWidth = 200;  // Match frontend exactly
-    const legendHeight = 15;  // Match frontend exactly
+    const legendPosition = { x: 570, y: 130 };
+    const legendWidth = 200;
+    const legendHeight = 15;
 
     const legendGroup = svg.append('g')
       .attr('class', 'legend')
