@@ -64,6 +64,9 @@ export const DistrictsMapRequestSchema = z.object({
 
   showStateBoundaries: z.boolean().optional().default(true),
 
+  // State name for single-state rendering (filters and zooms to that state)
+  state: z.string().optional(),
+
   colorBarSettings: z.object({
     mode: z.enum(['continuous', 'discrete']).default('continuous'),
     binCount: z.number().min(2).max(20).optional().default(5),

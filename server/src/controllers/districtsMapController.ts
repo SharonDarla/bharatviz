@@ -72,7 +72,8 @@ export class DistrictsMapController {
         hideValues: request.hideValues,
         mainTitle: request.mainTitle,
         legendTitle: request.legendTitle,
-        showStateBoundaries: false, // Don't show other state boundaries for state-district view
+        showStateBoundaries: false,
+        state: request.state,
         colorBarSettings: request.colorBarSettings,
         formats: request.formats
       };
