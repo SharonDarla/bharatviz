@@ -76,8 +76,8 @@ const Credits: React.FC = () => {
 
       <div className="border rounded-lg p-6 bg-primary/5 border-primary/20">
         <h2 className="text-lg font-bold mb-3">Special Thanks</h2>
-        <p className="text-muted-foreground">
-			  BharatViz is made possible by the community efforts of collating shapefiles (geojsons) for India across the years. 
+        <p className="text-muted-foreground mb-4">
+			  BharatViz is made possible by the community efforts of collating shapefiles (geojsons) for India across the years.
 			  Sources and contributors are mentioned below. We thank all the contributors for generating and sharing the shape files!
           In particular, we would like to thank{' '}
           <a
@@ -95,7 +95,7 @@ const Credits: React.FC = () => {
             rel="noopener noreferrer"
             className="text-primary hover:text-primary/80 underline transition-colors"
           >
-            Shivakumar Jolad
+            Shivakumar Jolad's group
           </a>
           {' '}for their fantastic projects on Indian administrative boundaries (
           <a
@@ -114,6 +114,27 @@ const Credits: React.FC = () => {
             className="text-primary hover:text-primary/80 underline transition-colors"
           >
             India State Stories
+          </a>
+          .
+        </p>
+        <p className="text-muted-foreground">
+          This project was initially prototyped using{' '}
+          <a
+            href="https://lovable.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary/80 underline transition-colors"
+          >
+            Lovable.dev
+          </a>
+          {' '}and{' '}
+          <a
+            href="https://claude.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:text-primary/80 underline transition-colors"
+          >
+            Claude.ai
           </a>
           .
         </p>
