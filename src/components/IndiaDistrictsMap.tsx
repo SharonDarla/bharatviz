@@ -151,6 +151,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   }, [dataTitle]);
 
   useEffect(() => {
+    if (selectedState) {
+      setMainTitle(selectedState);
+    } else {
+      setMainTitle('BharatViz (double-click to edit)');
+    }
+  }, [selectedState]);
+
+  useEffect(() => {
     if (data.length > 0) {
       const values = data.map(d => d.value).filter(v => !isNaN(v));
       const minValue = values.length > 0 ? Math.min(...values) : 0;
