@@ -59,6 +59,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
 
+  const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [draggingTitle, setDraggingTitle] = useState(false);
+  const [titleDragOffset, setTitleDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -1090,6 +1094,46 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     };
   }, [dragging, dragOffset, handleLegendMouseMove]);
 
+  const handleTitleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraggingTitle(true);
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (svgRect) {
+      const currentX = isMobile ? 175 : 400;
+      const currentY = isMobile ? 35 : 60;
+      setTitleDragOffset({
+        x: e.clientX - (svgRect.left + currentX + titlePosition.x),
+        y: e.clientY - (svgRect.top + currentY + titlePosition.y)
+      });
+    }
+  };
+
+  const handleTitleMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggingTitle || !svgRef.current) return;
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const currentX = isMobile ? 175 : 400;
+    const currentY = isMobile ? 35 : 60;
+    setTitlePosition({
+      x: e.clientX - svgRect.left - currentX - titleDragOffset.x,
+      y: e.clientY - svgRect.top - currentY - titleDragOffset.y
+    });
+  }, [draggingTitle, titleDragOffset, isMobile]);
+
+  const handleTitleMouseUp = () => {
+    setDraggingTitle(false);
+  };
+
+  useEffect(() => {
+    if (draggingTitle) {
+      document.addEventListener('mousemove', handleTitleMouseMove);
+      document.addEventListener('mouseup', handleTitleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleTitleMouseMove);
+        document.removeEventListener('mouseup', handleTitleMouseUp);
+      };
+    }
+  }, [draggingTitle, titleDragOffset, handleTitleMouseMove]);
+
   if (!mapData) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -1276,20 +1320,22 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             </foreignObject>
           ) : (
             <text
-              x={isMobile ? 175 : 310}
-              y={isMobile ? 35 : 50}
+              x={isMobile ? 175 : 400 + titlePosition.x}
+              y={isMobile ? 35 : 60 + titlePosition.y}
               textAnchor="middle"
-              style={{ 
-                fontFamily: 'Arial, Helvetica, sans-serif', 
-                fontSize: isMobile ? 16 : 20, 
-                fontWeight: 700, 
-                fill: '#1f2937', 
-                cursor: 'pointer'
+              style={{
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontSize: isMobile ? 16 : 20,
+                fontWeight: 700,
+                fill: '#1f2937',
+                cursor: draggingTitle ? 'grabbing' : 'grab',
+                userSelect: 'none'
               }}
-              onDoubleClick={e => { 
-                e.stopPropagation(); 
-                setEditingMainTitle(true); 
+              onDoubleClick={e => {
+                e.stopPropagation();
+                setEditingMainTitle(true);
               }}
+              onMouseDown={handleTitleMouseDown}
             >
               {mainTitle}
             </text>

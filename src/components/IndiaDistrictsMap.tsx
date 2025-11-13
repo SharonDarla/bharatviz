@@ -125,6 +125,10 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [draggingLabel, setDraggingLabel] = useState<{ districtKey: string; offset: { x: number; y: number } } | null>(null);
   const [labelDragOffset, setLabelDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
+  const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [draggingTitle, setDraggingTitle] = useState(false);
+  const [titleDragOffset, setTitleDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rotationCalculator = useRef(createRotationCalculator());
@@ -553,7 +557,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   // same projection logic as projectCoordinate()
   const geoToScreen = (lng: number, lat: number): { x: number; y: number } => {
     const mapWidth = isMobile ? 320 : 760;
-    const mapHeight = isMobile ? 400 : 850;
+    const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
     const offsetXParam = isMobile ? 55 : 45;
     const offsetYParam = isMobile ? 15 : 20;
 
@@ -594,7 +598,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     if (!bounds) return false;
 
     const mapWidth = isMobile ? 320 : 760;
-    const mapHeight = isMobile ? 400 : 850;
+    const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
     const offsetXParam = isMobile ? 55 : 45;
     const offsetYParam = isMobile ? 15 : 20;
 
@@ -829,6 +833,46 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     }
   }, [dragging, dragOffset, handleLegendMouseMove]);
 
+  const handleTitleMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraggingTitle(true);
+    const svgRect = svgRef.current?.getBoundingClientRect();
+    if (svgRect) {
+      const currentX = isMobile ? 175 : 310;
+      const currentY = isMobile ? 35 : 50;
+      setTitleDragOffset({
+        x: e.clientX - (svgRect.left + currentX + titlePosition.x),
+        y: e.clientY - (svgRect.top + currentY + titlePosition.y)
+      });
+    }
+  };
+
+  const handleTitleMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggingTitle || !svgRef.current) return;
+    const svgRect = svgRef.current.getBoundingClientRect();
+    const currentX = isMobile ? 175 : 310;
+    const currentY = isMobile ? 35 : 50;
+    setTitlePosition({
+      x: e.clientX - svgRect.left - currentX - titleDragOffset.x,
+      y: e.clientY - svgRect.top - currentY - titleDragOffset.y
+    });
+  }, [draggingTitle, titleDragOffset, isMobile]);
+
+  const handleTitleMouseUp = () => {
+    setDraggingTitle(false);
+  };
+
+  useEffect(() => {
+    if (draggingTitle) {
+      document.addEventListener('mousemove', handleTitleMouseMove);
+      document.addEventListener('mouseup', handleTitleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleTitleMouseMove);
+        document.removeEventListener('mouseup', handleTitleMouseUp);
+      };
+    }
+  }, [draggingTitle, titleDragOffset, handleTitleMouseMove]);
+
   const handleLabelMouseDown = (e: React.MouseEvent, districtKey: string, currentX: number, currentY: number) => {
     e.stopPropagation();
     const svgRect = svgRef.current?.getBoundingClientRect();
@@ -977,7 +1021,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     const img = new Image();
     const dpiScale = 300 / 96;
     const originalWidth = isMobile ? 350 : 800;
-    const originalHeight = isMobile ? 440 : 890;
+    const originalHeight = isMobile ? 440 : selectedState ? 1100 : 890;
     
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
@@ -1037,7 +1081,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     // High DPI settings for 300 DPI output
     const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
     const originalWidth = isMobile ? 350 : 800;
-    const originalHeight = isMobile ? 440 : 890;
+    const originalHeight = isMobile ? 440 : selectedState ? 1100 : 890;
     
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
@@ -1108,15 +1152,15 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         
         // Get the actual SVG dimensions
         const svgWidth = isMobile ? 350 : 800;
-        const svgHeight = isMobile ? 440 : 890;
-        
+        const svgHeight = isMobile ? 440 : selectedState ? 1100 : 890;
+
         // Clone the SVG to avoid modifying the original
         const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
-        
+
         // Ensure the cloned SVG has proper attributes for full capture
         svgClone.setAttribute('width', svgWidth.toString());
         svgClone.setAttribute('height', svgHeight.toString());
-        svgClone.setAttribute('viewBox', `${isMobile ? '0 0 350 440' : '0 0 800 890'}`);
+        svgClone.setAttribute('viewBox', `${isMobile ? '0 0 350 440' : selectedState ? '0 0 800 1100' : '0 0 800 890'}`);
         svgClone.style.width = `${svgWidth}px`;
         svgClone.style.height = `${svgHeight}px`;
         
@@ -1231,13 +1275,13 @@ Chittoor,50`;
             <svg
               ref={svgRef}
               width={isMobile ? "350" : "800"}
-              height={isMobile ? "440" : "890"}
-              viewBox={isMobile ? "0 0 350 440" : "0 0 800 890"}
+              height={isMobile ? "440" : selectedState ? "1100" : "890"}
+              viewBox={isMobile ? "0 0 350 440" : selectedState ? "0 0 800 1100" : "0 0 800 890"}
               className="border border-border rounded bg-background max-w-full h-auto"
             >
               {geojsonData.features.map((feature, index) => {
                 const mapWidth = isMobile ? 320 : 760;
-                const mapHeight = isMobile ? 400 : 850;
+                const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
                 const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
                 const districtData = data.find(d =>
                   d.district.toLowerCase().trim() === feature.properties.district_name.toLowerCase().trim() &&
@@ -1313,9 +1357,11 @@ Chittoor,50`;
                     // Smaller districts get proportionally smaller fonts
                     const scaledArea = Math.sqrt(normalizedArea);
 
-                    // Map scaled area to font size range, then apply 0.65 scaling factor
+                    // Map scaled area to font size range, then apply scaling factor
+                    // Use 0.75 for state-district view (larger fonts), 0.65 for full districts view
                     const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
-                    const finalFontSize = baseFinalFontSize * 0.65;
+                    const fontSizingFactor = selectedState ? 0.75 : 0.65;
+                    const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
                     const optimalPoint = polylabel(polygonCoords, 0.00000001);
 
@@ -1490,7 +1536,7 @@ Chittoor,50`;
                 })
                 .map((stateFeature, index) => {
                 const mapWidth = isMobile ? 320 : 760;
-                const mapHeight = isMobile ? 400 : 850;
+                const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
                 const path = convertCoordinatesToPath(stateFeature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
                 
                 return (
@@ -1536,21 +1582,22 @@ Chittoor,50`;
                   </foreignObject>
                 ) : (
                   <text
-                    x={isMobile ? 175 : 310}
-                    y={isMobile ? 35 : 50}
+                    x={isMobile ? 175 : 310 + titlePosition.x}
+                    y={isMobile ? 35 : 50 + titlePosition.y}
                     textAnchor="middle"
-                    style={{ 
-                      fontFamily: 'Arial, Helvetica, sans-serif', 
-                      fontSize: isMobile ? 16 : 20, 
-                      fontWeight: 700, 
-                      fill: '#1f2937', 
-                      cursor: 'pointer',
+                    style={{
+                      fontFamily: 'Arial, Helvetica, sans-serif',
+                      fontSize: isMobile ? 16 : 20,
+                      fontWeight: 700,
+                      fill: '#1f2937',
+                      cursor: draggingTitle ? 'grabbing' : 'grab',
                       userSelect: 'none'
                     }}
-                    onDoubleClick={e => { 
-                      e.stopPropagation(); 
-                      setEditingMainTitle(true); 
+                    onDoubleClick={e => {
+                      e.stopPropagation();
+                      setEditingMainTitle(true);
                     }}
+                    onMouseDown={handleTitleMouseDown}
                   >
                     {mainTitle}
                   </text>
