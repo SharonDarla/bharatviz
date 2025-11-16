@@ -12,6 +12,10 @@ import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
 import Credits from '@/components/Credits';
 import { Github } from 'lucide-react';
+import { ChatPanel } from '@/components/chat/ChatPanel';
+import { buildDynamicContext } from '@/lib/chat/contextBuilder';
+import { DATA_FILES } from '@/lib/constants';
+import type { DynamicChatContext } from '@/lib/chat/types';
 
 interface StateMapData {
   state: string;
@@ -71,6 +75,16 @@ const Index = () => {
   const [stateGistMapping, setStateGistMapping] = useState<StateGistMapping | null>(null);
   const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
 
+  // Chat context state
+  const [chatContext, setChatContext] = useState<DynamicChatContext | null>(null);
+
+  // Track previous context to detect changes
+  const prevContextRef = useRef<{
+    tab: string;
+    mapType: string;
+    selectedState: string | undefined;
+  } | null>(null);
+
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -100,6 +114,96 @@ const Index = () => {
       fetchStates();
     }
   }, [activeTab, selectedStateMapType]);
+
+  // Build chat context when data or view changes
+  useEffect(() => {
+    async function updateChatContext() {
+      try {
+        let geoJsonPath = '';
+        let data: Array<{name?: string, state?: string, district?: string, value: number | null}> = [];
+        let currentMapType = '';
+        let currentSelectedState: string | undefined = undefined;
+        let metricName: string | undefined = undefined;
+
+        // Determine GeoJSON path and data based on active tab
+        if (activeTab === 'states') {
+          geoJsonPath = DATA_FILES.STATES_GEOJSON;
+          currentMapType = 'states';
+          metricName = stateDataTitle || undefined;
+          data = stateMapData.map(d => ({
+            name: d.state,
+            value: d.value
+          }));
+        } else if (activeTab === 'districts') {
+          const config = getDistrictMapConfig(selectedDistrictMapType);
+          geoJsonPath = config.geojsonPath;
+          currentMapType = selectedDistrictMapType;
+          metricName = districtDataTitle || undefined;
+          data = districtMapData.map(d => ({
+            name: d.district,
+            state: d.state,
+            value: d.value
+          }));
+        } else if (activeTab === 'state-districts' && selectedStateForMap) {
+          // For state-specific districts
+          const config = getDistrictMapConfig(selectedStateMapType);
+          geoJsonPath = config.geojsonPath;
+          currentMapType = selectedStateMapType;
+          currentSelectedState = selectedStateForMap;
+          metricName = stateDistrictDataTitle || undefined;
+          data = stateDistrictMapData.map(d => ({
+            name: d.district,
+            state: d.state,
+            value: d.value
+          }));
+        }
+
+        // Check if context has changed (tab, mapType, or selectedState)
+        const prevContext = prevContextRef.current;
+        const contextChanged = !prevContext ||
+          prevContext.tab !== activeTab ||
+          prevContext.mapType !== currentMapType ||
+          prevContext.selectedState !== currentSelectedState;
+
+        // Update previous context ref
+        prevContextRef.current = {
+          tab: activeTab,
+          mapType: currentMapType,
+          selectedState: currentSelectedState
+        };
+
+        if (geoJsonPath) {
+          const context = await buildDynamicContext({
+            activeTab: activeTab as 'states' | 'districts' | 'state-districts',
+            selectedState: activeTab === 'state-districts' ? selectedStateForMap : undefined,
+            mapType: activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType,
+            data,
+            geoJsonPath,
+            metricName,
+            // Clear conversation history if context changed, otherwise preserve it
+            conversationHistory: contextChanged ? [] : (chatContext?.conversationHistory || [])
+          });
+
+          setChatContext(context);
+        }
+      } catch (error) {
+        console.error('Failed to build chat context:', error);
+      }
+    }
+
+    updateChatContext();
+  }, [
+    activeTab,
+    selectedStateForMap,
+    selectedDistrictMapType,
+    selectedStateMapType,
+    stateMapData,
+    districtMapData,
+    stateDistrictMapData,
+    stateDataTitle,
+    districtDataTitle,
+    stateDistrictDataTitle
+  ]);
 
   const handleStateDataLoad = (data: StateMapData[], title?: string) => {
     setStateMapData(data);
@@ -610,6 +714,12 @@ bv$show_map(result_nfhs5)`}
           </div>
         </div>
       </footer>
+
+      {/* Chat Panel - key changes when context changes to reset conversation */}
+      <ChatPanel
+        key={`${activeTab}-${activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType}-${selectedStateForMap || ''}`}
+        context={chatContext}
+      />
     </div>
   );
 };
