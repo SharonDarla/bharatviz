@@ -3,7 +3,15 @@
  * Injects dynamic context into LLM for every query
  */
 
-import type { DynamicChatContext } from './types';
+import type {
+  DynamicChatContext,
+  UserData,
+  CurrentView,
+  RegionalStats,
+  HierarchicalStateStats,
+  DistrictData,
+  PreviousContext
+} from './types';
 
 /**
  * Build system prompt with current context
@@ -54,7 +62,7 @@ function getViewDescription(tab: string, selectedState?: string): string {
   }
 }
 
-function buildUserDataSection(userData: any, currentView: any): string {
+function buildUserDataSection(userData: UserData, currentView: CurrentView): string {
   // Use the actual metric name if provided, otherwise fall back to generic "values"
   const metricLabel = userData.metricName || 'values';
 
@@ -98,10 +106,10 @@ function buildUserDataSection(userData: any, currentView: any): string {
   if (userData.top10.length > 0) {
     section += `
 **Top 5:**
-${userData.top10.slice(0, 5).map((d: any, i: number) => `${i + 1}. ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
+${userData.top10.slice(0, 5).map((d: { name: string; value: number }, i: number) => `${i + 1}. ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
 
 **Bottom 5:**
-${userData.bottom10.slice(0, 5).map((d: any, i: number) => `${i + 1}. ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
+${userData.bottom10.slice(0, 5).map((d: { name: string; value: number }, i: number) => `${i + 1}. ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
 `;
   }
 
@@ -117,7 +125,7 @@ ${userData.allData.map(d => `- ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
     section += `
 **Regional Averages:**
 ${Object.entries(userData.regionalStats)
-  .map(([region, stats]: [string, any]) =>
+  .map(([region, stats]: [string, RegionalStats]) =>
     `- ${region}: ${stats.mean.toFixed(2)} (${stats.dataCount} entities with data)`
   )
   .join('\n')}
@@ -162,7 +170,7 @@ ${districtsWithData.map(d => `- ${d.name}: ${d.value?.toFixed(2)}`).join('\n')}
   // Include hierarchical data for all-India district views
   if (userData.hierarchicalStats && currentView.tab === 'districts') {
     const statesWithData = Object.entries(userData.hierarchicalStats)
-      .filter(([_, stats]: [string, any]) => stats.dataCount > 0)
+      .filter(([_, stats]: [string, HierarchicalStateStats]) => stats.dataCount > 0)
       .sort((a, b) => b[1].dataCount - a[1].dataCount);
 
     // Check if specific states were mentioned in the query
@@ -176,12 +184,12 @@ ${districtsWithData.map(d => `- ${d.name}: ${d.value?.toFixed(2)}`).join('\n')}
       // Include detailed district data only for mentioned states
       for (const [state, stats] of statesWithData) {
         if (mentionedStates.includes(state)) {
-          const statsTyped = stats as any;
-          const districtsWithData = statsTyped.districts.filter((d: any) => !d.missing);
+          const statsTyped = stats as HierarchicalStateStats;
+          const districtsWithData = statsTyped.districts.filter((d: DistrictData) => !d.missing);
 
           section += `
 **${state}** (${statsTyped.dataCount}/${statsTyped.districtCount} districts with data):
-${districtsWithData.map((d: any) => `  - ${d.name}: ${d.value?.toFixed(2)}`).join('\n')}
+${districtsWithData.map((d: DistrictData) => `  - ${d.name}: ${d.value?.toFixed(2)}`).join('\n')}
 `;
         }
       }
@@ -190,7 +198,7 @@ ${districtsWithData.map((d: any) => `  - ${d.name}: ${d.value?.toFixed(2)}`).joi
       section += `
 **State-wise Summary:**
 ${statesWithData.map(([state, stats]) => {
-  const s = stats as any;
+  const s = stats as HierarchicalStateStats;
   return `- ${state}: ${s.dataCount}/${s.districtCount} districts, Mean: ${s.mean?.toFixed(2) || 'N/A'}, Range: ${s.min?.toFixed(2)}-${s.max?.toFixed(2)}`;
 }).join('\n')}
 
@@ -214,7 +222,7 @@ User has not uploaded any data yet. You can only answer questions about:
 `;
 }
 
-function buildPreviousContextSection(previousContext: any): string {
+function buildPreviousContextSection(previousContext: PreviousContext): string {
   return `
 ## Previous Context (for comparison)
 
