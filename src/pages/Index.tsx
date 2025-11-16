@@ -192,6 +192,7 @@ const Index = () => {
     }
 
     updateChatContext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeTab,
     selectedStateForMap,

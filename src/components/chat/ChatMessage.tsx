@@ -141,7 +141,7 @@ function formatMessage(content: string): JSX.Element {
  */
 function formatInlineMarkdown(text: string): (string | JSX.Element)[] {
   const parts: (string | JSX.Element)[] = [];
-  let current = text;
+  const current = text;
   let key = 0;
 
   // Simple bold detection **text**
