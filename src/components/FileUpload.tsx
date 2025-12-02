@@ -3,6 +3,7 @@ import { Upload, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Papa from 'papaparse';
+import pako from 'pako';
 
 interface FileUploadProps {
   onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>, title?: string) => void;
@@ -18,6 +19,91 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
+
+  // Helper function to decompress gzipped files
+  const decompressGzip = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const compressed = new Uint8Array(e.target?.result as ArrayBuffer);
+          const decompressed = pako.inflate(compressed, { to: 'string' });
+          resolve(decompressed);
+        } catch (error) {
+          reject(new Error('Failed to decompress gzipped file'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  // Helper function to process uploaded CSV data
+  const processUploadedData = async (result: Papa.ParseResult<Record<string, string>>) => {
+    try {
+      const data = result.data as Array<Record<string, string>>;
+      const headers = result.meta.fields || [];
+
+      // Validate column count based on mode
+      const requiredColumns = mode === 'districts' ? 3 : 2;
+      if (headers.length < requiredColumns) {
+        alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
+        return;
+      }
+
+      // For districts: state, district, value columns (value is always last column)
+      // For states: state, value columns (value is always last column)
+      const stateColumn = headers[0];
+      const locationColumn = mode === 'districts' ? headers[1] : headers[0];
+      const valueColumn = headers[headers.length - 1]; // Always use the last column
+
+      const processedData = data
+        .filter(row => {
+          const hasLocationData = mode === 'districts'
+            ? row[stateColumn] && row[locationColumn]
+            : row[locationColumn];
+          return hasLocationData;
+        })
+        .map(row => {
+          const value = row[valueColumn];
+          const trimmedValue = value ? value.trim() : '';
+          const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a'
+            ? NaN
+            : Number(trimmedValue);
+
+          return mode === 'districts'
+            ? {
+                state: row[stateColumn].trim(),
+                district: row[locationColumn].trim(),
+                value: numericValue
+              }
+            : {
+                state: row[locationColumn].trim(),
+                value: numericValue
+              };
+        })
+        .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
+
+      if (processedData.length === 0) {
+        const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
+        alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
+        return;
+      }
+
+      // Filter data based on GeoJSON before passing to parent
+      const filteredData = await filterDataByGeoJSON(processedData);
+
+      if (filteredData.length === 0) {
+        alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
+        return;
+      }
+
+      // Use second column header as title
+      onDataLoad(filteredData, valueColumn);
+    } catch (error) {
+      alert('Error processing file data');
+    }
+  };
 
   // Helper function to filter data based on GeoJSON
   const filterDataByGeoJSON = async (
@@ -56,77 +142,35 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Check if file is gzipped
+    const isGzipped = file.name.endsWith('.gz');
+
+    if (isGzipped) {
+      try {
+        const decompressedText = await decompressGzip(file);
+        Papa.parse(decompressedText, {
+          header: true,
+          complete: async (result) => {
+            await processUploadedData(result);
+          },
+          error: (error) => {
+            alert('Error parsing decompressed file');
+          }
+        });
+      } catch (error) {
+        alert('Error decompressing gzipped file. Please ensure the file is a valid .gz file.');
+      }
+      return;
+    }
 
     Papa.parse(file, {
       header: true,
       complete: async (result) => {
-        try {
-          const data = result.data as Array<Record<string, string>>;
-          const headers = result.meta.fields || [];
-
-
-          // Validate column count based on mode
-          const requiredColumns = mode === 'districts' ? 3 : 2;
-          if (headers.length < requiredColumns) {
-            alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
-            return;
-          }
-
-          // For districts: state, district, value columns (value is always last column)
-          // For states: state, value columns (value is always last column)
-          const stateColumn = headers[0];
-          const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-          const valueColumn = headers[headers.length - 1]; // Always use the last column
-
-          const processedData = data
-            .filter(row => {
-              const hasLocationData = mode === 'districts'
-                ? row[stateColumn] && row[locationColumn]
-                : row[locationColumn];
-              return hasLocationData;
-            })
-            .map(row => {
-              const value = row[valueColumn];
-              const trimmedValue = value ? value.trim() : '';
-              const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a'
-                ? NaN
-                : Number(trimmedValue);
-
-              return mode === 'districts'
-                ? {
-                    state: row[stateColumn].trim(),
-                    district: row[locationColumn].trim(),
-                    value: numericValue
-                  }
-                : {
-                    state: row[locationColumn].trim(),
-                    value: numericValue
-                  };
-            })
-            .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
-
-          if (processedData.length === 0) {
-            const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
-            alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
-            return;
-          }
-
-          // Filter data based on GeoJSON before passing to parent
-          const filteredData = await filterDataByGeoJSON(processedData);
-
-          if (filteredData.length === 0) {
-            alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
-            return;
-          }
-
-          // Use second column header as title
-          onDataLoad(filteredData, valueColumn);
-        } catch (error) {
-          alert('Error processing file data');
-        }
+        await processUploadedData(result);
       },
       error: (error) => {
         alert('Error parsing file');
@@ -242,6 +286,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     }
   };
 
+  // Helper to detect URL type
+  function detectUrlType(url: string): 'google-sheets' | 'csv' | 'tsv' | 'csv-gz' | 'tsv-gz' | 'unknown' {
+    if (url.includes('docs.google.com/spreadsheets')) {
+      return 'google-sheets';
+    }
+    if (url.endsWith('.csv.gz')) {
+      return 'csv-gz';
+    }
+    if (url.endsWith('.tsv.gz')) {
+      return 'tsv-gz';
+    }
+    if (url.endsWith('.csv')) {
+      return 'csv';
+    }
+    if (url.endsWith('.tsv')) {
+      return 'tsv';
+    }
+    return 'unknown';
+  }
+
   // Helper to extract Google Sheet ID and GID from URL
   function extractSheetInfo(url: string) {
     // Typical format: https://docs.google.com/spreadsheets/d/{sheetId}/edit#gid={gid}
@@ -250,98 +314,70 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     return { sheetId: match[1], gid: match[2] || '0' };
   }
 
+  // Helper to fetch and decompress gzipped URL
+  const fetchAndDecompressGzUrl = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch URL: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const compressed = new Uint8Array(arrayBuffer);
+    const decompressed = pako.inflate(compressed, { to: 'string' });
+    return decompressed;
+  };
+
   const handleLoadGoogleSheet = async () => {
     setSheetError(null);
     setLoadingSheet(true);
-    const info = extractSheetInfo(googleSheetUrl);
-    if (!info) {
-      setSheetError('Invalid Google Sheet link.');
-      setLoadingSheet(false);
-      return;
-    }
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${info.sheetId}/gviz/tq?tqx=out:csv&gid=${info.gid}`;
+
+    const urlType = detectUrlType(googleSheetUrl);
+    let csvText: string;
+
     try {
-      const response = await fetch(csvUrl);
-      if (!response.ok) throw new Error('Failed to fetch Google Sheet.');
-      const csvText = await response.text();
+      if (urlType === 'google-sheets') {
+        // Handle Google Sheets URL
+        const info = extractSheetInfo(googleSheetUrl);
+        if (!info) {
+          setSheetError('Invalid Google Sheet link.');
+          setLoadingSheet(false);
+          return;
+        }
+        const csvUrl = `https://docs.google.com/spreadsheets/d/${info.sheetId}/gviz/tq?tqx=out:csv&gid=${info.gid}`;
+        const response = await fetch(csvUrl);
+        if (!response.ok) throw new Error('Failed to fetch Google Sheet.');
+        csvText = await response.text();
+      } else if (urlType === 'csv-gz' || urlType === 'tsv-gz') {
+        // Handle gzipped CSV/TSV URL
+        csvText = await fetchAndDecompressGzUrl(googleSheetUrl);
+      } else if (urlType === 'csv' || urlType === 'tsv') {
+        // Handle direct CSV/TSV URL
+        const response = await fetch(googleSheetUrl);
+        if (!response.ok) throw new Error(`Failed to fetch URL: ${response.statusText}`);
+        csvText = await response.text();
+      } else {
+        setSheetError('Invalid URL. Please provide a Google Sheets link or a direct link to a CSV, TSV, or gzipped file.');
+        setLoadingSheet(false);
+        return;
+      }
       Papa.parse(csvText, {
         header: true,
         complete: async (result) => {
           try {
-            const data = result.data as Array<Record<string, string>>;
-            const headers = result.meta.fields || [];
-
-            // Validate column count based on mode
-            const requiredColumns = mode === 'districts' ? 3 : 2;
-            if (headers.length < requiredColumns) {
-              setSheetError(`Sheet must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
-              setLoadingSheet(false);
-              return;
-            }
-
-            // For districts: state, district, value columns (value is always last column)
-            // For states: state, value columns (value is always last column)
-            const stateColumn = headers[0];
-            const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-            const valueColumn = headers[headers.length - 1]; // Always use the last column
-
-            const processedData = data
-              .filter(row => {
-                const hasLocationData = mode === 'districts'
-                  ? row[stateColumn] && row[locationColumn]
-                  : row[locationColumn];
-                return hasLocationData;
-              })
-              .map(row => {
-                const value = row[valueColumn];
-                const trimmedValue = value ? value.trim() : '';
-                const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a'
-                  ? NaN
-                  : Number(trimmedValue);
-
-                return mode === 'districts'
-                  ? {
-                      state: row[stateColumn].trim(),
-                      district: row[locationColumn].trim(),
-                      value: numericValue
-                    }
-                  : {
-                      state: row[locationColumn].trim(),
-                      value: numericValue
-                    };
-              })
-              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
-            if (processedData.length === 0) {
-              const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
-              setSheetError(`No valid data found. Ensure your sheet has data in the ${columnDesc}.`);
-              setLoadingSheet(false);
-              return;
-            }
-
-            // Filter data based on GeoJSON before passing to parent
-            const filteredData = await filterDataByGeoJSON(processedData);
-
-            if (filteredData.length === 0) {
-              setSheetError(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
-              setLoadingSheet(false);
-              return;
-            }
-
-            // Use second column header as title
-            onDataLoad(filteredData, valueColumn);
+            await processUploadedData(result);
             setLoadingSheet(false);
           } catch (error) {
-            setSheetError('Error processing sheet data.');
+            setSheetError('Error processing data from URL.');
             setLoadingSheet(false);
           }
         },
         error: () => {
-          setSheetError('Error parsing CSV from Google Sheet.');
+          setSheetError('Error parsing CSV/TSV data from URL.');
           setLoadingSheet(false);
         }
       });
     } catch (err) {
-      setSheetError('Failed to fetch or parse Google Sheet.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch or parse data from URL.';
+      setSheetError(errorMessage);
       setLoadingSheet(false);
     }
   };
@@ -353,8 +389,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
         <p className="text-sm text-muted-foreground mb-4">
           {mode === 'districts'
-            ? 'Upload a CSV or TSV file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
-            : 'Upload a CSV or TSV file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
+            ? 'Upload a CSV, TSV, or gzipped (.gz) file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
+            : 'Upload a CSV, TSV, or gzipped (.gz) file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
           }
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -374,9 +410,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         
         <div className="mt-4 p-4 border-t border-gray-200">
           <div className="text-center mb-3">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Or load from Google Sheets</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-1">Or load from URL</h4>
             <p className="text-xs text-gray-500">
-              Paste your Google Sheet link below (see{' '}
+              Paste a Google Sheets link (see{' '}
               <a
                 href={googleSheetLink || (mode === 'districts'
                   ? "https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing"
@@ -386,7 +422,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                 className="underline text-blue-500 hover:text-blue-700"
               >
                 template
-              </a>)
+              </a>
+              ) or a direct URL to CSV, TSV, or gzipped files (.csv, .tsv, .csv.gz, .tsv.gz)
             </p>
           </div>
           <div className="flex flex-col gap-3">
@@ -394,7 +431,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               <input
                 type="text"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://docs.google.com/spreadsheets/d/..."
+                placeholder="https://docs.google.com/... or https://example.com/data.csv"
                 value={googleSheetUrl}
                 onChange={e => setGoogleSheetUrl(e.target.value)}
                 disabled={loadingSheet}
@@ -417,7 +454,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                 onClick={handleLoadGoogleSheet}
                 disabled={loadingSheet || !googleSheetUrl}
               >
-                {loadingSheet ? 'Loading...' : 'Load from Google Sheet'}
+                {loadingSheet ? 'Loading...' : 'Load from URL'}
               </Button>
             </div>
             {sheetError && <div className="text-xs text-red-500 text-center">{sheetError}</div>}
@@ -426,7 +463,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,.tsv"
+          accept=".csv,.tsv,.gz"
           onChange={handleFileUpload}
           className="hidden"
         />
