@@ -314,12 +314,62 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     return { sheetId: match[1], gid: match[2] || '0' };
   }
 
-  // Helper to fetch and decompress gzipped URL
-  const fetchAndDecompressGzUrl = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.statusText}`);
+  // Helper to fetch with CORS proxy fallback
+  const fetchWithCorsFallback = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    try {
+      // Try direct fetch first
+      const response = await fetch(url, options);
+      // If response is ok, return it
+      if (response.ok) {
+        return response;
+      }
+      // If response exists but not ok, it's not a CORS issue - throw the error
+      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+    } catch (error) {
+      // CORS errors typically result in TypeError with "Failed to fetch" or network errors
+      // Only use proxy for network/CORS errors, not for HTTP errors (4xx, 5xx)
+      if (error instanceof TypeError || (error instanceof Error && error.message.includes('Failed to fetch'))) {
+        // Use a public CORS proxy as fallback
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const proxyResponse = await fetch(proxyUrl);
+        if (!proxyResponse.ok) {
+          throw new Error(`Failed to fetch URL via proxy: ${proxyResponse.statusText}`);
+        }
+        return proxyResponse;
+      }
+      // Re-throw other errors
+      throw error;
     }
+  };
+
+  // Helper to fetch and decompress gzipped URL with CORS fallback
+  const fetchAndDecompressGzUrl = async (url: string): Promise<string> => {
+    let response: Response;
+    
+    try {
+      // Try direct fetch first
+      response = await fetch(url);
+      if (response.ok) {
+        // Success, use direct response
+      } else {
+        // HTTP error (4xx, 5xx) - not a CORS issue, throw error
+        throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+      }
+    } catch (error) {
+      // CORS or network error - try proxy
+      if (error instanceof TypeError || (error instanceof Error && error.message.includes('Failed to fetch'))) {
+        // Use a public CORS proxy
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        response = await fetch(proxyUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch URL via proxy: ${response.statusText}`);
+        }
+      } else {
+        // Re-throw other errors
+        throw error;
+      }
+    }
+    
     const arrayBuffer = await response.arrayBuffer();
     const compressed = new Uint8Array(arrayBuffer);
     const decompressed = pako.inflate(compressed, { to: 'string' });
@@ -343,15 +393,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
           return;
         }
         const csvUrl = `https://docs.google.com/spreadsheets/d/${info.sheetId}/gviz/tq?tqx=out:csv&gid=${info.gid}`;
-        const response = await fetch(csvUrl);
+        const response = await fetchWithCorsFallback(csvUrl);
         if (!response.ok) throw new Error('Failed to fetch Google Sheet.');
         csvText = await response.text();
       } else if (urlType === 'csv-gz' || urlType === 'tsv-gz') {
         // Handle gzipped CSV/TSV URL
         csvText = await fetchAndDecompressGzUrl(googleSheetUrl);
       } else if (urlType === 'csv' || urlType === 'tsv') {
-        // Handle direct CSV/TSV URL
-        const response = await fetch(googleSheetUrl);
+        // Handle direct CSV/TSV URL with CORS fallback
+        const response = await fetchWithCorsFallback(googleSheetUrl);
         if (!response.ok) throw new Error(`Failed to fetch URL: ${response.statusText}`);
         csvText = await response.text();
       } else {
