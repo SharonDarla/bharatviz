@@ -55,13 +55,21 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.get('/embed.js', (req, res) => {
-  res.sendFile(join(__dirname, '..', 'public', 'embed.js'));
-});
-
 app.use('/api/v1/states', mapRoutes);
 app.use('/api/v1/districts', districtsMapRoutes);
 app.use('/api/v1/embed', embedRoutes);
+
+// Serve embed.js from /api/embed.js to bypass nginx static file handling
+app.get('/api/embed.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(join(__dirname, '..', 'public', 'embed.js'));
+});
+
+// Also try to serve from root path (in case nginx allows it)
+app.get('/embed.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(join(__dirname, '..', 'public', 'embed.js'));
+});
 
 // Root endpoint with API documentation
 app.get('/', (req, res) => {

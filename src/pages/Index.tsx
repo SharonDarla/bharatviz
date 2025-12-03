@@ -586,7 +586,7 @@ bv$show_map(result_nfhs5)`}
                       <h3 className="text-lg font-semibold mb-2">JavaScript widget</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`<div id="my-map"></div>
-<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script src="https://bharatviz.saketlab.in/api/embed.js"></script>
 <script>
   BharatViz.embed({
     container: '#my-map',
