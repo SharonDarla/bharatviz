@@ -31,10 +31,12 @@ app.use(helmet({
   }
 }));
 
+// CORS configuration - allow all origins for embedding to work on any website
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*',
+  origin: '*',
   methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
 }));
 
 const limiter = rateLimit({
