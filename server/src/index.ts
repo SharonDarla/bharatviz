@@ -55,6 +55,10 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.get('/embed.js', (req, res) => {
+  res.sendFile(join(__dirname, '..', 'public', 'embed.js'));
+});
+
 app.use('/api/v1/states', mapRoutes);
 app.use('/api/v1/districts', districtsMapRoutes);
 app.use('/api/v1/embed', embedRoutes);
