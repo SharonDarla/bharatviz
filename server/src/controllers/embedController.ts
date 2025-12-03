@@ -52,8 +52,15 @@ export class EmbedController {
     return hasDistrict ? 'districts' : 'states';
   }
 
-  private findValueColumnName(row: CSVRow): string | null {
-    // First, try common value column names
+  private findValueColumnName(row: CSVRow, explicitColumn?: string): string | null {
+    if (explicitColumn) {
+      if (row[explicitColumn] !== undefined && row[explicitColumn] !== null && row[explicitColumn] !== '') {
+        const val = parseFloat(String(row[explicitColumn]));
+        if (!isNaN(val)) return explicitColumn;
+      }
+      return null;
+    }
+
     const commonValueNames = ['value', 'Value', 'VALUE', 'val', 'Val'];
     for (const name of commonValueNames) {
       if (row[name] !== undefined && row[name] !== null && row[name] !== '') {
@@ -62,11 +69,9 @@ export class EmbedController {
       }
     }
 
-    // If not found, look for the first numeric column that's not a state/district identifier
     const keys = Object.keys(row);
     for (const key of keys) {
       const lowerKey = key.toLowerCase();
-      // Skip state/district identifier columns
       if (lowerKey.includes('state') || lowerKey.includes('district')) continue;
 
       const val = parseFloat(String(row[key]));
@@ -76,25 +81,25 @@ export class EmbedController {
     return null;
   }
 
-  private findValueColumn(row: CSVRow): number {
-    const columnName = this.findValueColumnName(row);
+  private findValueColumn(row: CSVRow, explicitColumn?: string): number {
+    const columnName = this.findValueColumnName(row, explicitColumn);
     if (!columnName) return 0;
 
     const val = parseFloat(String(row[columnName]));
     return isNaN(val) ? 0 : val;
   }
 
-  private parseCSVData(data: CSVRow[], mapType: MapType): StateData[] | DistrictData[] {
+  private parseCSVData(data: CSVRow[], mapType: MapType, explicitColumn?: string): StateData[] | DistrictData[] {
     if (mapType === 'states') {
       return data.map((row: CSVRow) => ({
         state: String(row.state || row.State || row.STATE || row.state_name || row.State_Name || ''),
-        value: this.findValueColumn(row)
+        value: this.findValueColumn(row, explicitColumn)
       })).filter((item): item is StateData => Boolean(item.state) && !isNaN(item.value));
     } else {
       return data.map((row: CSVRow) => ({
         state: String(row.state_name || row.state || row.State || row.STATE || ''),
         district: String(row.district_name || row.district || row.District || row.DISTRICT || ''),
-        value: this.findValueColumn(row)
+        value: this.findValueColumn(row, explicitColumn)
       })).filter((item): item is DistrictData => Boolean(item.state) && Boolean(item.district) && !isNaN(item.value));
     }
   }
@@ -112,8 +117,9 @@ export class EmbedController {
         invertColors = 'false',
         hideValues = 'false',
         hideStateNames = 'false',
-        hideDistrictNames = 'false',
-        showStateBoundaries = 'true'
+        hideDistrictNames = 'true',
+        showStateBoundaries = 'true',
+        valueColumn
       } = req.query;
 
       if (!dataUrl || typeof dataUrl !== 'string') {
@@ -140,17 +146,25 @@ export class EmbedController {
         mapType = 'state-districts';
       }
 
-      const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType);
+      const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType, valueColumn as string);
 
-      // Auto-detect the value column name for title and legend
       let autoDetectedColumnName: string | null = null;
       if (parseResult.data.length > 0) {
-        autoDetectedColumnName = this.findValueColumnName(parseResult.data[0] as CSVRow);
+        autoDetectedColumnName = this.findValueColumnName(parseResult.data[0] as CSVRow, valueColumn as string);
       }
 
-      // Use auto-detected column name if title/legendTitle weren't explicitly provided
       const finalTitle = (title === 'BharatViz' && autoDetectedColumnName) ? autoDetectedColumnName : title;
       const finalLegendTitle = (legendTitle === 'Values' && autoDetectedColumnName) ? autoDetectedColumnName : legendTitle;
+
+      const hideDistrictNamesProvided = req.query.hideDistrictNames !== undefined;
+      const finalHideDistrictNames = hideDistrictNamesProvided ?
+        (hideDistrictNames === 'true') :
+        (mapType === 'districts' ? true : false);
+
+      const hideValuesProvided = req.query.hideValues !== undefined;
+      const finalHideValues = hideValuesProvided ?
+        (hideValues === 'true') :
+        (mapType === 'districts' ? true : false);
 
       if (parsedData.length === 0) {
         return res.status(400).json({
@@ -166,9 +180,9 @@ export class EmbedController {
         boundary: boundary as string,
         colorScale: colorScale as string,
         invertColors: invertColors === 'true',
-        hideValues: hideValues === 'true',
+        hideValues: finalHideValues,
         hideStateNames: hideStateNames === 'true',
-        hideDistrictNames: hideDistrictNames === 'true',
+        hideDistrictNames: finalHideDistrictNames,
         showStateBoundaries: showStateBoundaries === 'true',
         mainTitle: finalTitle as string,
         legendTitle: finalLegendTitle as string
@@ -203,8 +217,9 @@ export class EmbedController {
         invertColors = 'false',
         hideValues = 'false',
         hideStateNames = 'false',
-        hideDistrictNames = 'false',
-        showStateBoundaries = 'true'
+        hideDistrictNames = 'true',
+        showStateBoundaries = 'true',
+        valueColumn
       } = req.query;
 
       if (!dataUrl || typeof dataUrl !== 'string') {
@@ -231,16 +246,24 @@ export class EmbedController {
         mapType = 'state-districts';
       }
 
-      const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType);
+      const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType, valueColumn as string);
 
-      // Auto-detect the value column name for legend
       let autoDetectedColumnName: string | null = null;
       if (parseResult.data.length > 0) {
-        autoDetectedColumnName = this.findValueColumnName(parseResult.data[0] as CSVRow);
+        autoDetectedColumnName = this.findValueColumnName(parseResult.data[0] as CSVRow, valueColumn as string);
       }
 
-      // Use auto-detected column name if legendTitle wasn't explicitly provided
       const finalLegendTitle = (legendTitle === 'Values' && autoDetectedColumnName) ? autoDetectedColumnName : legendTitle;
+
+      const hideDistrictNamesProvided = req.query.hideDistrictNames !== undefined;
+      const finalHideDistrictNames = hideDistrictNamesProvided ?
+        (hideDistrictNames === 'true') :
+        (mapType === 'districts' ? true : false);
+
+      const hideValuesProvided = req.query.hideValues !== undefined;
+      const finalHideValues = hideValuesProvided ?
+        (hideValues === 'true') :
+        (mapType === 'districts' ? true : false);
 
       if (parsedData.length === 0) {
         return res.status(400).json({
@@ -256,9 +279,9 @@ export class EmbedController {
         boundary: boundary as string,
         colorScale: colorScale as string,
         invertColors: invertColors === 'true',
-        hideValues: hideValues === 'true',
+        hideValues: finalHideValues,
         hideStateNames: hideStateNames === 'true',
-        hideDistrictNames: hideDistrictNames === 'true',
+        hideDistrictNames: finalHideDistrictNames,
         showStateBoundaries: showStateBoundaries === 'true',
         mainTitle: '',
         legendTitle: finalLegendTitle as string
@@ -290,9 +313,10 @@ export class EmbedController {
         invertColors = false,
         hideValues = false,
         hideStateNames = false,
-        hideDistrictNames = false,
+        hideDistrictNames = true,
         showStateBoundaries = true,
-        format = 'html'
+        format = 'html',
+        valueColumn
       } = req.body;
 
       if (!data || !Array.isArray(data)) {
@@ -311,15 +335,19 @@ export class EmbedController {
 
       let parsedData: StateData[] | DistrictData[];
 
-      if (mapType === 'states') {
-        parsedData = (data as CSVRow[]).filter((item): item is StateData =>
-          'state' in item && 'value' in item && item.state !== undefined && item.value !== undefined
-        );
+      if (valueColumn) {
+        parsedData = this.parseCSVData(data as CSVRow[], mapType, valueColumn);
       } else {
-        parsedData = (data as CSVRow[]).filter((item): item is DistrictData =>
-          'state' in item && 'district' in item && 'value' in item &&
-          item.state !== undefined && item.district !== undefined && item.value !== undefined
-        );
+        if (mapType === 'states') {
+          parsedData = (data as CSVRow[]).filter((item): item is StateData =>
+            'state' in item && 'value' in item && item.state !== undefined && item.value !== undefined
+          );
+        } else {
+          parsedData = (data as CSVRow[]).filter((item): item is DistrictData =>
+            'state' in item && 'district' in item && 'value' in item &&
+            item.state !== undefined && item.district !== undefined && item.value !== undefined
+          );
+        }
       }
 
       if (parsedData.length === 0) {
