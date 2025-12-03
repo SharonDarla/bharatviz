@@ -6,8 +6,23 @@ import Papa from 'papaparse';
 
 type MapType = 'states' | 'districts' | 'state-districts';
 
+interface CSVRow {
+  [key: string]: string | number;
+}
+
+interface StateData {
+  state: string;
+  value: number;
+}
+
+interface DistrictData {
+  state: string;
+  district: string;
+  value: number;
+}
+
 export class EmbedController {
-  private detectMapType(data: any[]): MapType {
+  private detectMapType(data: CSVRow[]): MapType {
     if (!data || data.length === 0) return 'states';
 
     const firstRow = data[0];
@@ -19,18 +34,18 @@ export class EmbedController {
     return hasDistrict ? 'districts' : 'states';
   }
 
-  private parseCSVData(data: any[], mapType: MapType) {
+  private parseCSVData(data: CSVRow[], mapType: MapType): StateData[] | DistrictData[] {
     if (mapType === 'states') {
-      return data.map((row: any) => ({
-        state: row.state || row.State || row.STATE || row.state_name || row.State_Name,
-        value: parseFloat(row.value || row.Value || row.VALUE || row.val || row.Val || '0')
-      })).filter(item => item.state && !isNaN(item.value));
+      return data.map((row: CSVRow) => ({
+        state: String(row.state || row.State || row.STATE || row.state_name || row.State_Name || ''),
+        value: parseFloat(String(row.value || row.Value || row.VALUE || row.val || row.Val || '0'))
+      })).filter((item): item is StateData => Boolean(item.state) && !isNaN(item.value));
     } else {
-      return data.map((row: any) => ({
-        state: row.state_name || row.state || row.State || row.STATE,
-        district: row.district_name || row.district || row.District || row.DISTRICT,
-        value: parseFloat(row.value || row.Value || row.VALUE || row.val || row.Val || '0')
-      })).filter(item => item.state && item.district && !isNaN(item.value));
+      return data.map((row: CSVRow) => ({
+        state: String(row.state_name || row.state || row.State || row.STATE || ''),
+        district: String(row.district_name || row.district || row.District || row.DISTRICT || ''),
+        value: parseFloat(String(row.value || row.Value || row.VALUE || row.val || row.Val || '0'))
+      })).filter((item): item is DistrictData => Boolean(item.state) && Boolean(item.district) && !isNaN(item.value));
     }
   }
 
@@ -68,14 +83,14 @@ export class EmbedController {
         });
       }
 
-      const detectedMapType = this.detectMapType(parseResult.data);
+      const detectedMapType = this.detectMapType(parseResult.data as CSVRow[]);
       let mapType: MapType = (explicitMapType as MapType) || detectedMapType;
 
       if (state && mapType === 'districts') {
         mapType = 'state-districts';
       }
 
-      const parsedData = this.parseCSVData(parseResult.data, mapType);
+      const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType);
 
       if (parsedData.length === 0) {
         return res.status(400).json({
@@ -104,11 +119,12 @@ export class EmbedController {
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       res.send(html);
 
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       res.status(500).json({
         success: false,
         error: {
-          message: error.message || 'Failed to generate embed',
+          message: err.message || 'Failed to generate embed',
           code: 'EMBED_ERROR'
         }
       });
@@ -148,14 +164,14 @@ export class EmbedController {
         });
       }
 
-      const detectedMapType = this.detectMapType(parseResult.data);
+      const detectedMapType = this.detectMapType(parseResult.data as CSVRow[]);
       let mapType: MapType = (explicitMapType as MapType) || detectedMapType;
 
       if (state && mapType === 'districts') {
         mapType = 'state-districts';
       }
 
-      const parsedData = this.parseCSVData(parseResult.data, mapType);
+      const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType);
 
       if (parsedData.length === 0) {
         return res.status(400).json({
@@ -183,10 +199,11 @@ export class EmbedController {
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.send(svgContent);
 
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       res.status(500).json({
         success: false,
-        error: { message: error.message || 'Failed to generate SVG', code: 'SVG_ERROR' }
+        error: { message: err.message || 'Failed to generate SVG', code: 'SVG_ERROR' }
       });
     }
   }
@@ -216,7 +233,7 @@ export class EmbedController {
         });
       }
 
-      const detectedMapType = this.detectMapType(data);
+      const detectedMapType = this.detectMapType(data as CSVRow[]);
       let mapType: MapType = explicitMapType || detectedMapType;
 
       if (state && mapType === 'districts') {
@@ -224,8 +241,13 @@ export class EmbedController {
       }
 
       const parsedData = mapType === 'states'
-        ? data.filter((item: any) => item.state && item.value !== undefined)
-        : data.filter((item: any) => item.state && item.district && item.value !== undefined);
+        ? (data as CSVRow[]).filter((item): item is StateData =>
+            'state' in item && 'value' in item && item.state !== undefined && item.value !== undefined
+          )
+        : (data as CSVRow[]).filter((item): item is DistrictData =>
+            'state' in item && 'district' in item && 'value' in item &&
+            item.state !== undefined && item.district !== undefined && item.value !== undefined
+          );
 
       if (parsedData.length === 0) {
         return res.status(400).json({
@@ -274,16 +296,17 @@ export class EmbedController {
         });
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as Error;
       res.status(500).json({
         success: false,
-        error: { message: error.message || 'Failed to generate embed', code: 'GENERATE_ERROR' }
+        error: { message: err.message || 'Failed to generate embed', code: 'GENERATE_ERROR' }
       });
     }
   }
 
   private async generateSVG(options: {
-    data: any[];
+    data: StateData[] | DistrictData[];
     mapType: MapType;
     state?: string;
     boundary: string;
@@ -314,7 +337,7 @@ export class EmbedController {
     if (mapType === 'states') {
       const renderer = new StatesMapRenderer();
       return await renderer.renderMap({
-        data,
+        data: data as StateData[],
         colorScale,
         invertColors,
         hideValues,
@@ -329,9 +352,9 @@ export class EmbedController {
 
       const renderer = new DistrictsMapRenderer();
       return await renderer.renderMap({
-        data,
+        data: data as DistrictData[],
         state,
-        mapType: boundary as any,
+        mapType: boundary as 'LGD' | 'NFHS4' | 'NFHS5',
         colorScale,
         invertColors,
         hideValues,
@@ -342,8 +365,8 @@ export class EmbedController {
     } else {
       const renderer = new DistrictsMapRenderer();
       return await renderer.renderMap({
-        data,
-        mapType: boundary as any,
+        data: data as DistrictData[],
+        mapType: boundary as 'LGD' | 'NFHS4' | 'NFHS5',
         colorScale,
         invertColors,
         hideValues,
