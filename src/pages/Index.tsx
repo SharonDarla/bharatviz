@@ -565,6 +565,123 @@ bv$show_map(result_nfhs5)`}
                 </div>
 
                 <div className="pt-6 border-t">
+                  <h2 className="text-2xl font-bold mb-4">Embed Maps in Your Website</h2>
+                  <p className="text-muted-foreground mb-4">
+                    Embed interactive BharatViz maps directly into your website, blog, or GitHub Pages without downloading files.
+                    Your data stays on your server and maps update automatically when data changes.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
+                      <h3 className="text-lg font-semibold mb-2 text-purple-800 dark:text-purple-200">Method 1: iframe Embed (Simplest)</h3>
+                      <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                        Just add an iframe to your HTML. Host your CSV file anywhere (GitHub Pages, your website, etc.)
+                      </p>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`<iframe
+  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://yoursite.com/data.csv&colorScale=viridis&title=My%20Map"
+  width="800"
+  height="600"
+  frameborder="0">
+</iframe>`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
+                      <h3 className="text-lg font-semibold mb-2 text-purple-800 dark:text-purple-200">Method 2: JavaScript Widget (Recommended)</h3>
+                      <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                        More flexible and responsive. Works great with inline data or URLs.
+                      </p>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`<!-- Add to your HTML -->
+<div id="my-map"></div>
+<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script>
+  BharatViz.embed({
+    container: '#my-map',
+    dataUrl: 'https://yoursite.com/data.csv',
+    colorScale: 'viridis',
+    title: 'My Map'
+  });
+</script>`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-950">
+                      <h3 className="text-lg font-semibold mb-2 text-purple-800 dark:text-purple-200">Method 3: Direct SVG Image</h3>
+                      <p className="text-sm text-purple-700 dark:text-purple-300 mb-2">
+                        Use as a regular image or in Markdown files (GitHub README, etc.)
+                      </p>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`<!-- HTML -->
+<img src="https://bharatviz.saketlab.in/api/v1/embed/svg?dataUrl=https://yoursite.com/data.csv&colorScale=viridis" />
+
+<!-- Markdown -->
+![My Map](https://bharatviz.saketlab.in/api/v1/embed/svg?dataUrl=https://yoursite.com/data.csv&colorScale=viridis)`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">GitHub Pages Example</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Host your data on GitHub Pages and embed maps anywhere:
+                      </p>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# 1. Create data.csv in your GitHub repo:
+state,value
+Maharashtra,82.9
+Karnataka,75.6
+Kerala,93.9
+
+# 2. Enable GitHub Pages in repo settings
+
+# 3. Embed using your GitHub Pages URL:
+<iframe src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://USERNAME.github.io/REPO/data.csv&colorScale=viridis"></iframe>`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">Available Parameters</h3>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p><code className="bg-muted px-1 py-0.5 rounded">dataUrl</code> - URL to your CSV file (required)</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">mapType</code> - 'states', 'districts', or 'state-districts' (default: 'states')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">colorScale</code> - 'viridis', 'spectral', 'blues', 'greens', etc. (default: 'spectral')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">title</code> - Map title (default: 'BharatViz')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">legendTitle</code> - Legend label (default: 'Values')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">invertColors</code> - true/false to reverse color scale</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">districtBoundary</code> - 'LGD', 'NFHS4', or 'NFHS5' for district maps</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-green-50 dark:bg-green-950">
+                      <h3 className="text-lg font-semibold mb-2 text-green-800 dark:text-green-200">Benefits of Embedding</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-green-700 dark:text-green-300">
+                        <li>No need to download and re-upload map images</li>
+                        <li>Maps update automatically when your data changes</li>
+                        <li>Free hosting with GitHub Pages</li>
+                        <li>Works on any website (WordPress, Medium, etc.)</li>
+                        <li>Version control your data with git</li>
+                        <li>Fully responsive and customizable</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Full Documentation</h3>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+                        For complete embed documentation including all parameters, advanced examples, and troubleshooting:
+                      </p>
+                      <a
+                        href="https://github.com/saketlab/bharatviz/blob/main/EMBED.md"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block text-sm underline hover:text-blue-900 dark:hover:text-blue-100"
+                      >
+                        View EMBED.md on GitHub →
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t">
                   <div className="p-4 border rounded-lg bg-muted/50">
                     <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
                       <Github className="h-5 w-5" />
