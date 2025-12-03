@@ -105,11 +105,18 @@
             params.append('showStateBoundaries', options.showStateBoundaries ? 'true' : 'false');
           }
 
-          const response = await fetch(`${API_BASE}/embed/svg?${params.toString()}`);
+          const url = `${API_BASE}/embed/svg?${params.toString()}`;
+          const response = await fetch(url);
 
           if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error?.message || 'Failed to fetch map');
+            let errorMessage = 'Failed to fetch map';
+            try {
+              const error = await response.json();
+              errorMessage = error.error?.message || errorMessage;
+            } catch (e) {
+              errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
           }
 
           svgContent = await response.text();

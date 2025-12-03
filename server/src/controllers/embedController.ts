@@ -52,17 +52,49 @@ export class EmbedController {
     return hasDistrict ? 'districts' : 'states';
   }
 
+  private findValueColumnName(row: CSVRow): string | null {
+    // First, try common value column names
+    const commonValueNames = ['value', 'Value', 'VALUE', 'val', 'Val'];
+    for (const name of commonValueNames) {
+      if (row[name] !== undefined && row[name] !== null && row[name] !== '') {
+        const val = parseFloat(String(row[name]));
+        if (!isNaN(val)) return name;
+      }
+    }
+
+    // If not found, look for the first numeric column that's not a state/district identifier
+    const keys = Object.keys(row);
+    for (const key of keys) {
+      const lowerKey = key.toLowerCase();
+      // Skip state/district identifier columns
+      if (lowerKey.includes('state') || lowerKey.includes('district')) continue;
+
+      const val = parseFloat(String(row[key]));
+      if (!isNaN(val)) return key;
+    }
+
+    return null;
+  }
+
+  private findValueColumn(row: CSVRow): number {
+    const columnName = this.findValueColumnName(row);
+    if (!columnName) return 0;
+
+    const val = parseFloat(String(row[columnName]));
+    return isNaN(val) ? 0 : val;
+  }
+
   private parseCSVData(data: CSVRow[], mapType: MapType): StateData[] | DistrictData[] {
     if (mapType === 'states') {
       return data.map((row: CSVRow) => ({
         state: String(row.state || row.State || row.STATE || row.state_name || row.State_Name || ''),
-        value: parseFloat(String(row.value || row.Value || row.VALUE || row.val || row.Val || '0'))
+        value: this.findValueColumn(row)
       })).filter((item): item is StateData => Boolean(item.state) && !isNaN(item.value));
     } else {
       return data.map((row: CSVRow) => ({
         state: String(row.state_name || row.state || row.State || row.STATE || ''),
         district: String(row.district_name || row.district || row.District || row.DISTRICT || ''),
-        value: parseFloat(String(row.value || row.Value || row.VALUE || row.val || row.Val || '0'))
+        value: this.findValueColumn(row)
       })).filter((item): item is DistrictData => Boolean(item.state) && Boolean(item.district) && !isNaN(item.value));
     }
   }
@@ -110,6 +142,16 @@ export class EmbedController {
 
       const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType);
 
+      // Auto-detect the value column name for title and legend
+      let autoDetectedColumnName: string | null = null;
+      if (parseResult.data.length > 0) {
+        autoDetectedColumnName = this.findValueColumnName(parseResult.data[0] as CSVRow);
+      }
+
+      // Use auto-detected column name if title/legendTitle weren't explicitly provided
+      const finalTitle = (title === 'BharatViz' && autoDetectedColumnName) ? autoDetectedColumnName : title;
+      const finalLegendTitle = (legendTitle === 'Values' && autoDetectedColumnName) ? autoDetectedColumnName : legendTitle;
+
       if (parsedData.length === 0) {
         return res.status(400).json({
           success: false,
@@ -128,11 +170,11 @@ export class EmbedController {
         hideStateNames: hideStateNames === 'true',
         hideDistrictNames: hideDistrictNames === 'true',
         showStateBoundaries: showStateBoundaries === 'true',
-        mainTitle: title as string,
-        legendTitle: legendTitle as string
+        mainTitle: finalTitle as string,
+        legendTitle: finalLegendTitle as string
       });
 
-      const html = this.generateEmbedHTML(svgContent, title as string);
+      const html = this.generateEmbedHTML(svgContent, finalTitle as string);
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       res.send(html);
@@ -191,6 +233,15 @@ export class EmbedController {
 
       const parsedData = this.parseCSVData(parseResult.data as CSVRow[], mapType);
 
+      // Auto-detect the value column name for legend
+      let autoDetectedColumnName: string | null = null;
+      if (parseResult.data.length > 0) {
+        autoDetectedColumnName = this.findValueColumnName(parseResult.data[0] as CSVRow);
+      }
+
+      // Use auto-detected column name if legendTitle wasn't explicitly provided
+      const finalLegendTitle = (legendTitle === 'Values' && autoDetectedColumnName) ? autoDetectedColumnName : legendTitle;
+
       if (parsedData.length === 0) {
         return res.status(400).json({
           success: false,
@@ -210,7 +261,7 @@ export class EmbedController {
         hideDistrictNames: hideDistrictNames === 'true',
         showStateBoundaries: showStateBoundaries === 'true',
         mainTitle: '',
-        legendTitle: legendTitle as string
+        legendTitle: finalLegendTitle as string
       });
 
       res.setHeader('Content-Type', 'image/svg+xml');
