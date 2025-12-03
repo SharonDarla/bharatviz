@@ -314,11 +314,52 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     return { sheetId: match[1], gid: match[2] || '0' };
   }
 
+  // Helper to create timeout signal (compatible with older browsers)
+  const createTimeoutSignal = (timeoutMs: number): AbortSignal => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), timeoutMs);
+    return controller.signal;
+  };
+
+  // Helper to try multiple CORS proxy services as fallbacks
+  const tryProxyServices = async (url: string): Promise<Response> => {
+    const proxyServices = [
+      { name: 'allorigins.win', url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
+      { name: 'corsproxy.io', url: `https://corsproxy.io/?${encodeURIComponent(url)}` },
+      { name: 'codetabs.com', url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}` },
+    ];
+
+    const errors: string[] = [];
+    
+    for (const proxy of proxyServices) {
+      try {
+        const response = await fetch(proxy.url, {
+          // Add timeout to prevent hanging
+          signal: createTimeoutSignal(30000), // 30 second timeout
+        });
+        if (response.ok) {
+          return response;
+        }
+        errors.push(`${proxy.name}: ${response.status} ${response.statusText}`);
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        errors.push(`${proxy.name}: ${errorMsg}`);
+        // Continue to next proxy service
+        continue;
+      }
+    }
+    
+    throw new Error(`All proxy services failed. Errors: ${errors.join('; ')}`);
+  };
+
   // Helper to fetch with CORS proxy fallback
   const fetchWithCorsFallback = async (url: string, options: RequestInit = {}): Promise<Response> => {
     try {
       // Try direct fetch first
-      const response = await fetch(url, options);
+      const response = await fetch(url, {
+        ...options,
+        signal: createTimeoutSignal(10000), // 10 second timeout for direct fetch
+      });
       // If response is ok, return it
       if (response.ok) {
         return response;
@@ -327,15 +368,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
     } catch (error) {
       // CORS errors typically result in TypeError with "Failed to fetch" or network errors
-      // Only use proxy for network/CORS errors, not for HTTP errors (4xx, 5xx)
-      if (error instanceof TypeError || (error instanceof Error && error.message.includes('Failed to fetch'))) {
-        // Use a public CORS proxy as fallback
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const proxyResponse = await fetch(proxyUrl);
-        if (!proxyResponse.ok) {
-          throw new Error(`Failed to fetch URL via proxy: ${proxyResponse.statusText}`);
+      // Also catch timeout errors
+      const isCorsOrNetworkError = 
+        error instanceof TypeError || 
+        (error instanceof Error && (
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('timeout') ||
+          error.name === 'AbortError'
+        ));
+      
+      if (isCorsOrNetworkError) {
+        // Try proxy services as fallback
+        try {
+          return await tryProxyServices(url);
+        } catch (proxyError) {
+          throw new Error(`Failed to fetch URL. Direct fetch failed (CORS/network error) and all proxy services failed: ${proxyError instanceof Error ? proxyError.message : 'Unknown error'}`);
         }
-        return proxyResponse;
       }
       // Re-throw other errors
       throw error;
@@ -348,7 +397,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     
     try {
       // Try direct fetch first
-      response = await fetch(url);
+      response = await fetch(url, {
+        signal: createTimeoutSignal(10000), // 10 second timeout
+      });
       if (response.ok) {
         // Success, use direct response
       } else {
@@ -356,13 +407,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      // CORS or network error - try proxy
-      if (error instanceof TypeError || (error instanceof Error && error.message.includes('Failed to fetch'))) {
-        // Use a public CORS proxy
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        response = await fetch(proxyUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch URL via proxy: ${response.statusText}`);
+      // CORS or network error - try proxy services
+      const isCorsOrNetworkError = 
+        error instanceof TypeError || 
+        (error instanceof Error && (
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('timeout') ||
+          error.name === 'AbortError'
+        ));
+      
+      if (isCorsOrNetworkError) {
+        // Try proxy services as fallback
+        try {
+          response = await tryProxyServices(url);
+        } catch (proxyError) {
+          throw new Error(`Failed to fetch gzipped URL. Direct fetch failed (CORS/network error) and all proxy services failed: ${proxyError instanceof Error ? proxyError.message : 'Unknown error'}`);
         }
       } else {
         // Re-throw other errors
