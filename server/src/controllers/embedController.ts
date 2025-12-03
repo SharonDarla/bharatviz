@@ -3,6 +3,7 @@ import { StatesMapRenderer } from '../services/mapRenderer.js';
 import { DistrictsMapRenderer } from '../services/districtsMapRenderer.js';
 import axios from 'axios';
 import Papa from 'papaparse';
+import { gunzipSync } from 'zlib';
 
 type MapType = 'states' | 'districts' | 'state-districts';
 
@@ -24,6 +25,21 @@ interface DistrictData {
 }
 
 export class EmbedController {
+  private async fetchAndDecompressCSV(dataUrl: string): Promise<string> {
+    // Fetch the data - handle gzipped files
+    const response = await axios.get(dataUrl, {
+      responseType: dataUrl.endsWith('.gz') ? 'arraybuffer' : 'text'
+    });
+
+    if (dataUrl.endsWith('.gz')) {
+      // Decompress gzipped data
+      const buffer = Buffer.from(response.data);
+      return gunzipSync(buffer).toString('utf-8');
+    }
+
+    return response.data;
+  }
+
   private detectMapType(data: CSVRow[]): MapType {
     if (!data || data.length === 0) return 'states';
 
@@ -75,8 +91,8 @@ export class EmbedController {
         });
       }
 
-      const response = await axios.get(dataUrl);
-      const parseResult = Papa.parse(response.data, { header: true, skipEmptyLines: true });
+      const csvData = await this.fetchAndDecompressCSV(dataUrl);
+      const parseResult = Papa.parse(csvData, { header: true, skipEmptyLines: true });
 
       if (parseResult.errors.length > 0) {
         return res.status(400).json({
@@ -156,8 +172,8 @@ export class EmbedController {
         });
       }
 
-      const response = await axios.get(dataUrl);
-      const parseResult = Papa.parse(response.data, { header: true, skipEmptyLines: true });
+      const csvData = await this.fetchAndDecompressCSV(dataUrl);
+      const parseResult = Papa.parse(csvData, { header: true, skipEmptyLines: true });
 
       if (parseResult.errors.length > 0) {
         return res.status(400).json({
