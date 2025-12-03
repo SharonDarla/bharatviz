@@ -13,12 +13,14 @@ interface CSVRow {
 interface StateData {
   state: string;
   value: number;
+  [key: string]: string | number;
 }
 
 interface DistrictData {
   state: string;
   district: string;
   value: number;
+  [key: string]: string | number;
 }
 
 export class EmbedController {
@@ -240,14 +242,18 @@ export class EmbedController {
         mapType = 'state-districts';
       }
 
-      const parsedData = mapType === 'states'
-        ? (data as CSVRow[]).filter((item): item is StateData =>
-            'state' in item && 'value' in item && item.state !== undefined && item.value !== undefined
-          )
-        : (data as CSVRow[]).filter((item): item is DistrictData =>
-            'state' in item && 'district' in item && 'value' in item &&
-            item.state !== undefined && item.district !== undefined && item.value !== undefined
-          );
+      let parsedData: StateData[] | DistrictData[];
+
+      if (mapType === 'states') {
+        parsedData = (data as CSVRow[]).filter((item): item is StateData =>
+          'state' in item && 'value' in item && item.state !== undefined && item.value !== undefined
+        );
+      } else {
+        parsedData = (data as CSVRow[]).filter((item): item is DistrictData =>
+          'state' in item && 'district' in item && 'value' in item &&
+          item.state !== undefined && item.district !== undefined && item.value !== undefined
+        );
+      }
 
       if (parsedData.length === 0) {
         return res.status(400).json({
@@ -338,7 +344,7 @@ export class EmbedController {
       const renderer = new StatesMapRenderer();
       return await renderer.renderMap({
         data: data as StateData[],
-        colorScale,
+        colorScale: colorScale as 'spectral',
         invertColors,
         hideValues,
         hideStateNames,
@@ -355,7 +361,7 @@ export class EmbedController {
         data: data as DistrictData[],
         state,
         mapType: boundary as 'LGD' | 'NFHS4' | 'NFHS5',
-        colorScale,
+        colorScale: colorScale as 'spectral',
         invertColors,
         hideValues,
         hideDistrictNames,
@@ -367,7 +373,7 @@ export class EmbedController {
       return await renderer.renderMap({
         data: data as DistrictData[],
         mapType: boundary as 'LGD' | 'NFHS4' | 'NFHS5',
-        colorScale,
+        colorScale: colorScale as 'spectral',
         invertColors,
         hideValues,
         hideDistrictNames,
