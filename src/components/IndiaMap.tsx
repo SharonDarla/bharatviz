@@ -5,7 +5,9 @@ import { ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
 import { DiscreteLegend } from '@/lib/discreteLegend';
+import { CategoricalLegend } from '@/lib/categoricalLegend';
 import { GeoJSON } from 'geojson';
+import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
 import { 
   BLACK_TEXT_STATES, 
   ABBREVIATED_STATES, 
@@ -19,7 +21,7 @@ import {
 
 interface MapData {
   state: string;
-  value: number;
+  value: number | string;
 }
 
 interface IndiaMapProps {
@@ -30,6 +32,8 @@ interface IndiaMapProps {
   hideValues?: boolean;
   dataTitle?: string;
   colorBarSettings?: ColorBarSettings;
+  dataType?: DataType;
+  categoryColors?: CategoryColorMapping;
 }
 
 export interface IndiaMapRef {
@@ -39,7 +43,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {} }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
 
@@ -54,7 +58,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [legendMin, setLegendMin] = useState('');
   const [legendMean, setLegendMean] = useState('');
   const [legendMax, setLegendMax] = useState('');
-  const [hoveredState, setHoveredState] = useState<{ state: string; value?: number } | null>(null);
+  const [hoveredState, setHoveredState] = useState<{ state: string; value?: number | string } | null>(null);
 
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
@@ -695,7 +699,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         if (data.length === 0) {
           return "#ffffff";
         }
-        
+
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
@@ -704,9 +708,14 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           return "#e5e7eb"; // Light gray for no data
         }
 
-        // Use the new discrete color utility
-        const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
-        return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+        // Handle categorical data
+        if (dataType === 'categorical' && typeof value === 'string') {
+          return getCategoryColor(value, categoryColors, '#e5e7eb');
+        }
+
+        // Use the new discrete color utility for numerical data
+        const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
+        return getColorForValue(value as number, values, colorScale, invertColors, colorBarSettings);
       })
       .attr("stroke", (d: GeoJSON.Feature) => {
         // If no data, use default gray stroke
@@ -955,7 +964,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.85}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(roundToSignificantDigits(value));
+              .text(typeof value === 'number' ? roundToSignificantDigits(value) : String(value));
           } else if (hideStateNames && !hideValues) {
             // Only value, centered vertically
             text.append("tspan")
@@ -964,7 +973,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.95}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(roundToSignificantDigits(value));
+              .text(typeof value === 'number' ? roundToSignificantDigits(value) : String(value));
           }
         }
       });
@@ -976,10 +985,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings]);
 
-  // Legend values from data
+  // Legend values from data (only for numerical data)
   useEffect(() => {
-    if (data.length > 0) {
-      const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+    if (data.length > 0 && dataType === 'numerical') {
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
       if (values.length > 0) {
         const meanValue = values.reduce((a, b) => a + b, 0) / values.length;
         setLegendMin(roundToSignificantDigits(Math.min(...values)));
@@ -995,21 +1004,21 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       setLegendMean('0.5');
       setLegendMax('1');
     }
-  }, [data]);
+  }, [data, dataType]);
 
-  // D3 gradient for legend (only for continuous mode)
+  // D3 gradient for legend (only for continuous mode and numerical data)
   useEffect(() => {
-    
+
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     // Always remove existing gradient first
     svg.selectAll('#states-legend-gradient').remove();
-    
-    // If no data or discrete mode, don't create gradient
-    if (data.length === 0 || colorBarSettings?.isDiscrete) {
+
+    // If no data, discrete mode, or categorical data, don't create gradient
+    if (data.length === 0 || colorBarSettings?.isDiscrete || dataType === 'categorical') {
       return;
     }
-    
+
     let defs = svg.select('defs');
     if (defs.empty()) defs = svg.append('defs');
     const gradient = defs.append('linearGradient')
@@ -1018,9 +1027,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .attr('x2', '100%')
       .attr('y1', '0%')
       .attr('y2', '0%');
-    
-    // Color scale - continuous mode only
-    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+
+    // Color scale - continuous mode only for numerical data
+    const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const getColorInterpolator = (scale: ColorScale) => {
@@ -1056,7 +1065,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {
@@ -1193,10 +1202,24 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         {/* Legend overlay (React) */}
         {data.length > 0 && (
           <>
-            {/* Discrete Legend */}
-            {colorBarSettings?.isDiscrete ? (
+            {/* Categorical Legend */}
+            {dataType === 'categorical' ? (
+              <CategoricalLegend
+                categories={getUniqueCategories(data.map(d => d.value))}
+                categoryColors={categoryColors}
+                legendPosition={legendPosition}
+                isMobile={isMobile}
+                onMouseDown={handleLegendMouseDown}
+                dragging={dragging}
+                legendTitle={legendTitle}
+                editingTitle={editingTitle}
+                setEditingTitle={setEditingTitle}
+                setLegendTitle={setLegendTitle}
+              />
+            ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
+              /* Discrete Legend */
               <DiscreteLegend
-                data={data.map(d => d.value)}
+                data={data.map(d => d.value).filter(v => typeof v === 'number') as number[]}
                 colorScale={colorScale}
                 invertColors={invertColors}
                 colorBarSettings={colorBarSettings}
@@ -1209,7 +1232,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 setEditingTitle={setEditingTitle}
                 setLegendTitle={setLegendTitle}
               />
-            ) : (
+            ) : dataType === 'numerical' ? (
               /* Continuous Legend */
               <g
                 className="legend-container"
@@ -1322,7 +1345,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                   </text>
                 )}
               </g>
-            )}
+            ) : null}
           </>
         )}
         
@@ -1384,7 +1407,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
           <div className="font-medium">{hoveredState.state}</div>
           {hoveredState.value !== undefined && (
-            <div className="text-xs">{roundToSignificantDigits(hoveredState.value)}</div>
+            <div className="text-xs">
+              {typeof hoveredState.value === 'number' ? roundToSignificantDigits(hoveredState.value) : String(hoveredState.value)}
+            </div>
           )}
         </div>
       )}

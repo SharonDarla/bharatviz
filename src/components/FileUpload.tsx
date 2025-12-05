@@ -250,22 +250,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         .map(row => {
           const value = row[valueColumn];
           const trimmedValue = value ? value.trim() : '';
-          const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a'
-            ? NaN
-            : Number(trimmedValue);
+
+          let parsedValue: number | string;
+          if (trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a') {
+            parsedValue = NaN;
+          } else {
+            const numericValue = Number(trimmedValue);
+            parsedValue = isNaN(numericValue) ? trimmedValue : numericValue;
+          }
 
           return mode === 'districts'
             ? {
                 state: row[stateColumn].trim(),
                 district: row[locationColumn].trim(),
-                value: numericValue
+                value: parsedValue
               }
             : {
                 state: row[locationColumn].trim(),
-                value: numericValue
+                value: parsedValue
               };
         })
-        .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
+        .filter(row => {
+          if (typeof row.value === 'string') return row.value !== '';
+          return !isNaN(row.value) && isFinite(row.value);
+        }) as Array<{ state: string; value: number | string }> | Array<{ state: string; district: string; value: number | string }>;
 
       if (processedData.length === 0) {
         const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
@@ -437,22 +445,30 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               .map(row => {
                 const value = row[valueColumn];
                 const trimmedValue = value ? value.trim() : '';
-                const numericValue = trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a' 
-                  ? NaN 
-                  : Number(trimmedValue);
-                
+
+                let parsedValue: number | string;
+                if (trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a') {
+                  parsedValue = NaN;
+                } else {
+                  const numericValue = Number(trimmedValue);
+                  parsedValue = isNaN(numericValue) ? trimmedValue : numericValue;
+                }
+
                 return mode === 'districts'
                   ? {
                       state: row[stateColumn].trim(),
                       district: row[locationColumn].trim(),
-                      value: numericValue
+                      value: parsedValue
                     }
                   : {
                       state: row[locationColumn].trim(),
-                      value: numericValue
+                      value: parsedValue
                     };
               })
-              .filter(row => !isNaN(row.value) && isFinite(row.value)) as Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>;
+              .filter(row => {
+                if (typeof row.value === 'string') return row.value !== '';
+                return !isNaN(row.value) && isFinite(row.value);
+              }) as Array<{ state: string; value: number | string }> | Array<{ state: string; district: string; value: number | string }>;
             
             if (processedData.length === 0) {
               const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';

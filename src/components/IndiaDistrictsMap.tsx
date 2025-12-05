@@ -11,12 +11,14 @@ import { type ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
 import { DiscreteLegend } from '@/lib/discreteLegend';
+import { CategoricalLegend } from '@/lib/categoricalLegend';
 import { createRotationCalculator, isPointInPolygon } from '@/lib/rotationUtils';
+import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
 
 interface DistrictMapData {
   state: string;
   district: string;
-  value: number;
+  value: number | string;
 }
 
 interface IndiaDistrictsMapProps {
@@ -35,6 +37,8 @@ interface IndiaDistrictsMapProps {
   onHideDistrictNamesChange?: (hidden: boolean) => void; // Callback when hiding district names
   onHideDistrictValuesChange?: (hidden: boolean) => void; // Callback when hiding district values
   enableRotation?: boolean; // Optional: enable expensive rotation calculation (defaults to false)
+  dataType?: DataType;
+  categoryColors?: CategoryColorMapping;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -100,12 +104,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   hideDistrictValues = false,
   onHideDistrictNamesChange,
   onHideDistrictValuesChange,
-  enableRotation = false
+  enableRotation = false,
+  dataType = 'numerical',
+  categoryColors = {}
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
-  const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number } | null>(null);
+  const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number | string } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
 
@@ -159,8 +165,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   }, [selectedState]);
 
   useEffect(() => {
-    if (data.length > 0) {
-      const values = data.map(d => d.value).filter(v => !isNaN(v));
+    if (data.length > 0 && dataType === 'numerical') {
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       const minValue = values.length > 0 ? Math.min(...values) : 0;
       const maxValue = values.length > 0 ? Math.max(...values) : 1;
       const meanValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0.5;
@@ -172,7 +178,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       setLegendMean('0.5');
       setLegendMax('1');
     }
-  }, [data]);
+  }, [data, dataType]);
 
   useEffect(() => {
     const loadGeoData = async () => {
@@ -681,7 +687,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     const svg = d3.select(svgRef.current);
     svg.selectAll('#districts-legend-gradient').remove();
 
-    if (data.length === 0 || colorBarSettings?.isDiscrete) {
+    if (data.length === 0 || colorBarSettings?.isDiscrete || dataType === 'categorical') {
       return;
     }
     
@@ -693,9 +699,9 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .attr('x2', '100%')
       .attr('y1', '0%')
       .attr('y2', '0%');
-    
-    // Color scale - continuous mode only
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
+
+    // Color scale - continuous mode only for numerical data
+    const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const getColorInterpolator = (scale: ColorScale) => {
@@ -714,7 +720,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
 
   const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];
@@ -774,19 +780,30 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return '';
   };
 
-  const getDistrictColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
-    if (value === undefined || !dataExtent) return 'white';
+  const getDistrictColorForValue = (value: number | string | undefined, dataExtent: [number, number] | undefined): string => {
+    if (value === undefined) return 'white';
 
-    if (isNaN(value)) {
-      return '#d1d5db'; // Light gray for NaN/NA values
+    // Handle categorical data
+    if (dataType === 'categorical' && typeof value === 'string') {
+      return getCategoryColor(value, categoryColors, '#e5e7eb');
     }
 
-    const [minVal, maxVal] = dataExtent;
-    if (minVal === maxVal) return colorScales[colorScale](0.5);
+    // Handle numerical data
+    if (typeof value === 'number') {
+      if (!dataExtent) return 'white';
+      if (isNaN(value)) {
+        return '#d1d5db'; // Light gray for NaN/NA values
+      }
 
-    // Use the new discrete color utility
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
-    return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+      const [minVal, maxVal] = dataExtent;
+      if (minVal === maxVal) return colorScales[colorScale](0.5);
+
+      // Use the new discrete color utility
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+      return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+    }
+
+    return '#e5e7eb';
   };
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
@@ -1024,7 +1041,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
       // Use the new discrete color utility
-      const values = data.map(d => d.value).filter(v => !isNaN(v));
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     };
 
@@ -1387,7 +1404,7 @@ Chittoor,50`;
                   >
                     <title>
                       {feature.properties.district_name}, {feature.properties.state_name}
-                      {districtData?.value !== undefined ? `: ${roundToSignificantDigits(districtData.value)}` : ''}
+                      {districtData?.value !== undefined ? `: ${typeof districtData.value === 'number' ? roundToSignificantDigits(districtData.value) : String(districtData.value)}` : ''}
                     </title>
                   </path>
                 );
@@ -1591,7 +1608,7 @@ Chittoor,50`;
                               opacity: 0.8
                             }}
                           >
-                            {roundToSignificantDigits(districtValue)}
+                            {typeof districtValue === 'number' ? roundToSignificantDigits(districtValue) : String(districtValue)}
                           </text>
                         )}
                       </g>
@@ -1689,10 +1706,24 @@ Chittoor,50`;
               {/* Legend */}
               {data.length > 0 && (
                 <>
-                  {/* Discrete Legend */}
-                  {colorBarSettings?.isDiscrete ? (
+                  {/* Categorical Legend */}
+                  {dataType === 'categorical' ? (
+                    <CategoricalLegend
+                      categories={getUniqueCategories(data.map(d => d.value))}
+                      categoryColors={categoryColors}
+                      legendPosition={legendPosition}
+                      isMobile={isMobile}
+                      onMouseDown={handleLegendMouseDown}
+                      dragging={dragging}
+                      legendTitle={legendTitle}
+                      editingTitle={editingTitle}
+                      setEditingTitle={setEditingTitle}
+                      setLegendTitle={setLegendTitle}
+                    />
+                  ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
+                    /* Discrete Legend */
                     <DiscreteLegend
-                      data={data.map(d => d.value)}
+                      data={data.map(d => d.value).filter(v => typeof v === 'number') as number[]}
                       colorScale={colorScale}
                       invertColors={invertColors}
                       colorBarSettings={colorBarSettings}
@@ -1705,7 +1736,7 @@ Chittoor,50`;
                       setEditingTitle={setEditingTitle}
                       setLegendTitle={setLegendTitle}
                     />
-                  ) : (
+                  ) : dataType === 'numerical' ? (
                     /* Continuous Legend */
                     <g
                       className="legend-container"
@@ -1818,7 +1849,7 @@ Chittoor,50`;
                         </text>
                       )}
                     </g>
-                  )}
+                  ) : null}
                 </>
               )}
             </svg>
@@ -1829,7 +1860,9 @@ Chittoor,50`;
                 <div className="font-medium">{hoveredDistrict.district}</div>
                 <div className="text-xs text-muted-foreground">{hoveredDistrict.state}</div>
                 {hoveredDistrict.value !== undefined && (
-                  <div className="text-xs">{roundToSignificantDigits(hoveredDistrict.value)}</div>
+                  <div className="text-xs">
+                    {typeof hoveredDistrict.value === 'number' ? roundToSignificantDigits(hoveredDistrict.value) : String(hoveredDistrict.value)}
+                  </div>
                 )}
               </div>
             )}

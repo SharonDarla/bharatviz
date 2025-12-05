@@ -5,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { type DataType, type CategoryColorMapping } from '@/lib/categoricalUtils';
+import { CategoryColorPicker } from './CategoryColorPicker';
 
 export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
 
@@ -32,6 +34,10 @@ interface ColorMapChooserProps {
   onHideDistrictValuesChange?: (hide: boolean) => void;
   colorBarSettings?: ColorBarSettings;
   onColorBarSettingsChange?: (settings: ColorBarSettings) => void;
+  dataType?: DataType;
+  categories?: string[];
+  categoryColors?: CategoryColorMapping;
+  onCategoryColorChange?: (category: string, color: string) => void;
 }
 
 const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverging' } } = {
@@ -56,7 +62,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange, dataType = 'numerical', categories = [], categoryColors = {}, onCategoryColorChange }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -113,52 +119,65 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
   return (
     <Card>
       <CardContent className="space-y-4 pt-6">
-        <div>
-          <Label htmlFor="colorScale" className="text-sm font-medium">
-            Choose Color Scale
-          </Label>
-          <Select value={selectedScale} onValueChange={onScaleChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a color scale" />
-            </SelectTrigger>
-            <SelectContent>
-              <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
-                Sequential
-              </div>
-              {sequentialScales.map(([key, scale]) => (
-                <SelectItem key={key} value={key}>
-                  {scale.name}
-                </SelectItem>
-              ))}
-              <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">
-                Diverging
-              </div>
-              {divergingScales.map(([key, scale]) => (
-                <SelectItem key={key} value={key}>
-                  {scale.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="mt-4">
-          <Label className="text-sm font-medium">Preview</Label>
-          <div className="mt-2 h-4 rounded flex overflow-hidden">
-            {getPreviewColors(selectedScale, invertColors, colorBarSettings).map((color, i) => (
-              <div
-                key={i}
-                className="flex-1"
-                style={{
-                  backgroundColor: color,
-                }}
-              />
-            ))}
+        {dataType === 'categorical' ? (
+          <div className="text-center py-2">
+            <Label className="text-sm font-medium text-blue-600">
+              Categorical data detected
+            </Label>
+            <p className="text-xs text-gray-500 mt-1">
+              Use category colors below to customize
+            </p>
           </div>
-        </div>
-        
-        {/* Discrete/Continuous Toggle */}
-        {colorBarSettings && onColorBarSettingsChange && (
+        ) : (
+          <>
+            <div>
+              <Label htmlFor="colorScale" className="text-sm font-medium">
+                Choose Color Scale
+              </Label>
+              <Select value={selectedScale} onValueChange={onScaleChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a color scale" />
+                </SelectTrigger>
+                <SelectContent>
+                  <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
+                    Sequential
+                  </div>
+                  {sequentialScales.map(([key, scale]) => (
+                    <SelectItem key={key} value={key}>
+                      {scale.name}
+                    </SelectItem>
+                  ))}
+                  <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">
+                    Diverging
+                  </div>
+                  {divergingScales.map(([key, scale]) => (
+                    <SelectItem key={key} value={key}>
+                      {scale.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="mt-4">
+              <Label className="text-sm font-medium">Preview</Label>
+              <div className="mt-2 h-4 rounded flex overflow-hidden">
+                {getPreviewColors(selectedScale, invertColors, colorBarSettings).map((color, i) => (
+                  <div
+                    key={i}
+                    className="flex-1"
+                    style={{
+                      backgroundColor: color,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Discrete/Continuous Toggle - only show for numerical data */}
+        {dataType === 'numerical' && colorBarSettings && onColorBarSettingsChange && (
           <>
             <Separator />
             <div className="space-y-3">
@@ -320,6 +339,15 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           </label>
         )}
       </div>
+      {dataType === 'categorical' && onCategoryColorChange && (
+        <div className="px-6 pb-4">
+          <CategoryColorPicker
+            categories={categories}
+            colorMapping={categoryColors}
+            onColorChange={onCategoryColorChange}
+          />
+        </div>
+      )}
     </Card>
   );
 };
