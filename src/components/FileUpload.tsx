@@ -179,6 +179,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       }
     });
 
+    const totalEntries = data.length;
+    const matchedEntries = matchedData.length;
+    const unmatchedEntries = totalEntries - matchedEntries;
+    const matchPercentage = totalEntries > 0 ? ((matchedEntries / totalEntries) * 100).toFixed(2) : '0.00';
+
+    console.log('=== District Fuzzy Matching Benchmark (threshold: ' + fuzzyThreshold + ') ===');
+    console.log('Total entries:', totalEntries);
+    console.log('Matched entries:', matchedEntries);
+    console.log('Unmatched entries:', unmatchedEntries);
+    console.log('Match rate:', matchPercentage + '%');
+    console.log('=====================================================');
+
     return matchedData;
   };
 
@@ -217,6 +229,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         });
       }
     });
+
+    const totalEntries = data.length;
+    const matchedEntries = matchedData.length;
+    const unmatchedEntries = totalEntries - matchedEntries;
+    const matchPercentage = totalEntries > 0 ? ((matchedEntries / totalEntries) * 100).toFixed(2) : '0.00';
+
+    console.log('=== State Fuzzy Matching Benchmark (threshold: ' + fuzzyThreshold + ') ===');
+    console.log('Total entries:', totalEntries);
+    console.log('Matched entries:', matchedEntries);
+    console.log('Unmatched entries:', unmatchedEntries);
+    console.log('Match rate:', matchPercentage + '%');
+    console.log('===================================================');
 
     return matchedData;
   };
