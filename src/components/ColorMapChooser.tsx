@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -59,6 +59,56 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
 export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
+
+  // Local state for custom boundaries input to prevent re-rendering map while typing
+  const [boundariesInput, setBoundariesInput] = useState<string>('');
+  const [boundariesError, setBoundariesError] = useState<string>('');
+
+  // Sync local state with prop changes
+  useEffect(() => {
+    if (colorBarSettings?.customBoundaries) {
+      const newValue = colorBarSettings.customBoundaries.join(',');
+      setBoundariesInput(newValue);
+    }
+  }, [colorBarSettings?.customBoundaries]);
+
+  const applyCustomBoundaries = (inputValue: string) => {
+    setBoundariesError('');
+
+    const boundaries = inputValue
+      .split(',')
+      .map(b => parseFloat(b.trim()))
+      .filter(b => !isNaN(b));
+
+    if (boundaries.length < 2) {
+      setBoundariesError('Please enter at least 2 breakpoints');
+      return;
+    }
+
+    const sorted = [...boundaries].sort((a, b) => a - b);
+
+    // Check for duplicates
+    const hasDuplicates = sorted.some((val, idx) => idx > 0 && val === sorted[idx - 1]);
+    if (hasDuplicates) {
+      setBoundariesError('Breakpoints must be unique');
+      return;
+    }
+
+    if (colorBarSettings && onColorBarSettingsChange) {
+      onColorBarSettingsChange({
+        ...colorBarSettings,
+        customBoundaries: sorted
+      });
+    }
+  };
+
+  const handleBoundariesKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      applyCustomBoundaries(boundariesInput);
+      (e.target as HTMLInputElement).blur();
+    }
+  };
 
   return (
     <Card>
@@ -178,23 +228,28 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                     </label>
                     
                     {colorBarSettings.useCustomBoundaries && (
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-1">
                         <Input
                           placeholder="e.g., 0,25,50,75,100"
-                          value={colorBarSettings.customBoundaries.join(',')}
-                          onChange={(e) => {
-                            const boundaries = e.target.value
-                              .split(',')
-                              .map(b => parseFloat(b.trim()))
-                              .filter(b => !isNaN(b))
-                              .sort((a, b) => a - b);
-                            onColorBarSettingsChange({ ...colorBarSettings, customBoundaries: boundaries });
-                          }}
-                          className="text-xs h-8"
+                          value={boundariesInput}
+                          onChange={(e) => setBoundariesInput(e.target.value)}
+                          onBlur={() => applyCustomBoundaries(boundariesInput)}
+                          onKeyDown={handleBoundariesKeyDown}
+                          className={`text-xs h-8 ${boundariesError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                         />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Enter comma-separated values
-                        </p>
+                        {boundariesError ? (
+                          <p className="text-xs text-red-500">
+                            {boundariesError}
+                          </p>
+                        ) : (
+                          <div className="text-xs text-muted-foreground space-y-0.5">
+                            <p className="font-medium">📍 Enter breakpoints (not ranges)</p>
+                            <p>• Type values separated by commas</p>
+                            <p>• Press Enter or click outside to apply</p>
+                            <p>• Example: 0,25,50,75,100 creates ranges:</p>
+                            <p className="pl-3">0-25, 25.01-50, 50.01-75, 75-100</p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

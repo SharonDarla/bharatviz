@@ -207,7 +207,7 @@ const Index = () => {
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
                   mode="states"
-                  geojsonPath="/india_map_states.geojson"
+                  geojsonPath="/India_LGD_states.geojson"
                 />
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser 

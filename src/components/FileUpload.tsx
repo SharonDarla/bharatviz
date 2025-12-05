@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Papa from 'papaparse';
 import pako from 'pako';
+import { search as fastFuzzySearch } from 'fast-fuzzy';
 
 interface FileUploadProps {
   onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>, title?: string) => void;
@@ -19,6 +20,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
+  const [fuzzyThreshold, setFuzzyThreshold] = useState<number>(0.4);
 
   // Helper function to decompress gzipped files
   const decompressGzip = async (file: File): Promise<string> => {
@@ -36,6 +38,187 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsArrayBuffer(file);
     });
+  };
+
+  const normalizeString = (str: string): string => {
+    return str.trim().toLowerCase().replace(/[^\w\s]/g, '');
+  };
+
+  interface MatchResult {
+    inputValue: string;
+    matchedValue: string | null;
+    matchType: 'exact' | 'fuzzy' | 'none';
+  }
+
+  const matchWithFastFuzzy = (
+    input: string,
+    referenceList: string[],
+    threshold: number = 0.6
+  ): MatchResult => {
+    const normalized = normalizeString(input);
+    const normalizedRefs = referenceList.map(ref => ({
+      original: ref,
+      normalized: normalizeString(ref)
+    }));
+
+    const exactMatch = normalizedRefs.find(ref => ref.normalized === normalized);
+    if (exactMatch) {
+      return {
+        inputValue: input,
+        matchedValue: exactMatch.original,
+        matchType: 'exact'
+      };
+    }
+
+    if (normalized.length === 0 || referenceList.length === 0) {
+      return { inputValue: input, matchedValue: null, matchType: 'none' };
+    }
+
+    const results = fastFuzzySearch(normalized, normalizedRefs.map(r => r.normalized), {
+      threshold,
+      ignoreCase: true,
+      returnMatchData: true
+    });
+
+    if (results.length > 0) {
+      const bestMatch = results[0];
+      const matchedRef = normalizedRefs.find(ref => ref.normalized === bestMatch.item);
+
+      if (!matchedRef) {
+        return { inputValue: input, matchedValue: null, matchType: 'none' };
+      }
+
+      const inputFirstChar = normalized.charAt(0);
+      const matchFirstChar = bestMatch.item.charAt(0);
+
+      const firstCharMatches = inputFirstChar === matchFirstChar;
+      const isLenientThreshold = threshold < 0.3;
+
+      if (firstCharMatches || isLenientThreshold) {
+        return {
+          inputValue: input,
+          matchedValue: matchedRef.original,
+          matchType: 'fuzzy'
+        };
+      }
+    }
+
+    return { inputValue: input, matchedValue: null, matchType: 'none' };
+  };
+
+  // Use fast-fuzzy for all fuzzy matching
+  const matchWithFuzzy = (
+    input: string,
+    referenceList: string[],
+    threshold: number = 0.6
+  ): MatchResult => {
+    return matchWithFastFuzzy(input, referenceList, threshold);
+  };
+
+  interface StateDistrictData {
+    state: string;
+    district: string;
+    value: number;
+  }
+
+  interface StateData {
+    state: string;
+    value: number;
+  }
+
+  const matchStatesAndDistricts = (
+    data: StateDistrictData[],
+    validStates: string[],
+    validDistrictsByState: Map<string, string[]>
+  ): StateDistrictData[] => {
+    const exactMatchedStates = new Set<string>();
+    const remainingData: StateDistrictData[] = [];
+    const matchedData: StateDistrictData[] = [];
+
+    data.forEach(row => {
+      const stateMatch = matchWithFuzzy(row.state, validStates, fuzzyThreshold);
+
+      if (stateMatch.matchType === 'exact') {
+        exactMatchedStates.add(stateMatch.matchedValue!);
+      }
+
+      if (stateMatch.matchedValue) {
+        const districtsInState = validDistrictsByState.get(stateMatch.matchedValue) || [];
+        const districtMatch = matchWithFuzzy(row.district, districtsInState, fuzzyThreshold);
+
+        if (districtMatch.matchedValue) {
+          matchedData.push({
+            state: stateMatch.matchedValue,
+            district: districtMatch.matchedValue,
+            value: row.value
+          });
+        } else {
+          remainingData.push(row);
+        }
+      } else {
+        remainingData.push(row);
+      }
+    });
+
+    const unmatchedStates = validStates.filter(s => !exactMatchedStates.has(s));
+
+    remainingData.forEach(row => {
+      const stateMatch = matchWithFuzzy(row.state, unmatchedStates, fuzzyThreshold);
+
+      if (stateMatch.matchedValue) {
+        const districtsInState = validDistrictsByState.get(stateMatch.matchedValue) || [];
+        const districtMatch = matchWithFuzzy(row.district, districtsInState, fuzzyThreshold);
+
+        if (districtMatch.matchedValue) {
+          matchedData.push({
+            state: stateMatch.matchedValue,
+            district: districtMatch.matchedValue,
+            value: row.value
+          });
+        }
+      }
+    });
+
+    return matchedData;
+  };
+
+  const matchStates = (data: StateData[], validStates: string[]): StateData[] => {
+    const matchedData: StateData[] = [];
+    const exactMatchedStates = new Set<string>();
+    const unmatchedData: StateData[] = [];
+
+    data.forEach(row => {
+      const match = matchWithFuzzy(row.state, validStates, fuzzyThreshold);
+
+      if (match.matchType === 'exact' && match.matchedValue) {
+        exactMatchedStates.add(match.matchedValue);
+        matchedData.push({
+          state: match.matchedValue,
+          value: row.value
+        });
+      } else if (match.matchType === 'fuzzy' && match.matchedValue) {
+        matchedData.push({
+          state: match.matchedValue,
+          value: row.value
+        });
+      } else {
+        unmatchedData.push(row);
+      }
+    });
+
+    const unmatchedStates = validStates.filter(s => !exactMatchedStates.has(s));
+
+    unmatchedData.forEach(row => {
+      const match = matchWithFuzzy(row.state, unmatchedStates, fuzzyThreshold);
+      if (match.matchedValue) {
+        matchedData.push({
+          state: match.matchedValue,
+          value: row.value
+        });
+      }
+    });
+
+    return matchedData;
   };
 
   // Helper function to process uploaded CSV data
@@ -105,40 +288,77 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     }
   };
 
-  // Helper function to filter data based on GeoJSON
   const filterDataByGeoJSON = async (
     data: Array<{ state: string; value: number } | { state: string; district: string; value: number }>
   ): Promise<Array<{ state: string; value: number } | { state: string; district: string; value: number }>> => {
-    if (!geojsonPath) return data; // If no geojsonPath provided, return all data
+    if (!geojsonPath) {
+      return data;
+    }
 
     try {
       const response = await fetch(geojsonPath);
-      if (!response.ok) return data;
+
+      if (!response.ok) {
+        console.error('GeoJSON fetch failed:', response.status, response.statusText);
+        return data;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json') && !contentType?.includes('application/geo+json')) {
+        console.error('Invalid content type:', contentType);
+        return data;
+      }
 
       const geojson = await response.json();
 
       if (mode === 'districts') {
-        // For districts, filter based on both state_name and district_name
         const districtData = data as Array<{ state: string; district: string; value: number }>;
-        return districtData.filter(row => {
-          return geojson.features.some((feature: { properties: { district_name?: string; state_name?: string } }) =>
-            row.district.toLowerCase().trim() === feature.properties.district_name?.toLowerCase().trim() &&
-            row.state.toLowerCase().trim() === feature.properties.state_name?.toLowerCase().trim()
-          );
+
+        const validStates = new Set<string>();
+        const validDistrictsByState = new Map<string, string[]>();
+
+        geojson.features.forEach((feature: { properties: { district_name?: string; state_name?: string } }) => {
+          const stateName = feature.properties.state_name?.trim();
+          const districtName = feature.properties.district_name?.trim();
+
+          if (stateName) {
+            validStates.add(stateName);
+            if (districtName) {
+              if (!validDistrictsByState.has(stateName)) {
+                validDistrictsByState.set(stateName, []);
+              }
+              validDistrictsByState.get(stateName)!.push(districtName);
+            }
+          }
         });
+
+        return matchStatesAndDistricts(
+          districtData,
+          Array.from(validStates),
+          validDistrictsByState
+        );
       } else {
-        // For states, filter based on state_name
         const stateData = data as Array<{ state: string; value: number }>;
-        return stateData.filter(row => {
-          return geojson.features.some((feature: { properties: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }) => {
-            const featureStateName = (feature.properties.state_name || feature.properties.NAME_1 || feature.properties.name || feature.properties.ST_NM)?.toLowerCase().trim();
-            return row.state.toLowerCase().trim() === featureStateName;
-          });
+
+        const validStates = new Set<string>();
+        geojson.features.forEach((feature: { properties: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }) => {
+          const stateName = (
+            feature.properties.state_name ||
+            feature.properties.NAME_1 ||
+            feature.properties.name ||
+            feature.properties.ST_NM
+          )?.trim();
+
+          if (stateName) {
+            validStates.add(stateName);
+          }
         });
+
+        return matchStates(stateData, Array.from(validStates));
       }
     } catch (error) {
       console.error('Error filtering data by GeoJSON:', error);
-      return data; // Return unfiltered data on error
+      return data;
     }
   };
 
@@ -570,6 +790,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             {sheetError && <div className="text-xs text-red-500 text-center">{sheetError}</div>}
           </div>
         </div>
+
         <input
           ref={fileInputRef}
           type="file"

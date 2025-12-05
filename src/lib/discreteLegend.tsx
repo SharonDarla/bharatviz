@@ -100,56 +100,45 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
         </text>
       )}
 
-      {/* Discrete Color Rectangles */}
       {Array.from({ length: binCount }, (_, i) => {
-        // Keep rectangles in same order regardless of color inversion
         const binIndex = i;
-        
-        // Only invert the color calculation, not the rectangle position
         let t = (binIndex + 0.5) / binCount;
         if (invertColors) {
           t = 1 - t;
         }
-        
+
         const color = colorInterpolator(t);
-        const yPosition = i * (rectHeight + 4); // Fixed spacing
+        const yPosition = i * (rectHeight + 4);
         const minValue = boundaries[binIndex];
         const maxValue = boundaries[binIndex + 1];
         const isFirstBin = binIndex === 0;
         const isLastBin = binIndex === binCount - 1;
-        
-        // Calculate display values for non-overlapping ranges
+
         let displayMinValue = minValue;
         const displayMaxValue = maxValue;
-        
+
         if (!isFirstBin) {
-          // For all bins except the first, adjust the min to be non-overlapping
           if (dataAnalysis.isInteger) {
             displayMinValue = minValue + 1;
           } else {
-            displayMinValue = minValue + dataAnalysis.minGap;
+            displayMinValue = minValue + 0.01;
           }
         }
-        
-        
-        // Format the range text using the new formatter
-        const minText = formatLegendValue(displayMinValue);
-        const maxText = formatLegendValue(displayMaxValue);
-        
+
+        const minText = displayMinValue % 1 === 0 ? displayMinValue.toString() : displayMinValue.toFixed(2);
+        const maxText = displayMaxValue % 1 === 0 ? displayMaxValue.toString() : displayMaxValue.toFixed(2);
+
         let rangeText: string;
         if (displayMinValue === displayMaxValue) {
           rangeText = minText;
         } else if (isLastBin) {
-          // Last bin shows "≥ minValue" or "minValue+" depending on preference
           rangeText = `${minText}+`;
         } else {
           rangeText = `${minText} - ${maxText}`;
         }
-        
-        
+
         return (
           <g key={i}>
-            {/* Color rectangle */}
             <rect
               x={0}
               y={yPosition}
@@ -160,8 +149,6 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
               strokeWidth={0.5}
               rx={2}
             />
-            
-            {/* Range text */}
             <text
               x={rectWidth + 6}
               y={yPosition + rectHeight / 2}
