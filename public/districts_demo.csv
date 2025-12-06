@@ -2,12 +2,12 @@ state_name,district_name,column of interest
 A & N Islands,Nicobars,84.3
 A & N Islands,North And Middle Andaman,89.6
 A & N Islands,South Andamans,91.2
-Andhra Pradesh,Anantapur,64.3
+Andhra Pradesh,Anantapur,NA
 Andhra Pradesh,Chittoor,71.5
-Andhra Pradesh,East Godavari,73.1
+Andhra Pradesh,East Godavari,NA
 Andhra Pradesh,Guntur,68.9
 Andhra Pradesh,Krishna,74.2
-Andhra Pradesh,Kurnool,59.4
+Andhra Pradesh,Kurnool,NA
 Andhra Pradesh,Prakasam,63.8
 Arunachal Pradesh,Anjaw,56.9
 Arunachal Pradesh,Changlang,59.7
@@ -22,9 +22,9 @@ Assam,Golaghat,77.9
 Assam,Jorhat,82.2
 Assam,Kamrup Metro,88.7
 Assam,Nagaon,72.3
-Bihar,Araria,53.5
+Bihar,Araria,NA
 Bihar,Darbhanga,56.8
-Bihar,Gaya,63.0
+Bihar,Gaya,NA
 Bihar,Muzaffarpur,63.4
 Bihar,Patna,70.4
 Bihar,Purnia,51.8
@@ -62,11 +62,11 @@ Karnataka,Bengaluru Urban,88.7
 Karnataka,Dharwad,80.0
 Karnataka,Mysuru,73.4
 Kerala,Alappuzha,96.3
-Kerala,Ernakulam,95.7
+Kerala,Ernakulam,NA
 Kerala,Kannur,95.4
 Kerala,Kollam,94.0
 Kerala,Kottayam,97.2
-Kerala,Kozhikode,95.2
+Kerala,Kozhikode,NA
 Kerala,Thiruvananthapuram,93.0
 Madhya Pradesh,Bhopal,80.4
 Madhya Pradesh,Indore,80.9

@@ -12,16 +12,23 @@ import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
 import Credits from '@/components/Credits';
 import { Github } from 'lucide-react';
+import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
 
 interface StateMapData {
   state: string;
-  value: number;
+  value: number | string;
 }
 
 interface DistrictMapData {
   state: string;
   district: string;
-  value: number;
+  value: number | string;
+}
+
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
 }
 
 const Index = () => {
@@ -39,6 +46,9 @@ const Index = () => {
     customBoundaries: [],
     useCustomBoundaries: false
   });
+  const [stateDataType, setStateDataType] = useState<DataType>('numerical');
+  const [stateCategoryColors, setStateCategoryColors] = useState<CategoryColorMapping>({});
+  const [stateNAInfo, setStateNAInfo] = useState<NAInfo | undefined>(undefined);
 
   const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
   const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
@@ -51,7 +61,10 @@ const Index = () => {
     customBoundaries: [],
     useCustomBoundaries: false
   });
+  const [districtDataType, setDistrictDataType] = useState<DataType>('numerical');
+  const [districtCategoryColors, setDistrictCategoryColors] = useState<CategoryColorMapping>({});
   const [selectedDistrictMapType, setSelectedDistrictMapType] = useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
+  const [districtNAInfo, setDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
   const [stateDistrictMapData, setStateDistrictMapData] = useState<DistrictMapData[]>([]);
   const [stateDistrictColorScale, setStateDistrictColorScale] = useState<ColorScale>('spectral');
@@ -63,6 +76,8 @@ const Index = () => {
     customBoundaries: [],
     useCustomBoundaries: false
   });
+  const [stateDistrictDataType, setStateDistrictDataType] = useState<DataType>('numerical');
+  const [stateDistrictCategoryColors, setStateDistrictCategoryColors] = useState<CategoryColorMapping>({});
   const [selectedStateMapType, setSelectedStateMapType] = useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
   const [selectedStateForMap, setSelectedStateForMap] = useState<string>('Maharashtra');
   const [stateDistrictHideNames, setStateDistrictHideNames] = useState(false);
@@ -70,6 +85,7 @@ const Index = () => {
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [stateGistMapping, setStateGistMapping] = useState<StateGistMapping | null>(null);
   const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
+  const [stateDistrictNAInfo, setStateDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -101,19 +117,55 @@ const Index = () => {
     }
   }, [activeTab, selectedStateMapType]);
 
-  const handleStateDataLoad = (data: StateMapData[], title?: string) => {
+  const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
     setStateMapData(data);
     setStateDataTitle(title || '');
+    setStateNAInfo(naInfo);
+
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setStateDataType(dataType);
+
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(values);
+      const categoryColors = generateDefaultCategoryColors(categories);
+      setStateCategoryColors(categoryColors);
+      setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
   };
 
-  const handleDistrictDataLoad = (data: DistrictMapData[], title?: string) => {
+  const handleDistrictDataLoad = (data: DistrictMapData[], title?: string, naInfo?: NAInfo) => {
     setDistrictMapData(data);
     setDistrictDataTitle(title || '');
+    setDistrictNAInfo(naInfo);
+
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setDistrictDataType(dataType);
+
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(values);
+      const categoryColors = generateDefaultCategoryColors(categories);
+      setDistrictCategoryColors(categoryColors);
+      setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
   };
 
-  const handleStateDistrictDataLoad = (data: DistrictMapData[], title?: string) => {
+  const handleStateDistrictDataLoad = (data: DistrictMapData[], title?: string, naInfo?: NAInfo) => {
     setStateDistrictMapData(data);
     setStateDistrictDataTitle(title || '');
+    setStateDistrictNAInfo(naInfo);
+
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setStateDistrictDataType(dataType);
+
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(values);
+      const categoryColors = generateDefaultCategoryColors(categories);
+      setStateDistrictCategoryColors(categoryColors);
+      setStateDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
   };
 
   const handleExportPNG = () => {
@@ -186,12 +238,15 @@ const Index = () => {
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 order-2 lg:order-2">
-                <IndiaMap ref={stateMapRef} data={stateMapData} colorScale={stateColorScale} 
+                <IndiaMap ref={stateMapRef} data={stateMapData} colorScale={stateColorScale}
                   invertColors={stateInvertColors}
                   hideStateNames={stateHideNames}
                   hideValues={stateHideValues}
                   dataTitle={stateDataTitle}
                   colorBarSettings={stateColorBarSettings}
+                  dataType={stateDataType}
+                  categoryColors={stateCategoryColors}
+                  naInfo={stateNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions 
@@ -207,10 +262,10 @@ const Index = () => {
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
                   mode="states"
-                  geojsonPath="/india_map_states.geojson"
+                  geojsonPath="/India_LGD_states.geojson"
                 />
                 <div className="space-y-4 mt-6">
-                  <ColorMapChooser 
+                  <ColorMapChooser
                     selectedScale={stateColorScale}
                     onScaleChange={setStateColorScale}
                     invertColors={stateInvertColors}
@@ -221,6 +276,12 @@ const Index = () => {
                     onHideValuesChange={setStateHideValues}
                     colorBarSettings={stateColorBarSettings}
                     onColorBarSettingsChange={setStateColorBarSettings}
+                    dataType={stateDataType}
+                    categories={getUniqueCategories(stateMapData.map(d => d.value))}
+                    categoryColors={stateCategoryColors}
+                    onCategoryColorChange={(category, color) => {
+                      setStateCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
                   />
                 </div>
               </div>
@@ -240,6 +301,9 @@ const Index = () => {
                   colorBarSettings={districtColorBarSettings}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
                   statesGeojsonPath={getDistrictMapConfig(selectedDistrictMapType).states}
+                  dataType={districtDataType}
+                  categoryColors={districtCategoryColors}
+                  naInfo={districtNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
@@ -294,6 +358,12 @@ const Index = () => {
                     onShowStateBoundariesChange={setShowStateBoundaries}
                     colorBarSettings={districtColorBarSettings}
                     onColorBarSettingsChange={setDistrictColorBarSettings}
+                    dataType={districtDataType}
+                    categories={getUniqueCategories(districtMapData.map(d => d.value))}
+                    categoryColors={districtCategoryColors}
+                    onCategoryColorChange={(category, color) => {
+                      setDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
                   />
                 </div>
               </div>
@@ -319,6 +389,9 @@ const Index = () => {
                   hideDistrictValues={stateDistrictHideValues}
                   onHideDistrictNamesChange={setStateDistrictHideNames}
                   onHideDistrictValuesChange={setStateDistrictHideValues}
+                  dataType={stateDistrictDataType}
+                  categoryColors={stateDistrictCategoryColors}
+                  naInfo={stateDistrictNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
@@ -404,6 +477,7 @@ const Index = () => {
                   demoDataPath={getDistrictMapConfig(selectedStateMapType).demoDataPath}
                   googleSheetLink={getDistrictMapConfig(selectedStateMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedStateMapType).geojsonPath}
+                  selectedState={selectedStateForMap}
                 />
                 <div className="space-y-4 mt-6">
 <ColorMapChooser
@@ -418,6 +492,12 @@ const Index = () => {
                      onHideDistrictValuesChange={setStateDistrictHideValues}
                      colorBarSettings={stateDistrictColorBarSettings}
                      onColorBarSettingsChange={setStateDistrictColorBarSettings}
+                     dataType={stateDistrictDataType}
+                     categories={getUniqueCategories(stateDistrictMapData.map(d => d.value))}
+                     categoryColors={stateDistrictCategoryColors}
+                     onCategoryColorChange={(category, color) => {
+                       setStateDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                     }}
                    />
                 </div>
               </div>
