@@ -96,25 +96,21 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
-    // High DPI settings for 300 DPI output
-    const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
+
+    const dpiScale = 300 / 96;
     const originalWidth = isMobile ? 350 : 800;
     const originalHeight = isMobile ? 350 : 800;
-    
+
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
-    
+
     img.onload = () => {
       if (ctx) {
-        // Scale the context to match the DPI
         ctx.scale(dpiScale, dpiScale);
-        
-        // Fill background with white
+
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, originalWidth, originalHeight);
-        
-        // Draw the image at original size (context scaling handles the DPI)
+
         ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
         
         canvas.toBlob((blob) => {
@@ -141,12 +137,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
     svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     
-    // Ensure consistent font handling
     const allElements = svgClone.querySelectorAll('*');
     allElements.forEach(el => {
       const element = el as SVGElement;
       if (element.tagName === 'text') {
-        // Use both attribute and style to ensure compatibility
         element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
         element.style.fontFamily = 'Arial, Helvetica, sans-serif';
       }
@@ -163,11 +157,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     URL.revokeObjectURL(url);
   };
 
-  // Helper function to fix legend gradient in cloned SVG by replacing with solid color rectangles
   const fixLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
-    
-    // Get the appropriate D3 color interpolator
+
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
         blues: d3.interpolateBlues,
@@ -190,19 +182,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const baseInterpolator = interpolators[scale] || d3.interpolateBlues;
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
-    
-    // Calculate color scale values
+
     const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const colorInterpolator = getColorInterpolator(colorScale);
     const colorScaleFunction = d3.scaleSequential(colorInterpolator)
       .domain([minValue, maxValue]);
-    
-    // Find the legend rectangle that uses the gradient
+
     const legendRect = svgClone.querySelector('rect[fill*="states-legend-gradient"]');
     if (legendRect) {
-      // Get the rect's position and dimensions
       const x = parseFloat(legendRect.getAttribute('x') || '0');
       const y = parseFloat(legendRect.getAttribute('y') || '0');
       const width = parseFloat(legendRect.getAttribute('width') || '200');
@@ -210,120 +199,101 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const stroke = legendRect.getAttribute('stroke');
       const strokeWidth = legendRect.getAttribute('stroke-width');
       const rx = legendRect.getAttribute('rx');
-      
-      // Get parent element
+
       const parent = legendRect.parentElement;
       if (parent) {
-        // Remove the original gradient rect
         legendRect.remove();
-        
-        // Create multiple small rectangles with solid colors
-        const numSegments = 50; // More segments for smoother gradient
+
+        const numSegments = 50;
         const segmentWidth = width / numSegments;
-        
+
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
           const color = colorScaleFunction(value);
-          
+
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
           rect.setAttribute('y', y.toString());
           rect.setAttribute('width', segmentWidth.toString());
           rect.setAttribute('height', height.toString());
           rect.setAttribute('fill', color);
-          
-          // Add stroke only to first and last segment to maintain border
+
           if (i === 0 || i === numSegments - 1) {
             if (stroke) rect.setAttribute('stroke', stroke);
             if (strokeWidth) rect.setAttribute('stroke-width', strokeWidth);
           }
-          
-          // Add border radius to first and last segments
+
           if (rx && (i === 0 || i === numSegments - 1)) {
             rect.setAttribute('rx', rx);
           }
-          
+
           parent.appendChild(rect);
         }
       }
     }
-    
-    // Also remove any gradient definitions that are no longer needed
+
     const gradients = svgClone.querySelectorAll('#states-legend-gradient');
     gradients.forEach(gradient => gradient.remove());
   };
 
   const exportPDF = async () => {
     if (!svgRef.current) return;
-    
+
     try {
-      // Dynamically import PDF libraries
       const [{ default: jsPDF }, { svg2pdf }] = await Promise.all([
         import('jspdf'),
         import('svg2pdf.js')
       ]);
-      
-      // Create PDF document
+
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
-      
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Get the actual SVG dimensions
+
       const svgWidth = isMobile ? 350 : 800;
       const svgHeight = isMobile ? 350 : 800;
-      
-      // Clone the SVG to avoid modifying the original
+
       const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
-      
-      // Ensure the cloned SVG has proper attributes for full capture
+
       svgClone.setAttribute('width', svgWidth.toString());
       svgClone.setAttribute('height', svgHeight.toString());
       svgClone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
       svgClone.style.width = `${svgWidth}px`;
       svgClone.style.height = `${svgHeight}px`;
-      
-      // Remove any CSS classes that might interfere with export
+
       svgClone.removeAttribute('class');
-      
-      // Force all elements to be visible and properly positioned
+
       const allElements = svgClone.querySelectorAll('*');
       allElements.forEach(el => {
         const element = el as SVGElement;
         element.style.visibility = 'visible';
         element.style.display = 'block';
       });
-      
-      // Fix the legend gradient to match the selected color scale
+
       fixLegendGradient(svgClone);
-      
-      // Calculate PDF margins and available space
-      const pdfMargin = 15; // 15mm margin
+
+      const pdfMargin = 15;
       const availableWidth = pdfWidth - (2 * pdfMargin);
       const availableHeight = pdfHeight - (2 * pdfMargin);
-      
-      // Convert SVG dimensions to mm (1px = 0.264583mm at 96dpi)
+
       const svgWidthMm = svgWidth * 0.264583;
       const svgHeightMm = svgHeight * 0.264583;
-      
-      // Calculate scale to fit entire SVG in PDF
+
       const scaleX = availableWidth / svgWidthMm;
       const scaleY = availableHeight / svgHeightMm;
       const scale = Math.min(scaleX, scaleY);
-      
-      // Calculate final dimensions and position
+
       const finalWidth = svgWidthMm * scale;
       const finalHeight = svgHeightMm * scale;
       const x = (pdfWidth - finalWidth) / 2;
       const y = (pdfHeight - finalHeight) / 2;
-      
-      
-      // Use svg2pdf.js for true vector conversion
+
+
       await svg2pdf(svgClone, pdf, {
         xOffset: x,
         yOffset: y,
@@ -332,8 +302,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         width: finalWidth,
         height: finalHeight
       });
-      
-      // Save the PDF
       pdf.save(`bharatviz-states-${Date.now()}.pdf`);
       
     } catch (error) {

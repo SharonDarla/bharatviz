@@ -60,6 +60,7 @@ interface GeoJSONFeature {
   properties: {
     state_name?: string;
     district_name?: string;
+    nss_region?: string;
     NAME_1?: string;
     name?: string;
     ST_NM?: string;
@@ -772,7 +773,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     };
 
     if (coordinates[0] && Array.isArray(coordinates[0][0]) && Array.isArray((coordinates[0][0] as number[][])[0])) {
-      // MultiPolygon
       return (coordinates as number[][][][]).map(polygon => {
         return polygon.map(ring => {
           const pathData = convertRing(ring);
@@ -780,7 +780,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         }).join(' ');
       }).join(' ');
     } else if (coordinates[0] && Array.isArray(coordinates[0][0])) {
-      // Polygon
       return (coordinates as number[][][]).map(ring => {
         const pathData = convertRing(ring);
         return `M ${pathData} Z`;
@@ -793,22 +792,19 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const getDistrictColorForValue = (value: number | string | undefined, dataExtent: [number, number] | undefined): string => {
     if (value === undefined) return 'white';
 
-    // Handle categorical data
     if (dataType === 'categorical' && typeof value === 'string') {
       return getCategoryColor(value, categoryColors, '#e5e7eb');
     }
 
-    // Handle numerical data
     if (typeof value === 'number') {
       if (!dataExtent) return 'white';
       if (isNaN(value)) {
-        return 'white'; // White for NaN/NA values
+        return 'white';
       }
 
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
-      // Use the new discrete color utility
       const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     }
@@ -817,13 +813,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   };
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
-    const { district_name, state_name } = feature.properties;
+    const { district_name, nss_region, state_name } = feature.properties;
+    const districtOrRegion = district_name || nss_region || '';
     const districtData = data.find(d =>
-      d.district.toLowerCase().trim() === district_name.toLowerCase().trim() &&
-      d.state.toLowerCase().trim() === state_name.toLowerCase().trim()
+      d.district.toLowerCase().trim() === districtOrRegion.toLowerCase().trim() &&
+      d.state.toLowerCase().trim() === (state_name || '').toLowerCase().trim()
     );
     setHoveredDistrict({
-      district: district_name,
+      district: districtOrRegion,
       state: state_name,
       value: districtData?.value
     });
@@ -1390,13 +1387,15 @@ Chittoor,50`;
                 const mapWidth = isMobile ? 320 : 760;
                 const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
                 const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
+                const districtOrRegion = feature.properties.district_name || feature.properties.nss_region || '';
                 const districtData = data.find(d =>
-                  d.district.toLowerCase().trim() === feature.properties.district_name.toLowerCase().trim() &&
-                  d.state.toLowerCase().trim() === feature.properties.state_name.toLowerCase().trim()
+                  d.district.toLowerCase().trim() === districtOrRegion.toLowerCase().trim() &&
+                  d.state.toLowerCase().trim() === (feature.properties.state_name || '').toLowerCase().trim()
                 );
                 const fillColor = getDistrictColorForValue(districtData?.value, dataExtent);
                 const isHovered = hoveredDistrict &&
-                  hoveredDistrict.district === feature.properties.district_name;
+                  hoveredDistrict.district === districtOrRegion &&
+                  hoveredDistrict.state === feature.properties.state_name;
                 
                 return (
                   <path
@@ -1413,7 +1412,7 @@ Chittoor,50`;
                     onMouseLeave={handleDistrictLeave}
                   >
                     <title>
-                      {feature.properties.district_name}, {feature.properties.state_name}
+                      {districtOrRegion}, {feature.properties.state_name}
                       {districtData?.value !== undefined ? `: ${typeof districtData.value === 'number' ? roundToSignificantDigits(districtData.value) : String(districtData.value)}` : ''}
                     </title>
                   </path>
@@ -1424,7 +1423,7 @@ Chittoor,50`;
               {((!hideDistrictNames && !hideDistrictValues) || (!hideDistrictNames) || (!hideDistrictValues)) && districtLabelData.length > 0 && (
                 <g className="district-labels">
                   {districtLabelData.map(({ feature, area }, index) => {
-                    const districtName = feature.properties.district_name || '';
+                    const districtName = feature.properties.district_name || feature.properties.nss_region || '';
                     const stateName = feature.properties.state_name || '';
                     if (!districtName) return null;
 

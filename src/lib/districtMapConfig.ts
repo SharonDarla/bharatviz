@@ -151,6 +151,19 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     demoDataPath: '/nfhs4_blood_sugar_levels.csv',
     googleSheetLink: 'https://docs.google.com/spreadsheets/d/1kiVltD6zV7N500r6sgAMaubrFGLSUNd1DxXlGcnnuls/edit?usp=sharing',
     description: 'NFHS-4 survey district boundaries'
+  },
+
+  // NSSO Regions
+  NSSO: {
+    id: 'NSSO',
+    name: 'NSSO',
+    displayName: 'NSSO Regions',
+    geojsonPath: '/India_NFHS5_NSSO_regions_boundaries.geojson',
+    states: '/India_LGD_states.geojson',
+    templateCsvPath: '/bharatviz-nsso-regions-template.csv',
+    demoDataPath: '/nsso_regions_demo.csv',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1example/edit?usp=sharing',
+    description: 'NSSO (National Sample Survey Organization) regions - Regional boundaries for survey sampling'
   }
 };
 

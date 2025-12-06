@@ -171,7 +171,7 @@ const Index = () => {
   const handleExportPNG = () => {
     if (activeTab === 'states') {
       stateMapRef.current?.exportPNG();
-    } else if (activeTab === 'districts') {
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPNG();
     } else {
       stateDistrictMapRef.current?.exportPNG();
@@ -181,7 +181,7 @@ const Index = () => {
   const handleExportSVG = () => {
     if (activeTab === 'states') {
       stateMapRef.current?.exportSVG();
-    } else if (activeTab === 'districts') {
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportSVG();
     } else {
       stateDistrictMapRef.current?.exportSVG();
@@ -191,7 +191,7 @@ const Index = () => {
   const handleExportPDF = () => {
     if (activeTab === 'states') {
       stateMapRef.current?.exportPDF();
-    } else if (activeTab === 'districts') {
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPDF();
     } else {
       stateDistrictMapRef.current?.exportPDF();
@@ -201,14 +201,12 @@ const Index = () => {
   const handleDownloadCSVTemplate = () => {
     if (activeTab === 'states') {
       stateMapRef.current?.downloadCSVTemplate();
-    } else if (activeTab === 'districts') {
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.downloadCSVTemplate();
     } else {
       stateDistrictMapRef.current?.downloadCSVTemplate();
     }
   };
-
-  // Create gist URL provider for the selected map type
   const createGistUrlProvider = () => {
     return (stateName: string) => {
       if (!stateGistMapping) return null;
@@ -227,13 +225,46 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-6">
-            <TabsTrigger value="states">States</TabsTrigger>
-            <TabsTrigger value="districts">Districts</TabsTrigger>
-            <TabsTrigger value="state-districts">State-District</TabsTrigger>
-            <TabsTrigger value="help">Help</TabsTrigger>
-            <TabsTrigger value="credits">Credits</TabsTrigger>
-          </TabsList>
+          <div className="mb-8">
+            <TabsList className="grid w-full grid-cols-6 gap-2 bg-transparent p-0 h-auto">
+              <TabsTrigger
+                value="states"
+                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+              >
+                States
+              </TabsTrigger>
+              <TabsTrigger
+                value="districts"
+                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+              >
+                Districts
+              </TabsTrigger>
+              <TabsTrigger
+                value="regions"
+                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+              >
+                Regions
+              </TabsTrigger>
+              <TabsTrigger
+                value="state-districts"
+                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+              >
+                State-District
+              </TabsTrigger>
+              <TabsTrigger
+                value="help"
+                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+              >
+                Help
+              </TabsTrigger>
+              <TabsTrigger
+                value="credits"
+                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+              >
+                Credits
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
@@ -347,6 +378,71 @@ const Index = () => {
                   demoDataPath={getDistrictMapConfig(selectedDistrictMapType).demoDataPath}
                   googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
+                />
+                <div className="space-y-4 mt-6">
+                  <ColorMapChooser
+                    selectedScale={districtColorScale}
+                    onScaleChange={setDistrictColorScale}
+                    invertColors={districtInvertColors}
+                    onInvertColorsChange={setDistrictInvertColors}
+                    showStateBoundaries={showStateBoundaries}
+                    onShowStateBoundariesChange={setShowStateBoundaries}
+                    colorBarSettings={districtColorBarSettings}
+                    onColorBarSettingsChange={setDistrictColorBarSettings}
+                    dataType={districtDataType}
+                    categories={getUniqueCategories(districtMapData.map(d => d.value))}
+                    categoryColors={districtCategoryColors}
+                    onCategoryColorChange={(category, color) => {
+                      setDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`space-y-6 ${activeTab === 'regions' ? 'block' : 'hidden'}`}>
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 order-2 lg:order-2">
+                <IndiaDistrictsMap
+                  ref={districtMapRef}
+                  data={districtMapData}
+                  colorScale={districtColorScale}
+                  invertColors={districtInvertColors}
+                  dataTitle={districtDataTitle}
+                  showStateBoundaries={showStateBoundaries}
+                  colorBarSettings={districtColorBarSettings}
+                  geojsonPath={getDistrictMapConfig('NSSO').geojsonPath}
+                  statesGeojsonPath={getDistrictMapConfig('NSSO').states}
+                  dataType={districtDataType}
+                  categoryColors={districtCategoryColors}
+                  naInfo={districtNAInfo}
+                />
+                <div className="mt-6 flex justify-center">
+                  <ExportOptions
+                    onExportPNG={handleExportPNG}
+                    onExportSVG={handleExportSVG}
+                    onExportPDF={handleExportPDF}
+                    disabled={districtMapData.length === 0}
+                  />
+                </div>
+              </div>
+
+              <div className="lg:col-span-1 order-1 lg:order-1">
+                <div className="mb-4 p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                  <h3 className="text-lg font-semibold mb-2 text-black">NSSO Regions</h3>
+                  <p className="text-sm text-black">
+                    National Sample Survey Organization (NSSO) regions are geographical divisions used for survey sampling and statistical analysis across India.
+                  </p>
+                </div>
+
+                <FileUpload
+                  onDataLoad={handleDistrictDataLoad}
+                  mode="districts"
+                  templateCsvPath={getDistrictMapConfig('NSSO').templateCsvPath}
+                  demoDataPath={getDistrictMapConfig('NSSO').demoDataPath}
+                  googleSheetLink={getDistrictMapConfig('NSSO').googleSheetLink}
+                  geojsonPath={getDistrictMapConfig('NSSO').geojsonPath}
                 />
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser
