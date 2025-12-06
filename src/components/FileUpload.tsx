@@ -6,16 +6,27 @@ import Papa from 'papaparse';
 import pako from 'pako';
 import { search as fastFuzzySearch } from 'fast-fuzzy';
 
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
+}
+
 interface FileUploadProps {
-  onDataLoad: (data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>, title?: string) => void;
+  onDataLoad: (
+    data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>,
+    title?: string,
+    naInfo?: NAInfo
+  ) => void;
   mode?: 'states' | 'districts';
   templateCsvPath?: string;
   demoDataPath?: string;
   googleSheetLink?: string;
   geojsonPath?: string;
+  selectedState?: string; // Optional: for state-district tab, filter NAs by this state
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -293,28 +304,130 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                 state: row[locationColumn].trim(),
                 value: parsedValue
               };
-        })
-        .filter(row => {
-          if (typeof row.value === 'string') return row.value !== '';
-          return !isNaN(row.value) && isFinite(row.value);
-        }) as Array<{ state: string; value: number | string }> | Array<{ state: string; district: string; value: number | string }>;
+        }) as Array<{ state: string; value: number | string; district?: string }>;
 
-      if (processedData.length === 0) {
+      // Separate NA values from valid data
+      const validData: typeof processedData = [];
+      const naEntries: typeof processedData = [];
+
+      processedData.forEach(row => {
+        const isNA = typeof row.value === 'string' && row.value === '' ||
+                     typeof row.value === 'number' && (isNaN(row.value) || !isFinite(row.value));
+
+        if (isNA) {
+          naEntries.push(row);
+        } else {
+          validData.push(row);
+        }
+      });
+
+      if (validData.length === 0 && naEntries.length === 0) {
         const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
         alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
         return;
       }
 
       // Filter data based on GeoJSON before passing to parent
-      const filteredData = await filterDataByGeoJSON(processedData);
+      const filteredData = await filterDataByGeoJSON(validData);
 
-      if (filteredData.length === 0) {
+      if (filteredData.length === 0 && naEntries.length === 0) {
         alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
         return;
       }
 
+      // Find missing entries (exist in GeoJSON but not in uploaded data)
+      let missingEntries: typeof processedData = [];
+      if (mode === 'districts') {
+        // Build a map of state -> set of districts from GeoJSON
+        const validDistrictsByState = new Map<string, Set<string>>();
+        try {
+          const res = await fetch(geojsonPath);
+          if (res.ok) {
+            const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; district_name?: string } }> };
+            geo.features.forEach(f => {
+              const state = f.properties?.state_name?.trim();
+              const district = f.properties?.district_name?.trim();
+              if (state && district) {
+                if (!validDistrictsByState.has(state)) {
+                  validDistrictsByState.set(state, new Set());
+                }
+                validDistrictsByState.get(state)!.add(district);
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Error loading GeoJSON for missing entries:', e);
+        }
+
+        // Find districts in GeoJSON that are not in filteredData or naEntries
+        const dataMap = new Map<string, boolean>();
+        [...filteredData, ...naEntries].forEach(row => {
+          const key = `${row.state}|${(row as any).district}`;
+          dataMap.set(key, true);
+        });
+
+        validDistrictsByState.forEach((districts, state) => {
+          // If selectedState is provided, only count missing entries for that state
+          if (selectedState && state !== selectedState) {
+            return;
+          }
+
+          districts.forEach(district => {
+            const key = `${state}|${district}`;
+            if (!dataMap.has(key)) {
+              missingEntries.push({ state, district, value: NaN });
+            }
+          });
+        });
+      } else {
+        // For states mode - get all states from GeoJSON
+        const validStates: string[] = [];
+        try {
+          const res = await fetch(geojsonPath);
+          if (res.ok) {
+            const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }> };
+            geo.features.forEach(f => {
+              const stateName = f.properties?.state_name?.trim() ||
+                                f.properties?.NAME_1?.trim() ||
+                                f.properties?.name?.trim() ||
+                                f.properties?.ST_NM?.trim();
+              if (stateName && !validStates.includes(stateName)) {
+                validStates.push(stateName);
+              }
+            });
+          }
+        } catch (e) {
+          console.error('Error loading GeoJSON for missing entries:', e);
+        }
+
+        const dataMap = new Map<string, boolean>();
+        [...filteredData, ...naEntries].forEach(row => {
+          dataMap.set(row.state, true);
+        });
+
+        validStates.forEach(state => {
+          if (!dataMap.has(state)) {
+            missingEntries.push({ state, value: NaN });
+          }
+        });
+      }
+
+      // Combine explicit NAs and missing entries
+      const allNAEntries = [...naEntries, ...missingEntries];
+
+      // Prepare NA info
+      const naInfo: NAInfo = mode === 'districts'
+        ? {
+            districts: allNAEntries.map(e => ({ state: e.state, district: (e as { district: string }).district })),
+            count: allNAEntries.length
+          }
+        : {
+            states: allNAEntries.map(e => e.state),
+            count: allNAEntries.length
+          };
+
       // Use second column header as title
-      onDataLoad(filteredData, valueColumn);
+      onDataLoad(filteredData, valueColumn, naInfo);
     } catch (error) {
       alert('Error processing file data');
     }
@@ -487,28 +600,130 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                       state: row[locationColumn].trim(),
                       value: parsedValue
                     };
-              })
-              .filter(row => {
-                if (typeof row.value === 'string') return row.value !== '';
-                return !isNaN(row.value) && isFinite(row.value);
-              }) as Array<{ state: string; value: number | string }> | Array<{ state: string; district: string; value: number | string }>;
-            
-            if (processedData.length === 0) {
+              }) as Array<{ state: string; value: number | string; district?: string }>;
+
+            // Separate NA values from valid data
+            const validData: typeof processedData = [];
+            const naEntries: typeof processedData = [];
+
+            processedData.forEach(row => {
+              const isNA = typeof row.value === 'string' && row.value === '' ||
+                           typeof row.value === 'number' && (isNaN(row.value) || !isFinite(row.value));
+
+              if (isNA) {
+                naEntries.push(row);
+              } else {
+                validData.push(row);
+              }
+            });
+
+            if (validData.length === 0 && naEntries.length === 0) {
               const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
               alert(`No valid data found in demo file. Please ensure it has data in the ${columnDesc}.`);
               return;
             }
 
             // Filter data based on GeoJSON before passing to parent
-            const filteredData = await filterDataByGeoJSON(processedData);
+            const filteredData = await filterDataByGeoJSON(validData);
 
-            if (filteredData.length === 0) {
+            if (filteredData.length === 0 && naEntries.length === 0) {
               alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
               return;
             }
 
+            // Find missing entries (exist in GeoJSON but not in uploaded data)
+            let missingEntries: typeof processedData = [];
+            if (mode === 'districts') {
+              // Build a map of state -> set of districts from GeoJSON
+              const validDistrictsByState = new Map<string, Set<string>>();
+              try {
+                const res = await fetch(geojsonPath);
+                if (res.ok) {
+                  const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; district_name?: string } }> };
+                  geo.features.forEach(f => {
+                    const state = f.properties?.state_name?.trim();
+                    const district = f.properties?.district_name?.trim();
+                    if (state && district) {
+                      if (!validDistrictsByState.has(state)) {
+                        validDistrictsByState.set(state, new Set());
+                      }
+                      validDistrictsByState.get(state)!.add(district);
+                    }
+                  });
+                }
+              } catch (e) {
+                console.error('Error loading GeoJSON for missing entries:', e);
+              }
+
+              // Find districts in GeoJSON that are not in filteredData or naEntries
+              const dataMap = new Map<string, boolean>();
+              [...filteredData, ...naEntries].forEach(row => {
+                const key = `${row.state}|${(row as any).district}`;
+                dataMap.set(key, true);
+              });
+
+              validDistrictsByState.forEach((districts, state) => {
+                // If selectedState is provided, only count missing entries for that state
+                if (selectedState && state !== selectedState) {
+                  return;
+                }
+
+                districts.forEach(district => {
+                  const key = `${state}|${district}`;
+                  if (!dataMap.has(key)) {
+                    missingEntries.push({ state, district, value: NaN });
+                  }
+                });
+              });
+            } else {
+              // For states mode - get all states from GeoJSON
+              const validStates: string[] = [];
+              try {
+                const res = await fetch(geojsonPath);
+                if (res.ok) {
+                  const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }> };
+                  geo.features.forEach(f => {
+                    const stateName = f.properties?.state_name?.trim() ||
+                                      f.properties?.NAME_1?.trim() ||
+                                      f.properties?.name?.trim() ||
+                                      f.properties?.ST_NM?.trim();
+                    if (stateName && !validStates.includes(stateName)) {
+                      validStates.push(stateName);
+                    }
+                  });
+                }
+              } catch (e) {
+                console.error('Error loading GeoJSON for missing entries:', e);
+              }
+
+              const dataMap = new Map<string, boolean>();
+              [...filteredData, ...naEntries].forEach(row => {
+                dataMap.set(row.state, true);
+              });
+
+              validStates.forEach(state => {
+                if (!dataMap.has(state)) {
+                  missingEntries.push({ state, value: NaN });
+                }
+              });
+            }
+
+            // Combine explicit NAs and missing entries
+            const allNAEntries = [...naEntries, ...missingEntries];
+
+            // Prepare NA info
+            const naInfo: NAInfo = mode === 'districts'
+              ? {
+                  districts: allNAEntries.map(e => ({ state: e.state, district: (e as { district: string }).district })),
+                  count: allNAEntries.length
+                }
+              : {
+                  states: allNAEntries.map(e => e.state),
+                  count: allNAEntries.length
+                };
+
             // Use second column header as title
-            onDataLoad(filteredData, valueColumn);
+            onDataLoad(filteredData, valueColumn, naInfo);
           } catch (error) {
             alert('Error processing demo data');
           }

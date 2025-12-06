@@ -24,6 +24,12 @@ interface MapData {
   value: number | string;
 }
 
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
+}
+
 interface IndiaMapProps {
   data: MapData[];
   colorScale?: ColorScale;
@@ -34,6 +40,7 @@ interface IndiaMapProps {
   colorBarSettings?: ColorBarSettings;
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
+  naInfo?: NAInfo;
 }
 
 export interface IndiaMapRef {
@@ -43,7 +50,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {} }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
 
@@ -66,6 +73,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggingTitle, setDraggingTitle] = useState(false);
   const [titleDragOffset, setTitleDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const [showNALegend, setShowNALegend] = useState(true);
 
   const isMobile = useIsMobile();
 
@@ -705,7 +714,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         const value = dataMap.get(stateName);
 
         if (value === undefined) {
-          return "#e5e7eb"; // Light gray for no data
+          return "#ffffff"; // White for no data
         }
 
         // Handle categorical data
@@ -1400,8 +1409,74 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             </text>
           )}
         </g>
+
+        {/* NA Legend */}
+        {naInfo && naInfo.count > 0 && showNALegend && (
+          <g
+            className="na-legend"
+            transform={`translate(${isMobile ? 10 : 560}, ${isMobile ? 310 : 750})`}
+          >
+            {/* Background box */}
+            <rect
+              width={isMobile ? 150 : 220}
+              height={isMobile ? 30 : 35}
+              fill="white"
+              stroke="#d1d5db"
+              strokeWidth={1}
+              rx={4}
+            />
+
+            {/* NA color box */}
+            <rect
+              x={5}
+              y={isMobile ? 8 : 10}
+              width={isMobile ? 15 : 20}
+              height={isMobile ? 15 : 15}
+              fill="white"
+              stroke="#9ca3af"
+              strokeWidth={1}
+            />
+
+            {/* NA label */}
+            <text
+              x={isMobile ? 25 : 30}
+              y={isMobile ? 19 : 22}
+              style={{
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontSize: isMobile ? 11 : 13,
+                fill: '#374151'
+              }}
+            >
+              {naInfo.states
+                ? `NA (${naInfo.count} ${naInfo.count === 1 ? 'state' : 'states'})`
+                : `NA (${naInfo.count} ${naInfo.count === 1 ? 'district' : 'districts'})`
+              }
+            </text>
+
+            {/* Delete button */}
+            <g
+              onClick={() => setShowNALegend(false)}
+              style={{ cursor: 'pointer' }}
+              transform={`translate(${isMobile ? 135 : 200}, ${isMobile ? 8 : 10})`}
+            >
+              <circle r={isMobile ? 6 : 8} fill="#ef4444" opacity={0.8} />
+              <text
+                textAnchor="middle"
+                dy={isMobile ? 3 : 4}
+                style={{
+                  fontFamily: 'Arial, Helvetica, sans-serif',
+                  fontSize: isMobile ? 10 : 12,
+                  fontWeight: 'bold',
+                  fill: 'white'
+                }}
+              >
+                ×
+              </text>
+            </g>
+          </g>
+        )}
       </svg>
-      
+
       {/* Hover Tooltip */}
       {hoveredState && (
         <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">

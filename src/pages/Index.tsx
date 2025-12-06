@@ -25,6 +25,12 @@ interface DistrictMapData {
   value: number | string;
 }
 
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
+}
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState<string>('states');
 
@@ -42,6 +48,7 @@ const Index = () => {
   });
   const [stateDataType, setStateDataType] = useState<DataType>('numerical');
   const [stateCategoryColors, setStateCategoryColors] = useState<CategoryColorMapping>({});
+  const [stateNAInfo, setStateNAInfo] = useState<NAInfo | undefined>(undefined);
 
   const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
   const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
@@ -57,6 +64,7 @@ const Index = () => {
   const [districtDataType, setDistrictDataType] = useState<DataType>('numerical');
   const [districtCategoryColors, setDistrictCategoryColors] = useState<CategoryColorMapping>({});
   const [selectedDistrictMapType, setSelectedDistrictMapType] = useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
+  const [districtNAInfo, setDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
   const [stateDistrictMapData, setStateDistrictMapData] = useState<DistrictMapData[]>([]);
   const [stateDistrictColorScale, setStateDistrictColorScale] = useState<ColorScale>('spectral');
@@ -77,6 +85,7 @@ const Index = () => {
   const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [stateGistMapping, setStateGistMapping] = useState<StateGistMapping | null>(null);
   const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
+  const [stateDistrictNAInfo, setStateDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -108,9 +117,10 @@ const Index = () => {
     }
   }, [activeTab, selectedStateMapType]);
 
-  const handleStateDataLoad = (data: StateMapData[], title?: string) => {
+  const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
     setStateMapData(data);
     setStateDataTitle(title || '');
+    setStateNAInfo(naInfo);
 
     const values = data.map(d => d.value);
     const dataType = detectDataType(values);
@@ -124,9 +134,10 @@ const Index = () => {
     }
   };
 
-  const handleDistrictDataLoad = (data: DistrictMapData[], title?: string) => {
+  const handleDistrictDataLoad = (data: DistrictMapData[], title?: string, naInfo?: NAInfo) => {
     setDistrictMapData(data);
     setDistrictDataTitle(title || '');
+    setDistrictNAInfo(naInfo);
 
     const values = data.map(d => d.value);
     const dataType = detectDataType(values);
@@ -140,9 +151,10 @@ const Index = () => {
     }
   };
 
-  const handleStateDistrictDataLoad = (data: DistrictMapData[], title?: string) => {
+  const handleStateDistrictDataLoad = (data: DistrictMapData[], title?: string, naInfo?: NAInfo) => {
     setStateDistrictMapData(data);
     setStateDistrictDataTitle(title || '');
+    setStateDistrictNAInfo(naInfo);
 
     const values = data.map(d => d.value);
     const dataType = detectDataType(values);
@@ -234,6 +246,7 @@ const Index = () => {
                   colorBarSettings={stateColorBarSettings}
                   dataType={stateDataType}
                   categoryColors={stateCategoryColors}
+                  naInfo={stateNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions 
@@ -290,6 +303,7 @@ const Index = () => {
                   statesGeojsonPath={getDistrictMapConfig(selectedDistrictMapType).states}
                   dataType={districtDataType}
                   categoryColors={districtCategoryColors}
+                  naInfo={districtNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
@@ -377,6 +391,7 @@ const Index = () => {
                   onHideDistrictValuesChange={setStateDistrictHideValues}
                   dataType={stateDistrictDataType}
                   categoryColors={stateDistrictCategoryColors}
+                  naInfo={stateDistrictNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
@@ -462,6 +477,7 @@ const Index = () => {
                   demoDataPath={getDistrictMapConfig(selectedStateMapType).demoDataPath}
                   googleSheetLink={getDistrictMapConfig(selectedStateMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedStateMapType).geojsonPath}
+                  selectedState={selectedStateForMap}
                 />
                 <div className="space-y-4 mt-6">
 <ColorMapChooser

@@ -21,6 +21,12 @@ interface DistrictMapData {
   value: number | string;
 }
 
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
+}
+
 interface IndiaDistrictsMapProps {
   data: DistrictMapData[];
   colorScale: ColorScale;
@@ -39,6 +45,7 @@ interface IndiaDistrictsMapProps {
   enableRotation?: boolean; // Optional: enable expensive rotation calculation (defaults to false)
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
+  naInfo?: NAInfo;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -106,7 +113,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   onHideDistrictValuesChange,
   enableRotation = false,
   dataType = 'numerical',
-  categoryColors = {}
+  categoryColors = {},
+  naInfo
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -134,6 +142,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggingTitle, setDraggingTitle] = useState(false);
   const [titleDragOffset, setTitleDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const [showNALegend, setShowNALegend] = useState(true);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -792,7 +802,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     if (typeof value === 'number') {
       if (!dataExtent) return 'white';
       if (isNaN(value)) {
-        return '#d1d5db'; // Light gray for NaN/NA values
+        return 'white'; // White for NaN/NA values
       }
 
       const [minVal, maxVal] = dataExtent;
@@ -1394,7 +1404,7 @@ Chittoor,50`;
                     d={path}
                     fill={fillColor}
                     stroke={
-                      data.length === 0 ? "#0f172a" : 
+                      data.length === 0 ? "#0f172a" :
                       fillColor === 'white' || !isColorDark(fillColor) ? "#0f172a" : "#ffffff"
                     }
                     strokeWidth={isHovered ? "1.5" : "0.3"}
@@ -1852,8 +1862,74 @@ Chittoor,50`;
                   ) : null}
                 </>
               )}
+
+              {/* NA Legend */}
+              {naInfo && naInfo.count > 0 && showNALegend && (
+                <g
+                  className="na-legend"
+                  transform={`translate(${isMobile ? 10 : 320}, ${isMobile ? 400 : selectedState ? 1050 : 850})`}
+                >
+                  {/* Background box */}
+                  <rect
+                    width={isMobile ? 150 : 220}
+                    height={isMobile ? 30 : 35}
+                    fill="white"
+                    stroke="#d1d5db"
+                    strokeWidth={1}
+                    rx={4}
+                  />
+
+                  {/* NA color box */}
+                  <rect
+                    x={5}
+                    y={isMobile ? 8 : 10}
+                    width={isMobile ? 15 : 20}
+                    height={isMobile ? 15 : 15}
+                    fill="white"
+                    stroke="#9ca3af"
+                    strokeWidth={1}
+                  />
+
+                  {/* NA label */}
+                  <text
+                    x={isMobile ? 25 : 30}
+                    y={isMobile ? 19 : 22}
+                    style={{
+                      fontFamily: 'Arial, Helvetica, sans-serif',
+                      fontSize: isMobile ? 11 : 13,
+                      fill: '#374151'
+                    }}
+                  >
+                    {naInfo.districts
+                      ? `NA (${naInfo.count} ${naInfo.count === 1 ? 'district' : 'districts'})`
+                      : `NA (${naInfo.count} ${naInfo.count === 1 ? 'state' : 'states'})`
+                    }
+                  </text>
+
+                  {/* Delete button */}
+                  <g
+                    onClick={() => setShowNALegend(false)}
+                    style={{ cursor: 'pointer' }}
+                    transform={`translate(${isMobile ? 135 : 200}, ${isMobile ? 8 : 10})`}
+                  >
+                    <circle r={isMobile ? 6 : 8} fill="#ef4444" opacity={0.8} />
+                    <text
+                      textAnchor="middle"
+                      dy={isMobile ? 3 : 4}
+                      style={{
+                        fontFamily: 'Arial, Helvetica, sans-serif',
+                        fontSize: isMobile ? 10 : 12,
+                        fontWeight: 'bold',
+                        fill: 'white'
+                      }}
+                    >
+                      ×
+                    </text>
+                  </g>
+                </g>
+              )}
             </svg>
-            
+
             {/* Hover Tooltip */}
             {hoveredDistrict && (
               <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
