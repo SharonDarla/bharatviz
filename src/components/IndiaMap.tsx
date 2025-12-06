@@ -5,7 +5,9 @@ import { ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
 import { DiscreteLegend } from '@/lib/discreteLegend';
+import { CategoricalLegend } from '@/lib/categoricalLegend';
 import { GeoJSON } from 'geojson';
+import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
 import { 
   BLACK_TEXT_STATES, 
   ABBREVIATED_STATES, 
@@ -19,7 +21,13 @@ import {
 
 interface MapData {
   state: string;
-  value: number;
+  value: number | string;
+}
+
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
 }
 
 interface IndiaMapProps {
@@ -30,6 +38,9 @@ interface IndiaMapProps {
   hideValues?: boolean;
   dataTitle?: string;
   colorBarSettings?: ColorBarSettings;
+  dataType?: DataType;
+  categoryColors?: CategoryColorMapping;
+  naInfo?: NAInfo;
 }
 
 export interface IndiaMapRef {
@@ -39,7 +50,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
 
@@ -54,7 +65,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [legendMin, setLegendMin] = useState('');
   const [legendMean, setLegendMean] = useState('');
   const [legendMax, setLegendMax] = useState('');
-  const [hoveredState, setHoveredState] = useState<{ state: string; value?: number } | null>(null);
+  const [hoveredState, setHoveredState] = useState<{ state: string; value?: number | string } | null>(null);
 
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
@@ -62,6 +73,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggingTitle, setDraggingTitle] = useState(false);
   const [titleDragOffset, setTitleDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const [showNALegend, setShowNALegend] = useState(true);
 
   const isMobile = useIsMobile();
 
@@ -83,25 +96,21 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
-    // High DPI settings for 300 DPI output
-    const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
+
+    const dpiScale = 300 / 96;
     const originalWidth = isMobile ? 350 : 800;
     const originalHeight = isMobile ? 350 : 800;
-    
+
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
-    
+
     img.onload = () => {
       if (ctx) {
-        // Scale the context to match the DPI
         ctx.scale(dpiScale, dpiScale);
-        
-        // Fill background with white
+
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, originalWidth, originalHeight);
-        
-        // Draw the image at original size (context scaling handles the DPI)
+
         ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
         
         canvas.toBlob((blob) => {
@@ -128,12 +137,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
     svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     
-    // Ensure consistent font handling
     const allElements = svgClone.querySelectorAll('*');
     allElements.forEach(el => {
       const element = el as SVGElement;
       if (element.tagName === 'text') {
-        // Use both attribute and style to ensure compatibility
         element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
         element.style.fontFamily = 'Arial, Helvetica, sans-serif';
       }
@@ -150,11 +157,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     URL.revokeObjectURL(url);
   };
 
-  // Helper function to fix legend gradient in cloned SVG by replacing with solid color rectangles
   const fixLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
-    
-    // Get the appropriate D3 color interpolator
+
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
         blues: d3.interpolateBlues,
@@ -177,19 +182,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const baseInterpolator = interpolators[scale] || d3.interpolateBlues;
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
-    
-    // Calculate color scale values
+
     const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const colorInterpolator = getColorInterpolator(colorScale);
     const colorScaleFunction = d3.scaleSequential(colorInterpolator)
       .domain([minValue, maxValue]);
-    
-    // Find the legend rectangle that uses the gradient
+
     const legendRect = svgClone.querySelector('rect[fill*="states-legend-gradient"]');
     if (legendRect) {
-      // Get the rect's position and dimensions
       const x = parseFloat(legendRect.getAttribute('x') || '0');
       const y = parseFloat(legendRect.getAttribute('y') || '0');
       const width = parseFloat(legendRect.getAttribute('width') || '200');
@@ -197,120 +199,101 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       const stroke = legendRect.getAttribute('stroke');
       const strokeWidth = legendRect.getAttribute('stroke-width');
       const rx = legendRect.getAttribute('rx');
-      
-      // Get parent element
+
       const parent = legendRect.parentElement;
       if (parent) {
-        // Remove the original gradient rect
         legendRect.remove();
-        
-        // Create multiple small rectangles with solid colors
-        const numSegments = 50; // More segments for smoother gradient
+
+        const numSegments = 50;
         const segmentWidth = width / numSegments;
-        
+
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
           const color = colorScaleFunction(value);
-          
+
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
           rect.setAttribute('y', y.toString());
           rect.setAttribute('width', segmentWidth.toString());
           rect.setAttribute('height', height.toString());
           rect.setAttribute('fill', color);
-          
-          // Add stroke only to first and last segment to maintain border
+
           if (i === 0 || i === numSegments - 1) {
             if (stroke) rect.setAttribute('stroke', stroke);
             if (strokeWidth) rect.setAttribute('stroke-width', strokeWidth);
           }
-          
-          // Add border radius to first and last segments
+
           if (rx && (i === 0 || i === numSegments - 1)) {
             rect.setAttribute('rx', rx);
           }
-          
+
           parent.appendChild(rect);
         }
       }
     }
-    
-    // Also remove any gradient definitions that are no longer needed
+
     const gradients = svgClone.querySelectorAll('#states-legend-gradient');
     gradients.forEach(gradient => gradient.remove());
   };
 
   const exportPDF = async () => {
     if (!svgRef.current) return;
-    
+
     try {
-      // Dynamically import PDF libraries
       const [{ default: jsPDF }, { svg2pdf }] = await Promise.all([
         import('jspdf'),
         import('svg2pdf.js')
       ]);
-      
-      // Create PDF document
+
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
-      
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Get the actual SVG dimensions
+
       const svgWidth = isMobile ? 350 : 800;
       const svgHeight = isMobile ? 350 : 800;
-      
-      // Clone the SVG to avoid modifying the original
+
       const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
-      
-      // Ensure the cloned SVG has proper attributes for full capture
+
       svgClone.setAttribute('width', svgWidth.toString());
       svgClone.setAttribute('height', svgHeight.toString());
       svgClone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
       svgClone.style.width = `${svgWidth}px`;
       svgClone.style.height = `${svgHeight}px`;
-      
-      // Remove any CSS classes that might interfere with export
+
       svgClone.removeAttribute('class');
-      
-      // Force all elements to be visible and properly positioned
+
       const allElements = svgClone.querySelectorAll('*');
       allElements.forEach(el => {
         const element = el as SVGElement;
         element.style.visibility = 'visible';
         element.style.display = 'block';
       });
-      
-      // Fix the legend gradient to match the selected color scale
+
       fixLegendGradient(svgClone);
-      
-      // Calculate PDF margins and available space
-      const pdfMargin = 15; // 15mm margin
+
+      const pdfMargin = 15;
       const availableWidth = pdfWidth - (2 * pdfMargin);
       const availableHeight = pdfHeight - (2 * pdfMargin);
-      
-      // Convert SVG dimensions to mm (1px = 0.264583mm at 96dpi)
+
       const svgWidthMm = svgWidth * 0.264583;
       const svgHeightMm = svgHeight * 0.264583;
-      
-      // Calculate scale to fit entire SVG in PDF
+
       const scaleX = availableWidth / svgWidthMm;
       const scaleY = availableHeight / svgHeightMm;
       const scale = Math.min(scaleX, scaleY);
-      
-      // Calculate final dimensions and position
+
       const finalWidth = svgWidthMm * scale;
       const finalHeight = svgHeightMm * scale;
       const x = (pdfWidth - finalWidth) / 2;
       const y = (pdfHeight - finalHeight) / 2;
-      
-      
-      // Use svg2pdf.js for true vector conversion
+
+
       await svg2pdf(svgClone, pdf, {
         xOffset: x,
         yOffset: y,
@@ -319,8 +302,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         width: finalWidth,
         height: finalHeight
       });
-      
-      // Save the PDF
       pdf.save(`bharatviz-states-${Date.now()}.pdf`);
       
     } catch (error) {
@@ -695,18 +676,23 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         if (data.length === 0) {
           return "#ffffff";
         }
-        
+
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
 
         if (value === undefined) {
-          return "#e5e7eb"; // Light gray for no data
+          return "#ffffff"; // White for no data
         }
 
-        // Use the new discrete color utility
-        const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
-        return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+        // Handle categorical data
+        if (dataType === 'categorical' && typeof value === 'string') {
+          return getCategoryColor(value, categoryColors, '#e5e7eb');
+        }
+
+        // Use the new discrete color utility for numerical data
+        const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
+        return getColorForValue(value as number, values, colorScale, invertColors, colorBarSettings);
       })
       .attr("stroke", (d: GeoJSON.Feature) => {
         // If no data, use default gray stroke
@@ -955,7 +941,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.85}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(roundToSignificantDigits(value));
+              .text(typeof value === 'number' ? roundToSignificantDigits(value) : String(value));
           } else if (hideStateNames && !hideValues) {
             // Only value, centered vertically
             text.append("tspan")
@@ -964,7 +950,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               .style("font-size", `${fontSize * 0.95}px`)
               .style("font-weight", "700")
               .style("fill", valueColor)
-              .text(roundToSignificantDigits(value));
+              .text(typeof value === 'number' ? roundToSignificantDigits(value) : String(value));
           }
         }
       });
@@ -974,12 +960,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       // Map rendering failed - component will continue to show current state
     }
 
-  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType]);
 
-  // Legend values from data
+  // Legend values from data (only for numerical data)
   useEffect(() => {
-    if (data.length > 0) {
-      const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+    if (data.length > 0 && dataType === 'numerical') {
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
       if (values.length > 0) {
         const meanValue = values.reduce((a, b) => a + b, 0) / values.length;
         setLegendMin(roundToSignificantDigits(Math.min(...values)));
@@ -995,21 +981,21 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       setLegendMean('0.5');
       setLegendMax('1');
     }
-  }, [data]);
+  }, [data, dataType]);
 
-  // D3 gradient for legend (only for continuous mode)
+  // D3 gradient for legend (only for continuous mode and numerical data)
   useEffect(() => {
-    
+
     if (!svgRef.current) return;
     const svg = d3.select(svgRef.current);
     // Always remove existing gradient first
     svg.selectAll('#states-legend-gradient').remove();
-    
-    // If no data or discrete mode, don't create gradient
-    if (data.length === 0 || colorBarSettings?.isDiscrete) {
+
+    // If no data, discrete mode, or categorical data, don't create gradient
+    if (data.length === 0 || colorBarSettings?.isDiscrete || dataType === 'categorical') {
       return;
     }
-    
+
     let defs = svg.select('defs');
     if (defs.empty()) defs = svg.append('defs');
     const gradient = defs.append('linearGradient')
@@ -1018,9 +1004,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .attr('x2', '100%')
       .attr('y1', '0%')
       .attr('y2', '0%');
-    
-    // Color scale - continuous mode only
-    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
+
+    // Color scale - continuous mode only for numerical data
+    const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const getColorInterpolator = (scale: ColorScale) => {
@@ -1056,7 +1042,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {
@@ -1193,10 +1179,24 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         {/* Legend overlay (React) */}
         {data.length > 0 && (
           <>
-            {/* Discrete Legend */}
-            {colorBarSettings?.isDiscrete ? (
+            {/* Categorical Legend */}
+            {dataType === 'categorical' ? (
+              <CategoricalLegend
+                categories={getUniqueCategories(data.map(d => d.value))}
+                categoryColors={categoryColors}
+                legendPosition={legendPosition}
+                isMobile={isMobile}
+                onMouseDown={handleLegendMouseDown}
+                dragging={dragging}
+                legendTitle={legendTitle}
+                editingTitle={editingTitle}
+                setEditingTitle={setEditingTitle}
+                setLegendTitle={setLegendTitle}
+              />
+            ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
+              /* Discrete Legend */
               <DiscreteLegend
-                data={data.map(d => d.value)}
+                data={data.map(d => d.value).filter(v => typeof v === 'number') as number[]}
                 colorScale={colorScale}
                 invertColors={invertColors}
                 colorBarSettings={colorBarSettings}
@@ -1209,7 +1209,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 setEditingTitle={setEditingTitle}
                 setLegendTitle={setLegendTitle}
               />
-            ) : (
+            ) : dataType === 'numerical' ? (
               /* Continuous Legend */
               <g
                 className="legend-container"
@@ -1322,7 +1322,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                   </text>
                 )}
               </g>
-            )}
+            ) : null}
           </>
         )}
         
@@ -1377,14 +1377,82 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
             </text>
           )}
         </g>
+
+        {/* NA Legend */}
+        {naInfo && naInfo.count > 0 && showNALegend && (
+          <g
+            className="na-legend"
+            transform={`translate(${isMobile ? 10 : 560}, ${isMobile ? 310 : 750})`}
+          >
+            {/* Background box */}
+            <rect
+              width={isMobile ? 150 : 220}
+              height={isMobile ? 30 : 35}
+              fill="white"
+              stroke="#d1d5db"
+              strokeWidth={1}
+              rx={4}
+            />
+
+            {/* NA color box */}
+            <rect
+              x={5}
+              y={isMobile ? 8 : 10}
+              width={isMobile ? 15 : 20}
+              height={isMobile ? 15 : 15}
+              fill="white"
+              stroke="#9ca3af"
+              strokeWidth={1}
+            />
+
+            {/* NA label */}
+            <text
+              x={isMobile ? 25 : 30}
+              y={isMobile ? 19 : 22}
+              style={{
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontSize: isMobile ? 11 : 13,
+                fill: '#374151'
+              }}
+            >
+              {naInfo.states
+                ? `NA (${naInfo.count} ${naInfo.count === 1 ? 'state' : 'states'})`
+                : `NA (${naInfo.count} ${naInfo.count === 1 ? 'district' : 'districts'})`
+              }
+            </text>
+
+            {/* Delete button */}
+            <g
+              onClick={() => setShowNALegend(false)}
+              style={{ cursor: 'pointer' }}
+              transform={`translate(${isMobile ? 135 : 200}, ${isMobile ? 8 : 10})`}
+            >
+              <circle r={isMobile ? 6 : 8} fill="#ef4444" opacity={0.8} />
+              <text
+                textAnchor="middle"
+                dy={isMobile ? 3 : 4}
+                style={{
+                  fontFamily: 'Arial, Helvetica, sans-serif',
+                  fontSize: isMobile ? 10 : 12,
+                  fontWeight: 'bold',
+                  fill: 'white'
+                }}
+              >
+                ×
+              </text>
+            </g>
+          </g>
+        )}
       </svg>
-      
+
       {/* Hover Tooltip */}
       {hoveredState && (
         <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
           <div className="font-medium">{hoveredState.state}</div>
           {hoveredState.value !== undefined && (
-            <div className="text-xs">{roundToSignificantDigits(hoveredState.value)}</div>
+            <div className="text-xs">
+              {typeof hoveredState.value === 'number' ? roundToSignificantDigits(hoveredState.value) : String(hoveredState.value)}
+            </div>
           )}
         </div>
       )}

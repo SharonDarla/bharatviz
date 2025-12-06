@@ -11,12 +11,20 @@ import { type ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
 import { DiscreteLegend } from '@/lib/discreteLegend';
+import { CategoricalLegend } from '@/lib/categoricalLegend';
 import { createRotationCalculator, isPointInPolygon } from '@/lib/rotationUtils';
+import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
 
 interface DistrictMapData {
   state: string;
   district: string;
-  value: number;
+  value: number | string;
+}
+
+interface NAInfo {
+  states?: string[];
+  districts?: Array<{ state: string; district: string }>;
+  count: number;
 }
 
 interface IndiaDistrictsMapProps {
@@ -35,6 +43,9 @@ interface IndiaDistrictsMapProps {
   onHideDistrictNamesChange?: (hidden: boolean) => void; // Callback when hiding district names
   onHideDistrictValuesChange?: (hidden: boolean) => void; // Callback when hiding district values
   enableRotation?: boolean; // Optional: enable expensive rotation calculation (defaults to false)
+  dataType?: DataType;
+  categoryColors?: CategoryColorMapping;
+  naInfo?: NAInfo;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -49,6 +60,7 @@ interface GeoJSONFeature {
   properties: {
     state_name?: string;
     district_name?: string;
+    nss_region?: string;
     NAME_1?: string;
     name?: string;
     ST_NM?: string;
@@ -100,12 +112,15 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   hideDistrictValues = false,
   onHideDistrictNamesChange,
   onHideDistrictValuesChange,
-  enableRotation = false
+  enableRotation = false,
+  dataType = 'numerical',
+  categoryColors = {},
+  naInfo
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
-  const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number } | null>(null);
+  const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number | string } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
 
@@ -128,6 +143,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggingTitle, setDraggingTitle] = useState(false);
   const [titleDragOffset, setTitleDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const [showNALegend, setShowNALegend] = useState(true);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -159,8 +176,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   }, [selectedState]);
 
   useEffect(() => {
-    if (data.length > 0) {
-      const values = data.map(d => d.value).filter(v => !isNaN(v));
+    if (data.length > 0 && dataType === 'numerical') {
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       const minValue = values.length > 0 ? Math.min(...values) : 0;
       const maxValue = values.length > 0 ? Math.max(...values) : 1;
       const meanValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0.5;
@@ -172,7 +189,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       setLegendMean('0.5');
       setLegendMax('1');
     }
-  }, [data]);
+  }, [data, dataType]);
 
   useEffect(() => {
     const loadGeoData = async () => {
@@ -681,7 +698,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     const svg = d3.select(svgRef.current);
     svg.selectAll('#districts-legend-gradient').remove();
 
-    if (data.length === 0 || colorBarSettings?.isDiscrete) {
+    if (data.length === 0 || colorBarSettings?.isDiscrete || dataType === 'categorical') {
       return;
     }
     
@@ -693,9 +710,9 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .attr('x2', '100%')
       .attr('y1', '0%')
       .attr('y2', '0%');
-    
-    // Color scale - continuous mode only
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
+
+    // Color scale - continuous mode only for numerical data
+    const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
     const getColorInterpolator = (scale: ColorScale) => {
@@ -714,7 +731,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
 
   const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];
@@ -756,7 +773,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     };
 
     if (coordinates[0] && Array.isArray(coordinates[0][0]) && Array.isArray((coordinates[0][0] as number[][])[0])) {
-      // MultiPolygon
       return (coordinates as number[][][][]).map(polygon => {
         return polygon.map(ring => {
           const pathData = convertRing(ring);
@@ -764,7 +780,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         }).join(' ');
       }).join(' ');
     } else if (coordinates[0] && Array.isArray(coordinates[0][0])) {
-      // Polygon
       return (coordinates as number[][][]).map(ring => {
         const pathData = convertRing(ring);
         return `M ${pathData} Z`;
@@ -774,29 +789,38 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return '';
   };
 
-  const getDistrictColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
-    if (value === undefined || !dataExtent) return 'white';
+  const getDistrictColorForValue = (value: number | string | undefined, dataExtent: [number, number] | undefined): string => {
+    if (value === undefined) return 'white';
 
-    if (isNaN(value)) {
-      return '#d1d5db'; // Light gray for NaN/NA values
+    if (dataType === 'categorical' && typeof value === 'string') {
+      return getCategoryColor(value, categoryColors, '#e5e7eb');
     }
 
-    const [minVal, maxVal] = dataExtent;
-    if (minVal === maxVal) return colorScales[colorScale](0.5);
+    if (typeof value === 'number') {
+      if (!dataExtent) return 'white';
+      if (isNaN(value)) {
+        return 'white';
+      }
 
-    // Use the new discrete color utility
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
-    return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+      const [minVal, maxVal] = dataExtent;
+      if (minVal === maxVal) return colorScales[colorScale](0.5);
+
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+      return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+    }
+
+    return '#e5e7eb';
   };
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
-    const { district_name, state_name } = feature.properties;
+    const { district_name, nss_region, state_name } = feature.properties;
+    const districtOrRegion = district_name || nss_region || '';
     const districtData = data.find(d =>
-      d.district.toLowerCase().trim() === district_name.toLowerCase().trim() &&
-      d.state.toLowerCase().trim() === state_name.toLowerCase().trim()
+      d.district.toLowerCase().trim() === districtOrRegion.toLowerCase().trim() &&
+      d.state.toLowerCase().trim() === (state_name || '').toLowerCase().trim()
     );
     setHoveredDistrict({
-      district: district_name,
+      district: districtOrRegion,
       state: state_name,
       value: districtData?.value
     });
@@ -1024,7 +1048,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
       // Use the new discrete color utility
-      const values = data.map(d => d.value).filter(v => !isNaN(v));
+      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     };
 
@@ -1363,13 +1387,15 @@ Chittoor,50`;
                 const mapWidth = isMobile ? 320 : 760;
                 const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
                 const path = convertCoordinatesToPath(feature.geometry.coordinates, mapWidth, mapHeight, isMobile ? 55 : 45, isMobile ? 15 : 20);
+                const districtOrRegion = feature.properties.district_name || feature.properties.nss_region || '';
                 const districtData = data.find(d =>
-                  d.district.toLowerCase().trim() === feature.properties.district_name.toLowerCase().trim() &&
-                  d.state.toLowerCase().trim() === feature.properties.state_name.toLowerCase().trim()
+                  d.district.toLowerCase().trim() === districtOrRegion.toLowerCase().trim() &&
+                  d.state.toLowerCase().trim() === (feature.properties.state_name || '').toLowerCase().trim()
                 );
                 const fillColor = getDistrictColorForValue(districtData?.value, dataExtent);
                 const isHovered = hoveredDistrict &&
-                  hoveredDistrict.district === feature.properties.district_name;
+                  hoveredDistrict.district === districtOrRegion &&
+                  hoveredDistrict.state === feature.properties.state_name;
                 
                 return (
                   <path
@@ -1377,7 +1403,7 @@ Chittoor,50`;
                     d={path}
                     fill={fillColor}
                     stroke={
-                      data.length === 0 ? "#0f172a" : 
+                      data.length === 0 ? "#0f172a" :
                       fillColor === 'white' || !isColorDark(fillColor) ? "#0f172a" : "#ffffff"
                     }
                     strokeWidth={isHovered ? "1.5" : "0.3"}
@@ -1386,8 +1412,8 @@ Chittoor,50`;
                     onMouseLeave={handleDistrictLeave}
                   >
                     <title>
-                      {feature.properties.district_name}, {feature.properties.state_name}
-                      {districtData?.value !== undefined ? `: ${roundToSignificantDigits(districtData.value)}` : ''}
+                      {districtOrRegion}, {feature.properties.state_name}
+                      {districtData?.value !== undefined ? `: ${typeof districtData.value === 'number' ? roundToSignificantDigits(districtData.value) : String(districtData.value)}` : ''}
                     </title>
                   </path>
                 );
@@ -1397,7 +1423,7 @@ Chittoor,50`;
               {((!hideDistrictNames && !hideDistrictValues) || (!hideDistrictNames) || (!hideDistrictValues)) && districtLabelData.length > 0 && (
                 <g className="district-labels">
                   {districtLabelData.map(({ feature, area }, index) => {
-                    const districtName = feature.properties.district_name || '';
+                    const districtName = feature.properties.district_name || feature.properties.nss_region || '';
                     const stateName = feature.properties.state_name || '';
                     if (!districtName) return null;
 
@@ -1591,7 +1617,7 @@ Chittoor,50`;
                               opacity: 0.8
                             }}
                           >
-                            {roundToSignificantDigits(districtValue)}
+                            {typeof districtValue === 'number' ? roundToSignificantDigits(districtValue) : String(districtValue)}
                           </text>
                         )}
                       </g>
@@ -1689,10 +1715,24 @@ Chittoor,50`;
               {/* Legend */}
               {data.length > 0 && (
                 <>
-                  {/* Discrete Legend */}
-                  {colorBarSettings?.isDiscrete ? (
+                  {/* Categorical Legend */}
+                  {dataType === 'categorical' ? (
+                    <CategoricalLegend
+                      categories={getUniqueCategories(data.map(d => d.value))}
+                      categoryColors={categoryColors}
+                      legendPosition={legendPosition}
+                      isMobile={isMobile}
+                      onMouseDown={handleLegendMouseDown}
+                      dragging={dragging}
+                      legendTitle={legendTitle}
+                      editingTitle={editingTitle}
+                      setEditingTitle={setEditingTitle}
+                      setLegendTitle={setLegendTitle}
+                    />
+                  ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
+                    /* Discrete Legend */
                     <DiscreteLegend
-                      data={data.map(d => d.value)}
+                      data={data.map(d => d.value).filter(v => typeof v === 'number') as number[]}
                       colorScale={colorScale}
                       invertColors={invertColors}
                       colorBarSettings={colorBarSettings}
@@ -1705,7 +1745,7 @@ Chittoor,50`;
                       setEditingTitle={setEditingTitle}
                       setLegendTitle={setLegendTitle}
                     />
-                  ) : (
+                  ) : dataType === 'numerical' ? (
                     /* Continuous Legend */
                     <g
                       className="legend-container"
@@ -1818,18 +1858,86 @@ Chittoor,50`;
                         </text>
                       )}
                     </g>
-                  )}
+                  ) : null}
                 </>
               )}
+
+              {/* NA Legend */}
+              {naInfo && naInfo.count > 0 && showNALegend && (
+                <g
+                  className="na-legend"
+                  transform={`translate(${isMobile ? 10 : 320}, ${isMobile ? 400 : selectedState ? 1050 : 850})`}
+                >
+                  {/* Background box */}
+                  <rect
+                    width={isMobile ? 150 : 220}
+                    height={isMobile ? 30 : 35}
+                    fill="white"
+                    stroke="#d1d5db"
+                    strokeWidth={1}
+                    rx={4}
+                  />
+
+                  {/* NA color box */}
+                  <rect
+                    x={5}
+                    y={isMobile ? 8 : 10}
+                    width={isMobile ? 15 : 20}
+                    height={isMobile ? 15 : 15}
+                    fill="white"
+                    stroke="#9ca3af"
+                    strokeWidth={1}
+                  />
+
+                  {/* NA label */}
+                  <text
+                    x={isMobile ? 25 : 30}
+                    y={isMobile ? 19 : 22}
+                    style={{
+                      fontFamily: 'Arial, Helvetica, sans-serif',
+                      fontSize: isMobile ? 11 : 13,
+                      fill: '#374151'
+                    }}
+                  >
+                    {naInfo.districts
+                      ? `NA (${naInfo.count} ${naInfo.count === 1 ? 'district' : 'districts'})`
+                      : `NA (${naInfo.count} ${naInfo.count === 1 ? 'state' : 'states'})`
+                    }
+                  </text>
+
+                  {/* Delete button */}
+                  <g
+                    onClick={() => setShowNALegend(false)}
+                    style={{ cursor: 'pointer' }}
+                    transform={`translate(${isMobile ? 135 : 200}, ${isMobile ? 8 : 10})`}
+                  >
+                    <circle r={isMobile ? 6 : 8} fill="#ef4444" opacity={0.8} />
+                    <text
+                      textAnchor="middle"
+                      dy={isMobile ? 3 : 4}
+                      style={{
+                        fontFamily: 'Arial, Helvetica, sans-serif',
+                        fontSize: isMobile ? 10 : 12,
+                        fontWeight: 'bold',
+                        fill: 'white'
+                      }}
+                    >
+                      ×
+                    </text>
+                  </g>
+                </g>
+              )}
             </svg>
-            
+
             {/* Hover Tooltip */}
             {hoveredDistrict && (
               <div className="absolute top-2 left-7 bg-white border border-gray-300 rounded-lg p-3 shadow-lg z-10 pointer-events-none">
                 <div className="font-medium">{hoveredDistrict.district}</div>
                 <div className="text-xs text-muted-foreground">{hoveredDistrict.state}</div>
                 {hoveredDistrict.value !== undefined && (
-                  <div className="text-xs">{roundToSignificantDigits(hoveredDistrict.value)}</div>
+                  <div className="text-xs">
+                    {typeof hoveredDistrict.value === 'number' ? roundToSignificantDigits(hoveredDistrict.value) : String(hoveredDistrict.value)}
+                  </div>
                 )}
               </div>
             )}
