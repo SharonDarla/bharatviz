@@ -992,7 +992,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       // Map rendering failed - component will continue to show current state
     }
 
-  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType]);
 
   // Legend values from data (only for numerical data)
   useEffect(() => {

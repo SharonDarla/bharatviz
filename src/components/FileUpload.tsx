@@ -336,7 +336,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       }
 
       // Find missing entries (exist in GeoJSON but not in uploaded data)
-      let missingEntries: typeof processedData = [];
+      const missingEntries: typeof processedData = [];
       if (mode === 'districts') {
         // Build a map of state -> set of districts from GeoJSON
         const validDistrictsByState = new Map<string, Set<string>>();
@@ -362,7 +362,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         // Find districts in GeoJSON that are not in filteredData or naEntries
         const dataMap = new Map<string, boolean>();
         [...filteredData, ...naEntries].forEach(row => {
-          const key = `${row.state}|${(row as any).district}`;
+          const key = `${row.state}|${'district' in row ? row.district : ''}`;
           dataMap.set(key, true);
         });
 
@@ -632,7 +632,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             }
 
             // Find missing entries (exist in GeoJSON but not in uploaded data)
-            let missingEntries: typeof processedData = [];
+            const missingEntries: typeof processedData = [];
             if (mode === 'districts') {
               // Build a map of state -> set of districts from GeoJSON
               const validDistrictsByState = new Map<string, Set<string>>();
@@ -658,7 +658,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               // Find districts in GeoJSON that are not in filteredData or naEntries
               const dataMap = new Map<string, boolean>();
               [...filteredData, ...naEntries].forEach(row => {
-                const key = `${row.state}|${(row as any).district}`;
+                const key = `${row.state}|${'district' in row ? row.district : ''}`;
                 dataMap.set(key, true);
               });
 
