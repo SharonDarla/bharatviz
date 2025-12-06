@@ -337,8 +337,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
 
       const contentType = response.headers.get('content-type');
       if (!contentType?.includes('application/json') && !contentType?.includes('application/geo+json')) {
-        console.error('Invalid content type:', contentType);
-        return data;
+        console.warn('Unexpected content type for GeoJSON:', contentType, '- attempting to parse anyway');
       }
 
       const geojson = await response.json();
