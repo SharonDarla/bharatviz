@@ -746,6 +746,19 @@ bv$show_map(result_nfhs5)`}
                     Embed interactive BharatViz maps directly into your website, blog, or GitHub Pages without downloading files.
                   </p>
                   <div className="space-y-4">
+                    <div className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Live Demo & Interactive Examples</h3>
+                      <p className="text-blue-700 dark:text-blue-300 mb-3">
+                        See both embedding methods in action with live, working examples.
+                      </p>
+                      <a
+                        href="/embed-demo"
+                        className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        View Embed Demo →
+                      </a>
+                    </div>
+
                     <div className="p-4 border rounded-lg">
                       <h3 className="text-lg font-semibold mb-2">iframe embed</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">

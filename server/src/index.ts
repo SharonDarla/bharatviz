@@ -26,7 +26,8 @@ app.use(helmet({
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'"]
+      frameSrc: ["'self'"],
+      frameAncestors: ["'self'", "http://localhost:*", "https://*"]
     }
   }
 }));
