@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import Papa from 'papaparse';
+import pako from 'pako';
 import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
 import { IndiaDistrictsMap, type IndiaDistrictsMapRef } from '@/components/IndiaDistrictsMap';
@@ -32,7 +35,16 @@ interface NAInfo {
 }
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<string>('states');
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const getTabFromPath = (pathname: string): string => {
+    const path = pathname.slice(1);
+    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'help', 'credits'];
+    return validTabs.includes(path) ? path : 'states';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getTabFromPath(location.pathname));
 
   const [stateMapData, setStateMapData] = useState<StateMapData[]>([]);
   const [stateColorScale, setStateColorScale] = useState<ColorScale>('spectral');
@@ -90,6 +102,120 @@ const Index = () => {
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
+
+  useEffect(() => {
+    const tabFromPath = getTabFromPath(location.pathname);
+    if (tabFromPath !== activeTab) {
+      setActiveTab(tabFromPath);
+    }
+  }, [location.pathname]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const basePath = value === 'states' ? '' : value;
+    const search = location.search;
+    navigate(`/${basePath}${search}`);
+  };
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const dataUrl = searchParams.get('dataUrl');
+
+    if (dataUrl) {
+      const loadDataFromUrl = async () => {
+        try {
+          const response = await fetch(dataUrl);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
+          }
+
+          let csvText: string;
+
+          if (dataUrl.endsWith('.gz')) {
+            const arrayBuffer = await response.arrayBuffer();
+            const decompressed = pako.ungzip(new Uint8Array(arrayBuffer));
+            csvText = new TextDecoder().decode(decompressed);
+          } else {
+            csvText = await response.text();
+          }
+
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              const data = results.data as Record<string, string>[];
+
+              const hasDistrict = data[0] && ('district_name' in data[0] || 'district' in data[0]);
+              const colorScale = searchParams.get('colorScale') as ColorScale || 'spectral';
+              const title = searchParams.get('title') || '';
+              const legendTitle = searchParams.get('legendTitle') || 'Values';
+              const boundary = searchParams.get('boundary') || 'LGD';
+              const showStateBoundaries = searchParams.get('showStateBoundaries') === 'true';
+              const invertColors = searchParams.get('invertColors') === 'true';
+
+              if (hasDistrict) {
+                const districtData = data.map((row) => ({
+                  state: row.state_name || row.state || '',
+                  district: row.district_name || row.district || '',
+                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
+                }));
+
+                setDistrictMapData(districtData);
+                setDistrictDataTitle(title);
+                setDistrictColorScale(colorScale);
+                setDistrictInvertColors(invertColors);
+                setShowStateBoundaries(showStateBoundaries);
+                setSelectedDistrictMapType(boundary);
+
+                const values = districtData.map(d => d.value);
+                const dataType = detectDataType(values);
+                setDistrictDataType(dataType);
+
+                if (dataType === 'categorical') {
+                  const categories = getUniqueCategories(values);
+                  const categoryColors = generateDefaultCategoryColors(categories);
+                  setDistrictCategoryColors(categoryColors);
+                  setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                }
+
+                handleTabChange('districts');
+              } else {
+                const stateData = data.map((row) => ({
+                  state: row.state_name || row.state || '',
+                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
+                }));
+
+                setStateMapData(stateData);
+                setStateDataTitle(title);
+                setStateColorScale(colorScale);
+                setStateInvertColors(invertColors);
+
+                const values = stateData.map(d => d.value);
+                const dataType = detectDataType(values);
+                setStateDataType(dataType);
+
+                if (dataType === 'categorical') {
+                  const categories = getUniqueCategories(values);
+                  const categoryColors = generateDefaultCategoryColors(categories);
+                  setStateCategoryColors(categoryColors);
+                  setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                }
+
+                handleTabChange('states');
+              }
+            },
+            error: (error) => {
+              console.error('CSV parsing error:', error);
+            }
+          });
+        } catch (error) {
+          console.error('Error loading data from URL:', error);
+        }
+      };
+
+      loadDataFromUrl();
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (activeTab === 'state-districts') {
@@ -224,7 +350,7 @@ const Index = () => {
           </h1>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="mb-8">
             <TabsList className="grid w-full grid-cols-6 gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
