@@ -347,40 +347,40 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-6 gap-2 bg-transparent p-0 h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 States
               </TabsTrigger>
               <TabsTrigger
                 value="districts"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Districts
               </TabsTrigger>
               <TabsTrigger
                 value="regions"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Regions
               </TabsTrigger>
               <TabsTrigger
                 value="state-districts"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 State-District
               </TabsTrigger>
               <TabsTrigger
                 value="help"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Help
               </TabsTrigger>
               <TabsTrigger
                 value="credits"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Credits
               </TabsTrigger>
@@ -468,7 +468,6 @@ const Index = () => {
               </div>
 
               <div className="lg:col-span-1 order-1 lg:order-1">
-                {/* District Map Type Selector */}
                 <div className="mb-4 p-4 border rounded-lg bg-card">
                   <Label htmlFor="district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
@@ -621,7 +620,6 @@ const Index = () => {
               </div>
 
               <div className="lg:col-span-1 order-1 lg:order-1">
-                {/* District Map Type Selector */}
                 <div className="mb-4 p-4 border rounded-lg bg-card">
                   <Label htmlFor="state-district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
@@ -645,7 +643,6 @@ const Index = () => {
                   </Select>
                 </div>
 
-                {/* State Selector with Search */}
                 <div className="mb-4 p-4 border rounded-lg bg-card">
                   <Label htmlFor="state-selector" className="text-sm font-medium mb-2 block">
                     Select State

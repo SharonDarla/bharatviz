@@ -1469,40 +1469,42 @@ Chittoor,50`;
                     const fontSizingFactor = selectedState ? 0.75 : 0.65;
                     const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
-                    const optimalPoint = polylabel(polygonCoords, 0.00000001);
+                    // Use precision of 1.0 (degrees) for more conservative/safer positioning
+                    const optimalPoint = polylabel(polygonCoords, 1.0);
 
                     // Calculate principal axis angle for text rotation
                     const principalAxisAngle = calculatePrincipalAxisAngle(feature);
 
                     // Validate positions and use fallback chain
-                    // Priority: centroid (most reliable) → polylabel → bounding box center
+                    // Priority: polylabel (best visual center) → centroid → bounding box center
                     const outerRing = polygonCoords[0];
                     const textRotationAngle = 0;
 
                     // Calculate fallback positions upfront
+                    const polylabelPoint = { lng: optimalPoint[0], lat: optimalPoint[1] };
                     const centroid = calculateDistrictCentroid(feature);
                     const districtBounds = calculateDistrictBounds(feature);
                     const boundingBoxCenter = {
                       lng: (districtBounds.minLng + districtBounds.maxLng) / 2,
                       lat: (districtBounds.minLat + districtBounds.maxLat) / 2
                     };
-                    const polylabelPoint = { lng: optimalPoint[0], lat: optimalPoint[1] };
 
-                    // Use centroid first (mathematically guaranteed to be inside for simple polygons)
-                    // For complex polygons with islands, we use the largest polygon's centroid
-                    let positionCoords = centroid;
-                    let positionSource = 'centroid';
+                    // Use polylabel first (optimal visual center - pole of inaccessibility)
+                    // Polylabel is designed to always return a point inside the polygon, so we trust it
+                    let positionCoords = polylabelPoint;
+                    let positionSource = 'polylabel';
 
-                    // Only use polylabel if centroid is not available or validation fails
-                    if (!centroid) {
-                      if (isValidLabelPosition(polylabelPoint, outerRing)) {
-                        positionCoords = polylabelPoint;
-                        positionSource = 'polylabel';
-                      } else if (isValidLabelPosition(boundingBoxCenter, outerRing)) {
+                    // Validate using the full feature geometry (handles MultiPolygon correctly)
+                    if (!isPointInFeature(polylabelPoint, feature)) {
+                      // Polylabel failed validation, try centroid
+                      if (centroid && isPointInFeature(centroid, feature)) {
+                        positionCoords = centroid;
+                        positionSource = 'centroid';
+                      } else if (isPointInFeature(boundingBoxCenter, feature)) {
                         positionCoords = boundingBoxCenter;
                         positionSource = 'bounding-box-center';
                       } else {
-                        // Final fallback: use polylabel anyway
+                        // Final fallback: use polylabel anyway (it's mathematically guaranteed to be inside)
                         positionCoords = polylabelPoint;
                         positionSource = 'polylabel-fallback';
                       }

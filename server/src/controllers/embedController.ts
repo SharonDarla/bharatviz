@@ -486,6 +486,7 @@ export class EmbedController {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title} - BharatViz</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -501,15 +502,33 @@ export class EmbedController {
             justify-content: center;
             min-height: 100vh;
             padding: 20px;
+            overflow: hidden;
         }
         .map-container {
             max-width: 100%;
             width: auto;
             height: auto;
+            position: relative;
         }
         .map-container svg {
             max-width: 100%;
             height: auto;
+            cursor: grab;
+        }
+        .map-container svg:active {
+            cursor: grabbing;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 1000;
         }
         .credits {
             margin-top: 20px;
@@ -527,12 +546,61 @@ export class EmbedController {
     </style>
 </head>
 <body>
-    <div class="map-container">
+    <div class="map-container" id="map-container">
         ${svgContent}
+        <div class="tooltip" id="tooltip"></div>
     </div>
     <div class="credits">
         Created with <a href="https://bharatviz.saketlab.in" target="_blank">BharatViz</a>
     </div>
+    <script>
+        // Add interactivity to the embedded map
+        (function() {
+            const svg = d3.select('#map-container svg');
+            const tooltip = d3.select('#tooltip');
+
+            // Add zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([1, 8])
+                .on('zoom', (event) => {
+                    svg.select('g').attr('transform', event.transform);
+                });
+
+            svg.call(zoom);
+
+            // Add hover effects to paths
+            svg.selectAll('path, circle')
+                .on('mouseenter', function(event) {
+                    const el = d3.select(this);
+                    const title = el.select('title').text();
+
+                    if (title) {
+                        el.style('opacity', 0.8);
+                        tooltip
+                            .style('opacity', 1)
+                            .html(title)
+                            .style('left', (event.pageX + 10) + 'px')
+                            .style('top', (event.pageY - 10) + 'px');
+                    }
+                })
+                .on('mousemove', function(event) {
+                    tooltip
+                        .style('left', (event.pageX + 10) + 'px')
+                        .style('top', (event.pageY - 10) + 'px');
+                })
+                .on('mouseleave', function() {
+                    d3.select(this).style('opacity', 1);
+                    tooltip.style('opacity', 0);
+                });
+
+            // Reset zoom on double-click
+            svg.on('dblclick.zoom', function() {
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform, d3.zoomIdentity);
+            });
+        })();
+    </script>
 </body>
 </html>`;
   }

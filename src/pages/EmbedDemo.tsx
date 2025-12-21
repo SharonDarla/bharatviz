@@ -9,11 +9,11 @@ const EmbedDemo = () => {
 
   // Use localhost for demo, or production URL if deployed
   const baseUrl = window.location.origin;
-  const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : 'https://bharatviz.saketlab.in';
+  const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
   const dataUrl = `${baseUrl}/nfhs5_protein_consumption_eggs.csv`;
 
   const iframeCode = `<iframe
-  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20Consumption%20in%20India"
+  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20consumption%20in%20India"
   width="800"
   height="600"
   frameborder="0"
@@ -32,7 +32,7 @@ const EmbedDemo = () => {
     container: '#bharatviz-map',
     dataUrl: '${dataUrl}',
     colorScale: 'viridis',
-    title: 'Protein Consumption in India'
+    title: 'Protein consumption in India'
   });
 </script>`;
 
@@ -45,7 +45,7 @@ const EmbedDemo = () => {
   // Load the BharatViz embed script
   useEffect(() => {
     const baseUrl = window.location.origin;
-    const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : 'https://bharatviz.saketlab.in';
+    const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
     const dataUrl = `${baseUrl}/nfhs5_protein_consumption_eggs.csv`;
 
     const script = document.createElement('script');
@@ -60,7 +60,7 @@ const EmbedDemo = () => {
           container: '#js-embed-demo',
           dataUrl: dataUrl,
           colorScale: 'viridis',
-          title: 'Protein Consumption in India'
+          title: 'Protein consumption in India'
         });
       }
     };
@@ -163,7 +163,7 @@ const EmbedDemo = () => {
             <CardContent>
               <div className="border rounded-lg overflow-hidden">
                 <iframe
-                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20Consumption%20in%20India`}
+                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20consumption%20in%20India`}
                   width="100%"
                   height="600"
                   style={{ border: 'none' }}
