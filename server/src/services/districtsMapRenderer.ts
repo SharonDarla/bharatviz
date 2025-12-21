@@ -370,11 +370,23 @@ export class DistrictsMapRenderer {
         pathData = this.convertCoordinatesToPath(geometry.coordinates, bounds, width, height);
       }
 
-      mapGroup.append('path')
+      const pathElement = mapGroup.append('path')
         .attr('d', pathData)
         .attr('fill', fillColor)
         .attr('stroke', strokeColor)
         .attr('stroke-width', 0.3);
+
+      // Add title element for hover tooltips
+      const districtName = String(feature.properties?.district_name || feature.properties?.DISTRICT || '');
+      if (districtName) {
+        if (value !== undefined) {
+          pathElement.append('title')
+            .text(`${districtName}: ${roundToSignificantDigits(value)}`);
+        } else {
+          pathElement.append('title')
+            .text(districtName);
+        }
+      }
     });
 
     // Add district labels and values (if not hidden)

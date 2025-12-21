@@ -6,17 +6,21 @@ import { Check, Copy } from 'lucide-react';
 const EmbedDemo = () => {
   const [copiedIframe, setCopiedIframe] = useState(false);
   const [copiedJS, setCopiedJS] = useState(false);
+  const [copiedDistrictIframe, setCopiedDistrictIframe] = useState(false);
+  const [copiedDistrictJS, setCopiedDistrictJS] = useState(false);
 
   // Use localhost for demo, or production URL if deployed
   const baseUrl = window.location.origin;
   const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
   const dataUrl = `${baseUrl}/nfhs5_protein_consumption_eggs.csv`;
+  const districtDataUrl = 'https://saketkc.github.io/vayuayan-archive/daily_average_district/20251219_daily_AQI_mean.csv.gz';
 
   const iframeCode = `<iframe
   src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20consumption%20in%20India"
   width="800"
   height="600"
   frameborder="0"
+  sandbox="allow-scripts allow-same-origin"
   style="border: none; max-width: 100%;">
 </iframe>`;
 
@@ -36,6 +40,33 @@ const EmbedDemo = () => {
   });
 </script>`;
 
+  const districtIframeCode = `<iframe
+  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(districtDataUrl)}&colorScale=spectral&title=AQI%20-%20Mean%20(2025-12-19)&hideDistrictNames=true&hideValues=true"
+  width="800"
+  height="800"
+  frameborder="0"
+  sandbox="allow-scripts allow-same-origin"
+  style="border: none; max-width: 100%;">
+</iframe>`;
+
+  const districtJsCode = `<!-- Container for the map -->
+<div id="bharatviz-district-map"></div>
+
+<!-- Load BharatViz embed script -->
+<script src="${apiUrl}/embed.js"></script>
+
+<!-- Initialize the map -->
+<script>
+  BharatViz.embed({
+    container: '#bharatviz-district-map',
+    dataUrl: '${districtDataUrl}',
+    colorScale: 'spectral',
+    title: 'AQI - Mean (2025-12-19)',
+    hideDistrictNames: true,
+    hideValues: true
+  });
+</script>`;
+
   const copyToClipboard = (text: string, setter: (val: boolean) => void) => {
     navigator.clipboard.writeText(text);
     setter(true);
@@ -47,6 +78,7 @@ const EmbedDemo = () => {
     const baseUrl = window.location.origin;
     const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
     const dataUrl = `${baseUrl}/nfhs5_protein_consumption_eggs.csv`;
+    const districtDataUrl = 'https://saketkc.github.io/vayuayan-archive/daily_average_district/20251219_daily_AQI_mean.csv.gz';
 
     const script = document.createElement('script');
     script.src = `${apiUrl}/embed.js`;
@@ -54,13 +86,24 @@ const EmbedDemo = () => {
     document.body.appendChild(script);
 
     script.onload = () => {
-      // Initialize the JavaScript widget after script loads
+      // Initialize the JavaScript widgets after script loads
       if (window.BharatViz) {
+        // States widget
         window.BharatViz.embed({
           container: '#js-embed-demo',
           dataUrl: dataUrl,
           colorScale: 'viridis',
           title: 'Protein consumption in India'
+        });
+
+        // Districts widget
+        window.BharatViz.embed({
+          container: '#js-district-embed-demo',
+          dataUrl: districtDataUrl,
+          colorScale: 'spectral',
+          title: 'AQI - Mean (2025-12-19)',
+          hideDistrictNames: true,
+          hideValues: true
         });
       }
     };
@@ -86,38 +129,6 @@ const EmbedDemo = () => {
       </div>
 
       <div className="container mx-auto px-4 py-12 max-w-6xl">
-        {/* Introduction */}
-        <Card className="mb-12">
-          <CardHeader>
-            <CardTitle>Two Ways to Embed</CardTitle>
-            <CardDescription className="text-base">
-              Choose between iframe (simple) or JavaScript widget (more control)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold text-lg mb-2">iframe Method</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>✓ Simplest integration</li>
-                  <li>✓ Works in any CMS</li>
-                  <li>✓ No JavaScript required</li>
-                  <li>✓ Isolated from your page</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-2">JavaScript Widget</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li>✓ Better integration</li>
-                  <li>✓ Responsive sizing</li>
-                  <li>✓ Programmatic control</li>
-                  <li>✓ Custom styling</li>
-                </ul>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* iframe Method */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Method 1: iframe Embed</h2>
@@ -165,8 +176,9 @@ const EmbedDemo = () => {
                 <iframe
                   src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20consumption%20in%20India`}
                   width="100%"
-                  height="600"
+                  height="800"
                   style={{ border: 'none' }}
+                  sandbox="allow-scripts allow-same-origin"
                   title="BharatViz iframe embed demo"
                 />
               </div>
@@ -221,6 +233,121 @@ const EmbedDemo = () => {
                 <div id="js-embed-demo" className="min-h-[500px]">
                   <div className="text-center py-20 text-gray-500">
                     Loading map...
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* District-Level Maps */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">District-Level Maps</h2>
+          <p className="text-gray-600 mb-8">
+            BharatViz also supports district-level choropleth maps across India. Hover over districts to see their names and values.
+          </p>
+
+          {/* District iframe Method */}
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">iframe Embed (District-Level)</h3>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Code Example</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(districtIframeCode, setCopiedDistrictIframe)}
+                >
+                  {copiedDistrictIframe ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Code
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                District-level map showing AQI data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{districtIframeCode}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Live Demo</CardTitle>
+              <CardDescription>District-level map with hover tooltips</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden">
+                <iframe
+                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(districtDataUrl)}&colorScale=spectral&title=AQI%20-%20Mean%20(2025-12-19)&hideDistrictNames=true&hideValues=true`}
+                  width="100%"
+                  height="800"
+                  style={{ border: 'none' }}
+                  sandbox="allow-scripts allow-same-origin"
+                  title="BharatViz district iframe embed demo"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* District JavaScript Widget Method */}
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">JavaScript Widget (District-Level)</h3>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Code Example</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(districtJsCode, setCopiedDistrictJS)}
+                >
+                  {copiedDistrictJS ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Code
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                JavaScript widget for district-level maps
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{districtJsCode}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Live Demo</CardTitle>
+              <CardDescription>District-level JavaScript widget with hover tooltips</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-4">
+                <div id="js-district-embed-demo" className="min-h-[700px]">
+                  <div className="text-center py-20 text-gray-500">
+                    Loading district map...
                   </div>
                 </div>
               </div>
@@ -298,29 +425,6 @@ const EmbedDemo = () => {
                   </tbody>
                 </table>
               </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* API Documentation Link */}
-        <section>
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle>Need More Control?</CardTitle>
-              <CardDescription className="text-blue-900">
-                Use the REST API for programmatic map generation
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700 mb-4">
-                The REST API gives you full control over map generation with support for PNG, SVG, and PDF formats.
-                This is useful for automated reports, scheduled jobs, and server-side rendering.
-              </p>
-              <Button asChild>
-                <a href="https://bharatviz.saketlab.in/api" target="_blank" rel="noopener noreferrer">
-                  View API Documentation
-                </a>
-              </Button>
             </CardContent>
           </Card>
         </section>
