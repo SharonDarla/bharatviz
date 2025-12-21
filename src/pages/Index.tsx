@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
-import pako from 'pako';
 import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
 import { IndiaDistrictsMap, type IndiaDistrictsMapRef } from '@/components/IndiaDistrictsMap';
@@ -124,20 +123,16 @@ const Index = () => {
     if (dataUrl) {
       const loadDataFromUrl = async () => {
         try {
-          const response = await fetch(dataUrl);
+          const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          const apiBase = isDev ? 'http://localhost:3001' : `${window.location.protocol}//${window.location.hostname}`;
+          const proxyUrl = `${apiBase}/api/v1/proxy/csv?url=${encodeURIComponent(dataUrl)}`;
+          const response = await fetch(proxyUrl);
+
           if (!response.ok) {
             throw new Error(`Failed to fetch data: ${response.statusText}`);
           }
 
-          let csvText: string;
-
-          if (dataUrl.endsWith('.gz')) {
-            const arrayBuffer = await response.arrayBuffer();
-            const decompressed = pako.ungzip(new Uint8Array(arrayBuffer));
-            csvText = new TextDecoder().decode(decompressed);
-          } else {
-            csvText = await response.text();
-          }
+          const csvText = await response.text();
 
           Papa.parse(csvText, {
             header: true,
