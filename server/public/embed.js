@@ -30,6 +30,36 @@
   }
 
   const BharatViz = {
+    _cache: {
+      get: function(key) {
+        try {
+          const item = localStorage.getItem('bharatviz_' + key);
+          if (!item) return null;
+          const parsed = JSON.parse(item);
+          if (Date.now() - parsed.timestamp > 300000) {
+            localStorage.removeItem('bharatviz_' + key);
+            return null;
+          }
+          return parsed.data;
+        } catch (e) {
+          return null;
+        }
+      },
+      set: function(key, data) {
+        try {
+          localStorage.setItem('bharatviz_' + key, JSON.stringify({
+            data: data,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.warn('BharatViz: Cache storage failed');
+        }
+      },
+      generateKey: function(params) {
+        return btoa(JSON.stringify(params)).substring(0, 50);
+      }
+    },
+
     embed: async function(options) {
       const container = document.querySelector(options.container);
       if (!container) {
@@ -81,7 +111,38 @@
 
     _embedInline: async function(container, options) {
       try {
-        container.innerHTML = '<div style="text-align: center; padding: 40px;">Loading map...</div>';
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+            <div style="display: inline-block; position: relative;">
+              <div style="width: 48px; height: 48px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            </div>
+            <div style="margin-top: 20px; color: #666; font-size: 14px;">
+              <div id="bharatviz-load-status">Preparing map...</div>
+              <div style="font-size: 12px; color: #999; margin-top: 8px;">This may take a few moments</div>
+            </div>
+            <style>
+              @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            </style>
+          </div>
+        `;
+
+        const statusEl = container.querySelector('#bharatviz-load-status');
+        const updateStatus = (msg) => {
+          if (statusEl) statusEl.textContent = msg;
+        };
+
+        const cacheKey = this._cache.generateKey(options);
+        const cachedSVG = this._cache.get(cacheKey);
+
+        if (cachedSVG) {
+          updateStatus('Loading from cache...');
+          await new Promise(resolve => setTimeout(resolve, 100));
+          this._renderSVG(container, cachedSVG, options.title);
+          return;
+        }
 
         let svgContent;
 
@@ -106,7 +167,15 @@
           }
 
           const url = `${API_BASE}/embed/svg?${params.toString()}`;
+
+          updateStatus('Fetching data...');
+          const fetchStart = Date.now();
           const response = await fetch(url);
+          const fetchTime = Date.now() - fetchStart;
+
+          if (fetchTime > 1000) {
+            updateStatus('Processing map data...');
+          }
 
           if (!response.ok) {
             let errorMessage = 'Failed to fetch map';
@@ -119,6 +188,7 @@
             throw new Error(errorMessage);
           }
 
+          updateStatus('Rendering map...');
           svgContent = await response.text();
 
         } else if (options.data) {
@@ -158,39 +228,8 @@
           throw new Error('Either dataUrl or data must be provided');
         }
 
-        const wrapper = document.createElement('div');
-        wrapper.style.textAlign = 'center';
-        wrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif';
-
-        if (options.title) {
-          const titleEl = document.createElement('h2');
-          titleEl.textContent = options.title;
-          titleEl.style.marginBottom = '20px';
-          titleEl.style.color = '#333';
-          wrapper.appendChild(titleEl);
-        }
-
-        const mapDiv = document.createElement('div');
-        mapDiv.innerHTML = svgContent;
-        mapDiv.style.maxWidth = '100%';
-
-        const svgEl = mapDiv.querySelector('svg');
-        if (svgEl) {
-          svgEl.style.maxWidth = '100%';
-          svgEl.style.height = 'auto';
-        }
-
-        wrapper.appendChild(mapDiv);
-
-        const credits = document.createElement('div');
-        credits.style.marginTop = '20px';
-        credits.style.fontSize = '12px';
-        credits.style.color = '#666';
-        credits.innerHTML = 'Created with <a href="https://bharatviz.saketlab.in" target="_blank" style="color: #0066cc; text-decoration: none;">BharatViz</a>';
-        wrapper.appendChild(credits);
-
-        container.innerHTML = '';
-        container.appendChild(wrapper);
+        this._cache.set(cacheKey, svgContent);
+        this._renderSVG(container, svgContent, options.title);
 
       } catch (error) {
         console.error('BharatViz embed error:', error);
@@ -199,6 +238,42 @@
           <br><small style="color: #666;">Check console for details</small>
         </div>`;
       }
+    },
+
+    _renderSVG: function(container, svgContent, title) {
+      const wrapper = document.createElement('div');
+      wrapper.style.textAlign = 'center';
+      wrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif';
+
+      if (title) {
+        const titleEl = document.createElement('h2');
+        titleEl.textContent = title;
+        titleEl.style.marginBottom = '20px';
+        titleEl.style.color = '#333';
+        wrapper.appendChild(titleEl);
+      }
+
+      const mapDiv = document.createElement('div');
+      mapDiv.innerHTML = svgContent;
+      mapDiv.style.maxWidth = '100%';
+
+      const svgEl = mapDiv.querySelector('svg');
+      if (svgEl) {
+        svgEl.style.maxWidth = '100%';
+        svgEl.style.height = 'auto';
+      }
+
+      wrapper.appendChild(mapDiv);
+
+      const credits = document.createElement('div');
+      credits.style.marginTop = '20px';
+      credits.style.fontSize = '12px';
+      credits.style.color = '#666';
+      credits.innerHTML = 'Created with <a href="https://bharatviz.saketlab.in" target="_blank" style="color: #0066cc; text-decoration: none;">BharatViz</a>';
+      wrapper.appendChild(credits);
+
+      container.innerHTML = '';
+      container.appendChild(wrapper);
     },
 
     getEmbedUrl: function(options) {

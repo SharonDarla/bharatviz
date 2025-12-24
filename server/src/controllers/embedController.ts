@@ -4,8 +4,14 @@ import { DistrictsMapRenderer } from '../services/districtsMapRenderer.js';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { gunzipSync } from 'zlib';
+import crypto from 'crypto';
 
 type MapType = 'states' | 'districts' | 'state-districts';
+
+interface CacheEntry {
+  data: string;
+  timestamp: number;
+}
 
 interface CSVRow {
   [key: string]: string | number;
@@ -25,19 +31,57 @@ interface DistrictData {
 }
 
 export class EmbedController {
-  private async fetchAndDecompressCSV(dataUrl: string): Promise<string> {
-    // Fetch the data - handle gzipped files
-    const response = await axios.get(dataUrl, {
-      responseType: dataUrl.endsWith('.gz') ? 'arraybuffer' : 'text'
-    });
+  private csvCache: Map<string, CacheEntry> = new Map();
+  private svgCache: Map<string, CacheEntry> = new Map();
+  private readonly CACHE_TTL = 5 * 60 * 1000;
 
-    if (dataUrl.endsWith('.gz')) {
-      // Decompress gzipped data
-      const buffer = Buffer.from(response.data);
-      return gunzipSync(buffer).toString('utf-8');
+  private generateCacheKey(prefix: string, params: any): string {
+    const hash = crypto.createHash('md5').update(JSON.stringify(params)).digest('hex');
+    return `${prefix}:${hash}`;
+  }
+
+  private getCachedData(cache: Map<string, CacheEntry>, key: string): string | null {
+    const entry = cache.get(key);
+    if (entry && (Date.now() - entry.timestamp) < this.CACHE_TTL) {
+      return entry.data;
+    }
+    if (entry) {
+      cache.delete(key);
+    }
+    return null;
+  }
+
+  private setCachedData(cache: Map<string, CacheEntry>, key: string, data: string): void {
+    cache.set(key, { data, timestamp: Date.now() });
+
+    if (cache.size > 100) {
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+    }
+  }
+
+  private async fetchAndDecompressCSV(dataUrl: string): Promise<string> {
+    const cacheKey = this.generateCacheKey('csv', { dataUrl });
+    const cached = this.getCachedData(this.csvCache, cacheKey);
+    if (cached) {
+      return cached;
     }
 
-    return response.data;
+    const response = await axios.get(dataUrl, {
+      responseType: dataUrl.endsWith('.gz') ? 'arraybuffer' : 'text',
+      timeout: 30000
+    });
+
+    let csvData: string;
+    if (dataUrl.endsWith('.gz')) {
+      const buffer = Buffer.from(response.data);
+      csvData = gunzipSync(buffer).toString('utf-8');
+    } else {
+      csvData = response.data;
+    }
+
+    this.setCachedData(this.csvCache, cacheKey, csvData);
+    return csvData;
   }
 
   private detectMapType(data: CSVRow[]): MapType {
@@ -229,6 +273,16 @@ export class EmbedController {
         });
       }
 
+      const svgCacheKey = this.generateCacheKey('svg', req.query);
+      const cachedSVG = this.getCachedData(this.svgCache, svgCacheKey);
+      if (cachedSVG) {
+        res.setHeader('Content-Type', 'image/svg+xml');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        res.setHeader('X-Cache', 'HIT');
+        return res.send(cachedSVG);
+      }
+
       const csvData = await this.fetchAndDecompressCSV(dataUrl);
       const parseResult = Papa.parse(csvData, { header: true, skipEmptyLines: true });
 
@@ -287,8 +341,12 @@ export class EmbedController {
         legendTitle: finalLegendTitle as string
       });
 
+      this.setCachedData(this.svgCache, svgCacheKey, svgContent);
+
       res.setHeader('Content-Type', 'image/svg+xml');
       res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.setHeader('X-Cache', 'MISS');
       res.send(svgContent);
 
     } catch (error) {

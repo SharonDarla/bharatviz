@@ -194,7 +194,7 @@ const EmbedDemo = () => {
           <Card className="mb-6">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Code Example</CardTitle>
+                <CardTitle>Code example</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -208,7 +208,7 @@ const EmbedDemo = () => {
                   ) : (
                     <>
                       <Copy className="w-4 h-4 mr-2" />
-                      Copy Code
+                      Copy code
                     </>
                   )}
                 </Button>
@@ -226,7 +226,7 @@ const EmbedDemo = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Live Demo</CardTitle>
+              <CardTitle>Live demo</CardTitle>
               <CardDescription>This is how the iframe embed looks</CardDescription>
             </CardHeader>
             <CardContent>
@@ -245,12 +245,12 @@ const EmbedDemo = () => {
         </section>
 
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Method 2: JavaScript Widget</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">Method 2: JavaScript widget</h2>
 
           <Card className="mb-6">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Code Example</CardTitle>
+                <CardTitle>Code example</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -264,7 +264,7 @@ const EmbedDemo = () => {
                   ) : (
                     <>
                       <Copy className="w-4 h-4 mr-2" />
-                      Copy Code
+                      Copy code
                     </>
                   )}
                 </Button>
@@ -282,7 +282,7 @@ const EmbedDemo = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Live Demo</CardTitle>
+              <CardTitle>Live demo</CardTitle>
               <CardDescription>This is how the JavaScript widget looks</CardDescription>
             </CardHeader>
             <CardContent>
@@ -298,17 +298,17 @@ const EmbedDemo = () => {
         </section>
 
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">District-Level Maps</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">District-level maps</h2>
           <p className="text-gray-600 mb-8">
             BharatViz also supports district-level choropleth maps across India. Hover over districts to see their names and values.
           </p>
 
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">iframe Embed (District-Level)</h3>
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">iframe embed (district-level)</h3>
 
           <Card className="mb-6">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Code Example</CardTitle>
+                <CardTitle>Code example</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -322,7 +322,7 @@ const EmbedDemo = () => {
                   ) : (
                     <>
                       <Copy className="w-4 h-4 mr-2" />
-                      Copy Code
+                      Copy code
                     </>
                   )}
                 </Button>
@@ -340,7 +340,7 @@ const EmbedDemo = () => {
 
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Live Demo</CardTitle>
+              <CardTitle>Live demo</CardTitle>
               <CardDescription>District-level map with hover tooltips</CardDescription>
             </CardHeader>
             <CardContent>
@@ -357,12 +357,12 @@ const EmbedDemo = () => {
             </CardContent>
           </Card>
 
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">JavaScript Widget (District-Level)</h3>
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">JavaScript widget (district-level)</h3>
 
           <Card className="mb-6">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Code Example</CardTitle>
+                <CardTitle>Code example</CardTitle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -376,7 +376,7 @@ const EmbedDemo = () => {
                   ) : (
                     <>
                       <Copy className="w-4 h-4 mr-2" />
-                      Copy Code
+                      Copy code
                     </>
                   )}
                 </Button>
@@ -394,7 +394,7 @@ const EmbedDemo = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Live Demo</CardTitle>
+              <CardTitle>Live demo</CardTitle>
               <CardDescription>District-level JavaScript widget with hover tooltips</CardDescription>
             </CardHeader>
             <CardContent>
@@ -410,11 +410,11 @@ const EmbedDemo = () => {
         </section>
 
         <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Configuration Options</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">Configuration options</h2>
 
           <Card>
             <CardHeader>
-              <CardTitle>Available Parameters</CardTitle>
+              <CardTitle>Available parameters</CardTitle>
               <CardDescription>
                 Customize your embedded maps with these options
               </CardDescription>

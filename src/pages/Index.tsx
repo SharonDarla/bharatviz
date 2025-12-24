@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Papa from 'papaparse';
 import { FileUpload } from '@/components/FileUpload';
 import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
@@ -335,8 +336,128 @@ const Index = () => {
     };
   };
 
+  const getSEOContent = () => {
+    const baseUrl = 'https://bharatviz.saketlab.in';
+    const defaultImage = `${baseUrl}/bharatviz_favicon.png`;
+
+    const seoConfigs = {
+      states: {
+        title: 'BharatViz - Fast Choropleth Maps for India | State-Level Data Visualization',
+        description: 'Create beautiful, publication-ready choropleth maps of Indian states. Free online tool for data visualization with customizable color scales, export to PNG/SVG/PDF. Perfect for research, journalism, and presentations.',
+        keywords: 'India maps, choropleth, state maps, data visualization, India states, interactive maps, geospatial analysis, India data, map maker, research visualization',
+        canonical: baseUrl,
+        ogTitle: 'BharatViz - Fast Choropleth Maps for India',
+        ogDescription: 'Create beautiful choropleth maps of Indian states with customizable colors and export to PNG/SVG/PDF. Free and open source.'
+      },
+      districts: {
+        title: 'District-Level Maps of India | BharatViz Choropleth Visualization',
+        description: 'Visualize 800+ Indian districts with choropleth maps. Support for LGD, NFHS-5, and NFHS-4 boundaries. Export to PNG, SVG, PDF. Free tool for district-level data analysis and visualization.',
+        keywords: 'India district maps, district choropleth, LGD districts, NFHS-5, NFHS-4, district data visualization, India geography, granular maps, district boundaries',
+        canonical: `${baseUrl}/districts`,
+        ogTitle: 'District-Level Maps of India | BharatViz',
+        ogDescription: 'Visualize 800+ Indian districts with customizable choropleth maps. Support for LGD, NFHS-5, and NFHS-4 boundaries.'
+      },
+      regions: {
+        title: 'NSSO Regions Maps | BharatViz India Regional Visualization',
+        description: 'Create choropleth maps of NSSO (National Sample Survey Organization) regions in India. Ideal for survey analysis and regional statistical visualization. Free online mapping tool.',
+        keywords: 'NSSO regions, India regions, survey regions, NSSO maps, regional analysis, statistical regions, sample survey, India geography',
+        canonical: `${baseUrl}/regions`,
+        ogTitle: 'NSSO Regions Maps | BharatViz',
+        ogDescription: 'Visualize NSSO (National Sample Survey Organization) regions with customizable choropleth maps. Perfect for survey and statistical analysis.'
+      },
+      'state-districts': {
+        title: 'Individual State District Maps | BharatViz State-Wise Visualization',
+        description: 'Create detailed district-level maps for individual Indian states. High-resolution visualization with support for all major states. Export to PNG, SVG, PDF for presentations and publications.',
+        keywords: 'state district maps, Maharashtra districts, Karnataka districts, Tamil Nadu districts, state-wise maps, detailed district maps, India state geography',
+        canonical: `${baseUrl}/state-districts`,
+        ogTitle: 'Individual State District Maps | BharatViz',
+        ogDescription: 'Create detailed district-level maps for individual Indian states with customizable visualization options.'
+      },
+      help: {
+        title: 'Help & API Documentation | BharatViz India Maps',
+        description: 'Complete guide to using BharatViz: web interface, Python/R API, embedding maps, and programmatic access. Learn how to create choropleth maps of India with our comprehensive documentation.',
+        keywords: 'BharatViz help, map API, Python India maps, R India maps, API documentation, embed maps, India map tutorial, choropleth API',
+        canonical: `${baseUrl}/help`,
+        ogTitle: 'BharatViz Help & API Documentation',
+        ogDescription: 'Complete guide to using BharatViz for web, Python, R, and embedding maps. API documentation and examples included.'
+      },
+      credits: {
+        title: 'Credits & Acknowledgments | BharatViz',
+        description: 'Acknowledgments and credits for BharatViz - data sources, open source libraries, and contributors. Built with open data from Government of India sources.',
+        keywords: 'BharatViz credits, data sources, acknowledgments, open source, India government data, LGD, NFHS',
+        canonical: `${baseUrl}/credits`,
+        ogTitle: 'Credits & Acknowledgments | BharatViz',
+        ogDescription: 'Acknowledgments for BharatViz - data sources, libraries, and contributors.'
+      }
+    };
+
+    return seoConfigs[activeTab as keyof typeof seoConfigs] || seoConfigs.states;
+  };
+
+  const seoContent = getSEOContent();
+
   return (
     <div className="min-h-screen bg-background p-3 sm:p-6">
+      <Helmet>
+        <title>{seoContent.title}</title>
+        <meta name="title" content={seoContent.title} />
+        <meta name="description" content={seoContent.description} />
+        <meta name="keywords" content={seoContent.keywords} />
+
+        <link rel="canonical" href={seoContent.canonical} />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={seoContent.canonical} />
+        <meta property="og:title" content={seoContent.ogTitle} />
+        <meta property="og:description" content={seoContent.ogDescription} />
+        <meta property="og:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="BharatViz - Interactive India Maps" />
+        <meta property="og:site_name" content="BharatViz" />
+        <meta property="og:locale" content="en_US" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={seoContent.canonical} />
+        <meta name="twitter:title" content={seoContent.ogTitle} />
+        <meta name="twitter:description" content={seoContent.ogDescription} />
+        <meta name="twitter:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+        <meta name="twitter:image:alt" content="BharatViz - Interactive India Maps" />
+        <meta name="twitter:site" content="@saketkc" />
+        <meta name="twitter:creator" content="@saketkc" />
+
+        <meta name="author" content="Saket Choudhary" />
+        <meta name="robots" content="index, follow" />
+        <meta name="language" content="English" />
+        <meta name="geo.region" content="IN" />
+        <meta name="geo.placename" content="India" />
+
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "BharatViz",
+            "description": "Fast choropleth maps for India - visualize state and district level data",
+            "url": "https://bharatviz.saketlab.in",
+            "applicationCategory": "DataVisualization",
+            "operatingSystem": "Web Browser",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "author": {
+              "@type": "Person",
+              "name": "Saket Choudhary"
+            },
+            "provider": {
+              "@type": "Organization",
+              "name": "Saket Lab",
+              "url": "http://saketlab.in"
+            }
+          })}
+        </script>
+      </Helmet>
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3">
