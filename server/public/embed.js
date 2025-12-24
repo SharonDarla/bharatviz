@@ -170,7 +170,24 @@
 
           updateStatus('Fetching data...');
           const fetchStart = Date.now();
-          const response = await fetch(url);
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => {
+            controller.abort();
+          }, 60000);
+
+          let response;
+          try {
+            response = await fetch(url, { signal: controller.signal });
+          } catch (fetchError) {
+            clearTimeout(timeout);
+            if (fetchError.name === 'AbortError') {
+              throw new Error('Request timed out after 60 seconds. The server may be overloaded or the data source may be unavailable.');
+            }
+            throw new Error(`Network error: ${fetchError.message}`);
+          }
+          clearTimeout(timeout);
+
           const fetchTime = Date.now() - fetchStart;
 
           if (fetchTime > 1000) {
@@ -210,11 +227,30 @@
           requestBody.hideDistrictNames = options.hideDistrictNames || false;
           requestBody.showStateBoundaries = options.showStateBoundaries !== undefined ? options.showStateBoundaries : true;
 
-          const response = await fetch(`${API_BASE}/embed/generate`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody)
-          });
+          const generateUrl = `${API_BASE}/embed/generate`;
+
+          updateStatus('Generating map...');
+          const controller = new AbortController();
+          const timeout = setTimeout(() => {
+            controller.abort();
+          }, 60000);
+
+          let response;
+          try {
+            response = await fetch(generateUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody),
+              signal: controller.signal
+            });
+          } catch (fetchError) {
+            clearTimeout(timeout);
+            if (fetchError.name === 'AbortError') {
+              throw new Error('Request timed out after 60 seconds. The server may be overloaded.');
+            }
+            throw new Error(`Network error: ${fetchError.message}`);
+          }
+          clearTimeout(timeout);
 
           const result = await response.json();
 
@@ -233,9 +269,12 @@
 
       } catch (error) {
         console.error('BharatViz embed error:', error);
-        container.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545;">
-          <strong>Error loading map:</strong> ${error.message}
-          <br><small style="color: #666;">Check console for details</small>
+        container.innerHTML = `<div style="text-align: center; padding: 40px; color: #dc3545; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <strong>Error loading map:</strong><br>
+          <div style="margin-top: 10px; font-size: 14px;">${error.message}</div>
+          <div style="margin-top: 10px; font-size: 12px; color: #666;">
+            Check browser console for details
+          </div>
         </div>`;
       }
     },
