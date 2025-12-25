@@ -35,7 +35,7 @@ export class EmbedController {
   private svgCache: Map<string, CacheEntry> = new Map();
   private readonly CACHE_TTL = 5 * 60 * 1000;
 
-  private generateCacheKey(prefix: string, params: any): string {
+  private generateCacheKey(prefix: string, params: Record<string, unknown>): string {
     const hash = crypto.createHash('md5').update(JSON.stringify(params)).digest('hex');
     return `${prefix}:${hash}`;
   }

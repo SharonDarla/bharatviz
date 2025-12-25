@@ -10,12 +10,18 @@ import { ColorMapChooser, type ColorScale, type ColorBarSettings } from '@/compo
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { DISTRICT_MAP_TYPES, DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
+import { DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
 import Credits from '@/components/Credits';
 import { Github } from 'lucide-react';
 import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
+
+// Chat system
+import { ChatPanel } from '@/components/chat/ChatPanel';
+import { buildDynamicContext } from '@/lib/chat/contextBuilder';
+import { DATA_FILES } from '@/lib/constants';
+import type { DynamicChatContext, DataPoint } from '@/lib/chat/types';
 
 interface StateMapData {
   state: string;
@@ -99,6 +105,13 @@ const Index = () => {
   const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
   const [stateDistrictNAInfo, setStateDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
+  const [chatContext, setChatContext] = useState<DynamicChatContext | null>(null);
+  const prevContextRef = useRef<{
+    tab: string;
+    mapType: string;
+    selectedState?: string;
+  } | null>(null);
+
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
@@ -108,6 +121,7 @@ const Index = () => {
     if (tabFromPath !== activeTab) {
       setActiveTab(tabFromPath);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   const handleTabChange = (value: string) => {
@@ -211,6 +225,7 @@ const Index = () => {
 
       loadDataFromUrl();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   useEffect(() => {
@@ -239,6 +254,112 @@ const Index = () => {
     }
   }, [activeTab, selectedStateMapType]);
 
+  useEffect(() => {
+    async function updateChatContext() {
+      try {
+        let geoJsonPath = '';
+        let data: DataPoint[] = [];
+        let currentMapType = '';
+        let currentSelectedState: string | undefined = undefined;
+        let metricName: string | undefined = undefined;
+
+        const normalizeValue = (v: number | string | null | undefined): number | null => {
+          if (v === null || v === undefined) return null;
+          if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+          const cleaned = String(v).trim();
+          if (!cleaned) return null;
+          const num = Number(cleaned);
+          return Number.isFinite(num) ? num : null;
+        };
+
+        if (activeTab === 'states') {
+          geoJsonPath = DATA_FILES.STATES_GEOJSON;
+          currentMapType = 'states';
+          metricName = stateDataTitle || undefined;
+          data = stateMapData.map(d => ({
+            name: d.state,
+            value: normalizeValue(d.value),
+          }));
+        } else if (activeTab === 'districts') {
+          const config = getDistrictMapConfig(selectedDistrictMapType);
+          geoJsonPath = config.geojsonPath;
+          currentMapType = selectedDistrictMapType;
+          metricName = districtDataTitle || undefined;
+          data = districtMapData.map(d => ({
+            name: d.district,
+            state: d.state,
+            value: normalizeValue(d.value),
+          }));
+        } else if (activeTab === 'state-districts' && selectedStateForMap) {
+          const config = getDistrictMapConfig(selectedStateMapType);
+          geoJsonPath = config.geojsonPath;
+          currentMapType = selectedStateMapType;
+          currentSelectedState = selectedStateForMap;
+          metricName = stateDistrictDataTitle || undefined;
+          data = stateDistrictMapData.map(d => ({
+            name: d.district,
+            state: d.state,
+            value: normalizeValue(d.value),
+          }));
+        }
+
+        const prevContext = prevContextRef.current;
+        const contextChanged =
+          !prevContext ||
+          prevContext.tab !== activeTab ||
+          prevContext.mapType !== currentMapType ||
+          prevContext.selectedState !== currentSelectedState;
+
+        prevContextRef.current = {
+          tab: activeTab,
+          mapType: currentMapType,
+          selectedState: currentSelectedState,
+        };
+
+        if (geoJsonPath && data.length > 0) {
+          try {
+            const context = await buildDynamicContext({
+              activeTab: activeTab as 'states' | 'districts' | 'state-districts',
+              selectedState: activeTab === 'state-districts' ? selectedStateForMap : undefined,
+              mapType: activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType,
+              data,
+              geoJsonPath,
+              metricName,
+              conversationHistory: contextChanged ? [] : (chatContext?.conversationHistory || []),
+            });
+
+            setChatContext(context);
+          } catch (contextError) {
+            console.error('Failed to build chat context:', contextError, {
+              error: contextError,
+              stack: contextError instanceof Error ? contextError.stack : undefined
+            });
+            setChatContext(null);
+          }
+        } else {
+          setChatContext(null);
+        }
+      } catch (error) {
+        console.error('Chat context error:', error);
+        setChatContext(null);
+      }
+    }
+
+    updateChatContext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeTab,
+    selectedStateForMap,
+    selectedDistrictMapType,
+    selectedStateMapType,
+    stateMapData,
+    districtMapData,
+    stateDistrictMapData,
+    stateDataTitle,
+    districtDataTitle,
+    stateDistrictDataTitle,
+  ]);
+
   const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
     setStateMapData(data);
     setStateDataTitle(title || '');
@@ -256,7 +377,13 @@ const Index = () => {
     }
   };
 
-  const handleDistrictDataLoad = (data: DistrictMapData[], title?: string, naInfo?: NAInfo) => {
+  const handleDistrictDataLoad = (rawData: Array<{ state?: string; state_name?: string; district?: string; district_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
+    const data: DistrictMapData[] = rawData.map(row => ({
+      state: row.state || row.state_name || '',
+      district: row.district || row.district_name || '',
+      value: row.value === '' || row.value === 'NA' ? null : row.value
+    }));
+
     setDistrictMapData(data);
     setDistrictDataTitle(title || '');
     setDistrictNAInfo(naInfo);
@@ -267,13 +394,18 @@ const Index = () => {
 
     if (dataType === 'categorical') {
       const categories = getUniqueCategories(values);
-      const categoryColors = generateDefaultCategoryColors(categories);
-      setDistrictCategoryColors(categoryColors);
+      setDistrictCategoryColors(generateDefaultCategoryColors(categories));
       setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
     }
   };
 
-  const handleStateDistrictDataLoad = (data: DistrictMapData[], title?: string, naInfo?: NAInfo) => {
+  const handleStateDistrictDataLoad = (rawData: Array<{ state?: string; state_name?: string; district?: string; district_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
+    const data: DistrictMapData[] = rawData.map(row => ({
+      state: row.state || row.state_name || '',
+      district: row.district || row.district_name || '',
+      value: row.value === '' || row.value === 'NA' ? null : row.value
+    }));
+
     setStateDistrictMapData(data);
     setStateDistrictDataTitle(title || '');
     setStateDistrictNAInfo(naInfo);
@@ -284,8 +416,7 @@ const Index = () => {
 
     if (dataType === 'categorical') {
       const categories = getUniqueCategories(values);
-      const categoryColors = generateDefaultCategoryColors(categories);
-      setStateDistrictCategoryColors(categoryColors);
+      setStateDistrictCategoryColors(generateDefaultCategoryColors(categories));
       setStateDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
     }
   };
@@ -329,6 +460,7 @@ const Index = () => {
       stateDistrictMapRef.current?.downloadCSVTemplate();
     }
   };
+
   const createGistUrlProvider = () => {
     return (stateName: string) => {
       if (!stateGistMapping) return null;
@@ -338,7 +470,6 @@ const Index = () => {
 
   const getSEOContent = () => {
     const baseUrl = 'https://bharatviz.saketlab.in';
-    const defaultImage = `${baseUrl}/bharatviz_favicon.png`;
 
     const seoConfigs = {
       states: {
@@ -507,7 +638,7 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
           </div>
-          
+
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 order-2 lg:order-2">
@@ -522,7 +653,7 @@ const Index = () => {
                   naInfo={stateNAInfo}
                 />
                 <div className="mt-6 flex justify-center">
-                  <ExportOptions 
+                  <ExportOptions
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
@@ -530,7 +661,7 @@ const Index = () => {
                   />
                 </div>
               </div>
-              
+
               <div className="lg:col-span-1 order-1 lg:order-1">
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
@@ -815,25 +946,25 @@ const Index = () => {
                   selectedState={selectedStateForMap}
                 />
                 <div className="space-y-4 mt-6">
-<ColorMapChooser
-                     selectedScale={stateDistrictColorScale}
-                     onScaleChange={setStateDistrictColorScale}
-                     invertColors={stateDistrictInvertColors}
-                     onInvertColorsChange={setStateDistrictInvertColors}
-                     showStateBoundaries={true}
-                     hideDistrictNames={stateDistrictHideNames}
-                     onHideDistrictNamesChange={setStateDistrictHideNames}
-                     hideDistrictValues={stateDistrictHideValues}
-                     onHideDistrictValuesChange={setStateDistrictHideValues}
-                     colorBarSettings={stateDistrictColorBarSettings}
-                     onColorBarSettingsChange={setStateDistrictColorBarSettings}
-                     dataType={stateDistrictDataType}
-                     categories={getUniqueCategories(stateDistrictMapData.map(d => d.value))}
-                     categoryColors={stateDistrictCategoryColors}
-                     onCategoryColorChange={(category, color) => {
-                       setStateDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
-                     }}
-                   />
+                  <ColorMapChooser
+                    selectedScale={stateDistrictColorScale}
+                    onScaleChange={setStateDistrictColorScale}
+                    invertColors={stateDistrictInvertColors}
+                    onInvertColorsChange={setStateDistrictInvertColors}
+                    showStateBoundaries={true}
+                    hideDistrictNames={stateDistrictHideNames}
+                    hideValues={stateDistrictHideValues}
+                    onHideDistrictNamesChange={setStateDistrictHideNames}
+                    onHideDistrictValuesChange={setStateDistrictHideValues}
+                    colorBarSettings={stateDistrictColorBarSettings}
+                    onColorBarSettingsChange={setStateDistrictColorBarSettings}
+                    dataType={stateDistrictDataType}
+                    categories={getUniqueCategories(stateDistrictMapData.map(d => d.value))}
+                    categoryColors={stateDistrictCategoryColors}
+                    onCategoryColorChange={(category, color) => {
+                      setStateDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -1104,6 +1235,11 @@ bv$show_map(result_nfhs5)`}
           </div>
         </div>
       </footer>
+
+      <ChatPanel
+        key={`${activeTab}-${activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType}-${selectedStateForMap || ''}`}
+        context={chatContext}
+      />
     </div>
   );
 };
