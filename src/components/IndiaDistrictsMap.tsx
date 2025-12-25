@@ -662,7 +662,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY
     ]);
 
-    // Check if point is inside the polygon
     return isPointInPolygon([screenPoint.x, screenPoint.y], screenPolygon);
   };
 
@@ -1047,7 +1046,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
-      // Use the new discrete color utility
       const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     };
@@ -1427,7 +1425,6 @@ Chittoor,50`;
                     const stateName = feature.properties.state_name || '';
                     if (!districtName) return null;
 
-                    // Calculate bounds for rotation purposes
                     const bounds = calculateDistrictBounds(feature);
 
                     // Extract polygon coordinates in GeoJSON format [lng, lat]
@@ -1579,7 +1576,6 @@ Chittoor,50`;
 
                     return (
                       <g key={`label-group-${index}`} transform={transform}>
-                        {/* District name */}
                         <text
                           x={0}
                           y={-finalFontSize / 2}
@@ -1600,7 +1596,6 @@ Chittoor,50`;
                         >
                           {districtName}
                         </text>
-                        {/* District value - only show if data exists */}
                         {districtValue !== undefined && (
                           <text
                             x={0}
@@ -1761,7 +1756,6 @@ Chittoor,50`;
                         strokeWidth={0.5}
                         rx={3}
                       />
-                      {/* Min value */}
                       {editingMin ? (
                         <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
                           <input
@@ -1785,7 +1779,6 @@ Chittoor,50`;
                           {legendMin}
                         </text>
                       )}
-                      {/* Mean value */}
                       {editingMean ? (
                         <foreignObject x={isMobile ? 60 : 80} y={18} width={isMobile ? 30 : 40} height={30}>
                           <input
@@ -1809,7 +1802,6 @@ Chittoor,50`;
                           {legendMean}
                         </text>
                       )}
-                      {/* Max value */}
                       {editingMax ? (
                         <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
                           <input
@@ -1833,7 +1825,6 @@ Chittoor,50`;
                           {legendMax}
                         </text>
                       )}
-                      {/* Legend Title */}
                       {editingTitle ? (
                         <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
                           <input
@@ -1868,7 +1859,6 @@ Chittoor,50`;
                   className="na-legend"
                   transform={`translate(${isMobile ? 10 : 320}, ${isMobile ? 400 : selectedState ? 1050 : 850})`}
                 >
-                  {/* Background box */}
                   <rect
                     width={isMobile ? 150 : 220}
                     height={isMobile ? 30 : 35}
@@ -1878,7 +1868,6 @@ Chittoor,50`;
                     rx={4}
                   />
 
-                  {/* NA color box */}
                   <rect
                     x={5}
                     y={isMobile ? 8 : 10}
@@ -1889,7 +1878,6 @@ Chittoor,50`;
                     strokeWidth={1}
                   />
 
-                  {/* NA label */}
                   <text
                     x={isMobile ? 25 : 30}
                     y={isMobile ? 19 : 22}
@@ -1905,7 +1893,6 @@ Chittoor,50`;
                     }
                   </text>
 
-                  {/* Delete button */}
                   <g
                     onClick={() => setShowNALegend(false)}
                     style={{ cursor: 'pointer' }}

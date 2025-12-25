@@ -8,6 +8,7 @@ import type { FeatureCollection, Feature, Geometry, Polygon, MultiPolygon } from
 import { getColorForValue, getD3ColorInterpolator } from '../utils/discreteColorUtils.js';
 import { isColorDark, roundToSignificantDigits } from '../utils/colorUtils.js';
 import { DEFAULT_LEGEND_POSITION, MAP_DIMENSIONS } from '../utils/constants.js';
+import polylabel from 'polylabel';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -305,32 +306,43 @@ export class DistrictsMapRenderer {
         })
       : this.districtsGeojson.features;
 
-    // Helper function to calculate centroid of a polygon
-    const calculateCentroid = (coordinates: number[][] | number[][][] | number[][][][], type: string): [number, number] | null => {
-      let sumX = 0, sumY = 0, count = 0;
-
-      const processRing = (ring: number[][]): void => {
-        ring.forEach(coord => {
-          sumX += coord[0];
-          sumY += coord[1];
-          count++;
-        });
-      };
-
+    // Helper function to calculate visual center of a polygon using polylabel
+    const calculateVisualCenter = (coordinates: number[][] | number[][][] | number[][][][], type: string): [number, number] | null => {
       try {
         if (type === 'Polygon') {
           const polygonCoords = coordinates as number[][][];
-          processRing(polygonCoords[0]);
+          const center = polylabel(polygonCoords, 1.0);
+          return [center[0], center[1]];
         } else if (type === 'MultiPolygon') {
           const multiCoords = coordinates as number[][][][];
+          // For MultiPolygon, find the largest polygon and use its visual center
+          let largestPolygon: number[][][] | null = null;
+          let largestArea = 0;
+
           multiCoords.forEach(polygon => {
-            processRing(polygon[0]);
+            // Calculate approximate area of the polygon
+            const ring = polygon[0];
+            let area = 0;
+            for (let i = 0; i < ring.length - 1; i++) {
+              area += (ring[i][0] * ring[i + 1][1]) - (ring[i + 1][0] * ring[i][1]);
+            }
+            area = Math.abs(area) / 2;
+
+            if (area > largestArea) {
+              largestArea = area;
+              largestPolygon = polygon;
+            }
           });
+
+          if (largestPolygon) {
+            const center = polylabel(largestPolygon, 1.0);
+            return [center[0], center[1]];
+          }
         }
 
-        if (count === 0) return null;
-        return [sumX / count, sumY / count];
+        return null;
       } catch (e) {
+        console.error('Error calculating visual center:', e);
         return null;
       }
     };
@@ -358,11 +370,23 @@ export class DistrictsMapRenderer {
         pathData = this.convertCoordinatesToPath(geometry.coordinates, bounds, width, height);
       }
 
-      mapGroup.append('path')
+      const pathElement = mapGroup.append('path')
         .attr('d', pathData)
         .attr('fill', fillColor)
         .attr('stroke', strokeColor)
         .attr('stroke-width', 0.3);
+
+      // Add title element for hover tooltips
+      const districtName = String(feature.properties?.district_name || feature.properties?.DISTRICT || '');
+      if (districtName) {
+        if (value !== undefined) {
+          pathElement.append('title')
+            .text(`${districtName}: ${roundToSignificantDigits(value)}`);
+        } else {
+          pathElement.append('title')
+            .text(districtName);
+        }
+      }
     });
 
     // Add district labels and values (if not hidden)
@@ -372,16 +396,16 @@ export class DistrictsMapRenderer {
 
         if (value === undefined) return;
 
-        let centroid: [number, number] | null = null;
+        let visualCenter: [number, number] | null = null;
         if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
           const geometry = feature.geometry as Polygon | MultiPolygon;
-          centroid = calculateCentroid(geometry.coordinates, feature.geometry.type);
+          visualCenter = calculateVisualCenter(geometry.coordinates, feature.geometry.type);
         }
 
-        if (!centroid) return;
+        if (!visualCenter) return;
 
-        // Project centroid to canvas coordinates
-        const [x, y] = this.projectCoordinate(centroid[0], centroid[1], bounds, width, height);
+        // Project visual center to canvas coordinates
+        const [x, y] = this.projectCoordinate(visualCenter[0], visualCenter[1], bounds, width, height);
 
         const districtName = String(feature.properties?.district_name || feature.properties?.DISTRICT || '');
         const fillColor = (() => {

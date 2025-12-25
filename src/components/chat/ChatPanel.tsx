@@ -19,17 +19,17 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
-  // UI State
+  // UI state
   const [isOpen, setIsOpen] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(true);
 
-  // Model State
+  // Model state
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('');
   const [modelReady, setModelReady] = useState(false);
 
-  // Chat State
+  // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -113,9 +113,33 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
    * Handle sending a message
    */
   const handleSendMessage = async () => {
-    if (!input.trim() || !engineRef.current || !modelReady || !context) {
+    // Validate input
+    if (!input.trim()) {
       return;
     }
+
+    // Check if engine is ready
+    if (!engineRef.current || !modelReady) {
+      addSystemMessage('❌ Please wait for the model to finish loading before sending messages.');
+      return;
+    }
+
+    // CRITICAL: Check if context exists and capture it immediately
+    // to prevent race conditions during async operations
+    if (!context) {
+      addSystemMessage('❌ Context not available. Please make sure you have uploaded data to the map. The chatbot needs data context to answer questions.');
+      return;
+    }
+
+    // Validate context structure
+    if (!context.currentView || !context.geoMetadata || !context.userData) {
+      console.error('ChatPanel - Context structure is invalid:', context);
+      addSystemMessage('❌ Context structure is invalid. Please try reloading the data.');
+      return;
+    }
+
+    // Capture context value to prevent race conditions
+    const currentContext = context;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
@@ -143,7 +167,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
     try {
       // Update context with current conversation (exclude system messages)
       const updatedContext: DynamicChatContext = {
-        ...context,
+        ...currentContext,
         conversationHistory: messages
           .filter(m => m.role !== 'system')
           .map(m => ({
@@ -286,6 +310,14 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
         <>
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {!context && (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  <p className="font-semibold mb-1">⚠️ No data context</p>
+                  <p className="text-sm">Please upload data to the map first. The chatbot needs data to analyze.</p>
+                </AlertDescription>
+              </Alert>
+            )}
             {messages.length === 0 && context && (
               <Alert>
                 <AlertDescription>
@@ -325,7 +357,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder={context?.userData.hasData ? "Ask about your data..." : "Ask a question..."}
-                className="flex-1 px-3 py-2 border rounded-md resize-none min-h-[44px] max-h-[120px]"
+                className="flex-1 px-3 py-2 border rounded-md resize-none min-h-[44px] max-h-[120px] bg-background text-foreground"
                 rows={1}
                 disabled={isGenerating || !context}
               />

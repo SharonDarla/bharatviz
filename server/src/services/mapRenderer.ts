@@ -144,7 +144,22 @@ export class StatesMapRenderer {
         const fillColor = getColorForValue(value, values, colorScale, invertColors);
         return isColorDark(fillColor) ? '#ffffff' : '#0f172a';
       })
-      .attr('stroke-width', 0.5);
+      .attr('stroke-width', 0.5)
+      .each((d: StateFeature, i: number, nodes: HTMLElement[]) => {
+        // Add title element for hover tooltips
+        const pathElement = d3.select(nodes[i]);
+        const stateName = this.getStateName(d.properties);
+        const displayName = this.getDisplayName(stateName);
+        const value = dataMap.get(stateName);
+
+        if (value !== undefined) {
+          pathElement.append('title')
+            .text(`${displayName}: ${roundToSignificantDigits(value)}`);
+        } else {
+          pathElement.append('title')
+            .text(displayName);
+        }
+      });
 
     // Add state labels and values
     if (!hideStateNames || !hideValues) {

@@ -1,63 +1,27 @@
-import React, { useState, useRef, useEffect } from "react";
-import { FileUpload } from "@/components/FileUpload";
-import { IndiaMap, type IndiaMapRef } from "@/components/IndiaMap";
-import {
-  IndiaDistrictsMap,
-  type IndiaDistrictsMapRef,
-} from "@/components/IndiaDistrictsMap";
-import { ExportOptions } from "@/components/ExportOptions";
-import {
-  ColorMapChooser,
-  type ColorScale,
-  type ColorBarSettings,
-} from "@/components/ColorMapChooser";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-
-import {
-  DEFAULT_DISTRICT_MAP_TYPE,
-  getDistrictMapConfig,
-  getDistrictMapTypesList,
-} from "@/lib/districtMapConfig";
-
-import { getUniqueStatesFromGeoJSON } from "@/lib/stateUtils";
-
-import {
-  loadStateGistMapping,
-  getAvailableStates,
-  getStateGeoJSONUrl,
-  type StateGistMapping,
-} from "@/lib/stateGistMapping";
-
-import Credits from "@/components/Credits";
-import { Github } from "lucide-react";
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
+import Papa from 'papaparse';
+import { FileUpload } from '@/components/FileUpload';
+import { IndiaMap, type IndiaMapRef } from '@/components/IndiaMap';
+import { IndiaDistrictsMap, type IndiaDistrictsMapRef } from '@/components/IndiaDistrictsMap';
+import { ExportOptions } from '@/components/ExportOptions';
+import { ColorMapChooser, type ColorScale, type ColorBarSettings } from '@/components/ColorMapChooser';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
+import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
+import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
+import Credits from '@/components/Credits';
+import { Github } from 'lucide-react';
+import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
 
 // Chat system
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { buildDynamicContext } from '@/lib/chat/contextBuilder';
 import { DATA_FILES } from '@/lib/constants';
 import type { DynamicChatContext, DataPoint } from '@/lib/chat/types';
-
-// Categorical utilities
-import {
-  type DataType,
-  type CategoryColorMapping,
-  detectDataType,
-  getUniqueCategories,
-  generateDefaultCategoryColors,
-} from '@/lib/categoricalUtils';
-
-
-/* ----------------------------------------- */
-/*                 INTERFACES                */
-/* ----------------------------------------- */
 
 interface StateMapData {
   state: string;
@@ -76,145 +40,207 @@ interface NAInfo {
   count: number;
 }
 
-/* ----------------------------------------- */
-/*                  MAIN APP                 */
-/* ----------------------------------------- */
-
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<string>("states");
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  /* ---------- STATE MAP STATES ---------- */
+  const getTabFromPath = (pathname: string): string => {
+    const path = pathname.slice(1);
+    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'help', 'credits'];
+    return validTabs.includes(path) ? path : 'states';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getTabFromPath(location.pathname));
+
   const [stateMapData, setStateMapData] = useState<StateMapData[]>([]);
-  const [stateColorScale, setStateColorScale] =
-    useState<ColorScale>("spectral");
+  const [stateColorScale, setStateColorScale] = useState<ColorScale>('spectral');
   const [stateInvertColors, setStateInvertColors] = useState(false);
   const [stateHideNames, setStateHideNames] = useState(false);
   const [stateHideValues, setStateHideValues] = useState(false);
-  const [stateDataTitle, setStateDataTitle] = useState<string>("");
+  const [stateDataTitle, setStateDataTitle] = useState<string>('');
+  const [stateColorBarSettings, setStateColorBarSettings] = useState<ColorBarSettings>({
+    isDiscrete: false,
+    binCount: 5,
+    customBoundaries: [],
+    useCustomBoundaries: false
+  });
+  const [stateDataType, setStateDataType] = useState<DataType>('numerical');
+  const [stateCategoryColors, setStateCategoryColors] = useState<CategoryColorMapping>({});
+  const [stateNAInfo, setStateNAInfo] = useState<NAInfo | undefined>(undefined);
 
-  const [stateColorBarSettings, setStateColorBarSettings] =
-    useState<ColorBarSettings>({
-      isDiscrete: false,
-      binCount: 5,
-      customBoundaries: [],
-      useCustomBoundaries: false,
-    });
-
-  const [stateDataType, setStateDataType] =
-    useState<DataType>("numerical");
-  const [stateCategoryColors, setStateCategoryColors] =
-    useState<CategoryColorMapping>({});
-  const [stateNAInfo, setStateNAInfo] = useState<NAInfo | undefined>(
-    undefined
-  );
-
-  /* ---------- DISTRICT MAP STATES ---------- */
-  const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>(
-    []
-  );
-  const [districtColorScale, setDistrictColorScale] =
-    useState<ColorScale>("spectral");
+  const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
+  const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
   const [districtInvertColors, setDistrictInvertColors] = useState(false);
-  const [districtDataTitle, setDistrictDataTitle] = useState<string>("");
-
+  const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
   const [showStateBoundaries, setShowStateBoundaries] = useState(true);
+  const [districtColorBarSettings, setDistrictColorBarSettings] = useState<ColorBarSettings>({
+    isDiscrete: false,
+    binCount: 5,
+    customBoundaries: [],
+    useCustomBoundaries: false
+  });
+  const [districtDataType, setDistrictDataType] = useState<DataType>('numerical');
+  const [districtCategoryColors, setDistrictCategoryColors] = useState<CategoryColorMapping>({});
+  const [selectedDistrictMapType, setSelectedDistrictMapType] = useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
+  const [districtNAInfo, setDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
-  const [districtColorBarSettings, setDistrictColorBarSettings] =
-    useState<ColorBarSettings>({
-      isDiscrete: false,
-      binCount: 5,
-      customBoundaries: [],
-      useCustomBoundaries: false,
-    });
-
-  const [districtDataType, setDistrictDataType] =
-    useState<DataType>("numerical");
-  const [districtCategoryColors, setDistrictCategoryColors] =
-    useState<CategoryColorMapping>({});
-  const [selectedDistrictMapType, setSelectedDistrictMapType] =
-    useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
-
-  const [districtNAInfo, setDistrictNAInfo] =
-    useState<NAInfo | undefined>(undefined);
-
-  /* ---------- STATE-DISTRICT STATES ---------- */
-  const [stateDistrictMapData, setStateDistrictMapData] =
-    useState<DistrictMapData[]>([]);
-
-  const [stateDistrictColorScale, setStateDistrictColorScale] =
-    useState<ColorScale>("spectral");
-  const [stateDistrictInvertColors, setStateDistrictInvertColors] =
-    useState(false);
-
-  const [stateDistrictDataTitle, setStateDistrictDataTitle] =
-    useState<string>("");
-
-  const [stateDistrictColorBarSettings, setStateDistrictColorBarSettings] =
-    useState<ColorBarSettings>({
-      isDiscrete: false,
-      binCount: 5,
-      customBoundaries: [],
-      useCustomBoundaries: false,
-    });
-
-  const [stateDistrictDataType, setStateDistrictDataType] =
-    useState<DataType>("numerical");
-
-  const [stateDistrictCategoryColors, setStateDistrictCategoryColors] =
-    useState<CategoryColorMapping>({});
-
-  const [selectedStateMapType, setSelectedStateMapType] =
-    useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
-
-  const [selectedStateForMap, setSelectedStateForMap] =
-    useState<string>("Maharashtra");
-
-  const [stateDistrictHideNames, setStateDistrictHideNames] =
-    useState(false);
-  const [stateDistrictHideValues, setStateDistrictHideValues] =
-    useState(false);
-
+  const [stateDistrictMapData, setStateDistrictMapData] = useState<DistrictMapData[]>([]);
+  const [stateDistrictColorScale, setStateDistrictColorScale] = useState<ColorScale>('spectral');
+  const [stateDistrictInvertColors, setStateDistrictInvertColors] = useState(false);
+  const [stateDistrictDataTitle, setStateDistrictDataTitle] = useState<string>('');
+  const [stateDistrictColorBarSettings, setStateDistrictColorBarSettings] = useState<ColorBarSettings>({
+    isDiscrete: false,
+    binCount: 5,
+    customBoundaries: [],
+    useCustomBoundaries: false
+  });
+  const [stateDistrictDataType, setStateDistrictDataType] = useState<DataType>('numerical');
+  const [stateDistrictCategoryColors, setStateDistrictCategoryColors] = useState<CategoryColorMapping>({});
+  const [selectedStateMapType, setSelectedStateMapType] = useState<string>(DEFAULT_DISTRICT_MAP_TYPE);
+  const [selectedStateForMap, setSelectedStateForMap] = useState<string>('Maharashtra');
+  const [stateDistrictHideNames, setStateDistrictHideNames] = useState(false);
+  const [stateDistrictHideValues, setStateDistrictHideValues] = useState(false);
   const [availableStates, setAvailableStates] = useState<string[]>([]);
-  const [stateGistMapping, setStateGistMapping] =
-    useState<StateGistMapping | null>(null);
+  const [stateGistMapping, setStateGistMapping] = useState<StateGistMapping | null>(null);
+  const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
+  const [stateDistrictNAInfo, setStateDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
-  const [stateSearchQuery, setStateSearchQuery] = useState<string>("");
-
-  const [stateDistrictNAInfo, setStateDistrictNAInfo] =
-    useState<NAInfo | undefined>(undefined);
-
-  /* ---------- CHAT CONTEXT ---------- */
-  const [chatContext, setChatContext] =
-    useState<DynamicChatContext | null>(null);
-
+  const [chatContext, setChatContext] = useState<DynamicChatContext | null>(null);
   const prevContextRef = useRef<{
     tab: string;
     mapType: string;
     selectedState?: string;
   } | null>(null);
 
-  /* ---------- REFS FOR EXPORTING ---------- */
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
-  /* ----------------------------------------- */
-  /*    LOAD STATES FOR STATE–DISTRICT TAB     */
-  /* ----------------------------------------- */
 
   useEffect(() => {
-    if (activeTab === "state-districts") {
+    const tabFromPath = getTabFromPath(location.pathname);
+    if (tabFromPath !== activeTab) {
+      setActiveTab(tabFromPath);
+    }
+  }, [location.pathname]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const basePath = value === 'states' ? '' : value;
+    const search = location.search;
+    navigate(`/${basePath}${search}`);
+  };
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const dataUrl = searchParams.get('dataUrl');
+
+    if (dataUrl) {
+      const loadDataFromUrl = async () => {
+        try {
+          const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+          const apiBase = isDev ? 'http://localhost:3001' : `${window.location.protocol}//${window.location.hostname}`;
+          const proxyUrl = `${apiBase}/api/v1/proxy/csv?url=${encodeURIComponent(dataUrl)}`;
+          const response = await fetch(proxyUrl);
+
+          if (!response.ok) {
+            throw new Error(`Failed to fetch data: ${response.statusText}`);
+          }
+
+          const csvText = await response.text();
+
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              const data = results.data as Record<string, string>[];
+
+              const hasDistrict = data[0] && ('district_name' in data[0] || 'district' in data[0]);
+              const colorScale = searchParams.get('colorScale') as ColorScale || 'spectral';
+              const title = searchParams.get('title') || '';
+              const legendTitle = searchParams.get('legendTitle') || 'Values';
+              const boundary = searchParams.get('boundary') || 'LGD';
+              const showStateBoundaries = searchParams.get('showStateBoundaries') === 'true';
+              const invertColors = searchParams.get('invertColors') === 'true';
+
+              if (hasDistrict) {
+                const districtData = data.map((row) => ({
+                  state: row.state_name || row.state || '',
+                  district: row.district_name || row.district || '',
+                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
+                }));
+
+                setDistrictMapData(districtData);
+                setDistrictDataTitle(title);
+                setDistrictColorScale(colorScale);
+                setDistrictInvertColors(invertColors);
+                setShowStateBoundaries(showStateBoundaries);
+                setSelectedDistrictMapType(boundary);
+
+                const values = districtData.map(d => d.value);
+                const dataType = detectDataType(values);
+                setDistrictDataType(dataType);
+
+                if (dataType === 'categorical') {
+                  const categories = getUniqueCategories(values);
+                  const categoryColors = generateDefaultCategoryColors(categories);
+                  setDistrictCategoryColors(categoryColors);
+                  setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                }
+
+                handleTabChange('districts');
+              } else {
+                const stateData = data.map((row) => ({
+                  state: row.state_name || row.state || '',
+                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
+                }));
+
+                setStateMapData(stateData);
+                setStateDataTitle(title);
+                setStateColorScale(colorScale);
+                setStateInvertColors(invertColors);
+
+                const values = stateData.map(d => d.value);
+                const dataType = detectDataType(values);
+                setStateDataType(dataType);
+
+                if (dataType === 'categorical') {
+                  const categories = getUniqueCategories(values);
+                  const categoryColors = generateDefaultCategoryColors(categories);
+                  setStateCategoryColors(categoryColors);
+                  setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                }
+
+                handleTabChange('states');
+              }
+            },
+            error: (error) => {
+              console.error('CSV parsing error:', error);
+            }
+          });
+        } catch (error) {
+          console.error('Error loading data from URL:', error);
+        }
+      };
+
+      loadDataFromUrl();
+    }
+  }, [location.search]);
+
+  useEffect(() => {
+    if (activeTab === 'state-districts') {
       const fetchStates = async () => {
         try {
           const mapping = await loadStateGistMapping();
           setStateGistMapping(mapping);
-
           const states = getAvailableStates(mapping, selectedStateMapType);
-          if (states.length === 0) throw new Error("No states in mapping");
+
+          if (states.length === 0) {
+            throw new Error('No states found in gist mapping');
+          }
 
           setAvailableStates(states);
-        } catch (err) {
-          console.error("Gist mapping failed, falling back:", err);
-
+        } catch (error) {
+          console.error('Failed to fetch states from gist mapping:', error);
           const geojsonPath = getDistrictMapConfig(selectedStateMapType).geojsonPath;
           const states = await getUniqueStatesFromGeoJSON(geojsonPath);
           setAvailableStates(states);
@@ -226,11 +252,6 @@ const Index = () => {
     }
   }, [activeTab, selectedStateMapType]);
 
-  /* ----------------------------------------- */
-  /*         BUILD CHAT CONTEXT DYNAMICALLY    */
-  /* ----------------------------------------- */
-
-  // Build chat context when data or view changes
   useEffect(() => {
     async function updateChatContext() {
       try {
@@ -249,7 +270,6 @@ const Index = () => {
           return Number.isFinite(num) ? num : null;
         };
 
-        // Determine GeoJSON path and data based on active tab
         if (activeTab === 'states') {
           geoJsonPath = DATA_FILES.STATES_GEOJSON;
           currentMapType = 'states';
@@ -269,7 +289,6 @@ const Index = () => {
             value: normalizeValue(d.value),
           }));
         } else if (activeTab === 'state-districts' && selectedStateForMap) {
-          // For state-specific districts
           const config = getDistrictMapConfig(selectedStateMapType);
           geoJsonPath = config.geojsonPath;
           currentMapType = selectedStateMapType;
@@ -282,7 +301,6 @@ const Index = () => {
           }));
         }
 
-        // Check if context has changed (tab, mapType, or selectedState)
         const prevContext = prevContextRef.current;
         const contextChanged =
           !prevContext ||
@@ -290,34 +308,42 @@ const Index = () => {
           prevContext.mapType !== currentMapType ||
           prevContext.selectedState !== currentSelectedState;
 
-        // Update previous context ref
         prevContextRef.current = {
           tab: activeTab,
           mapType: currentMapType,
           selectedState: currentSelectedState,
         };
 
-        if (geoJsonPath) {
-          const context = await buildDynamicContext({
-            activeTab: activeTab as 'states' | 'districts' | 'state-districts',
-            selectedState: activeTab === 'state-districts' ? selectedStateForMap : undefined,
-            mapType: activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType,
-            data,
-            geoJsonPath,
-            metricName,
-            // Clear conversation history if context changed, otherwise preserve it
-            conversationHistory: contextChanged ? [] : (chatContext?.conversationHistory || []),
-          });
+        if (geoJsonPath && data.length > 0) {
+          try {
+            const context = await buildDynamicContext({
+              activeTab: activeTab as 'states' | 'districts' | 'state-districts',
+              selectedState: activeTab === 'state-districts' ? selectedStateForMap : undefined,
+              mapType: activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType,
+              data,
+              geoJsonPath,
+              metricName,
+              conversationHistory: contextChanged ? [] : (chatContext?.conversationHistory || []),
+            });
 
-          setChatContext(context);
+            setChatContext(context);
+          } catch (contextError) {
+            console.error('Failed to build chat context:', contextError, {
+              error: contextError,
+              stack: contextError instanceof Error ? contextError.stack : undefined
+            });
+            setChatContext(null);
+          }
+        } else {
+          setChatContext(null);
         }
       } catch (error) {
         console.error('Chat context error:', error);
+        setChatContext(null);
       }
     }
 
     updateChatContext();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeTab,
     selectedStateForMap,
@@ -331,241 +357,289 @@ const Index = () => {
     stateDistrictDataTitle,
   ]);
 
-
-  /* ----------------------------------------- */
-  /*              DATA LOAD HANDLERS           */
-  /* ----------------------------------------- */
-
-  const handleStateDataLoad = (
-    data: StateMapData[],
-    title?: string,
-    naInfo?: NAInfo
-  ) => {
+  const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
     setStateMapData(data);
-    setStateDataTitle(title || "");
+    setStateDataTitle(title || '');
     setStateNAInfo(naInfo);
 
-    const values = data.map((d) => d.value);
-    const type = detectDataType(values);
-    setStateDataType(type);
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setStateDataType(dataType);
 
-    if (type === "categorical") {
+    if (dataType === 'categorical') {
       const categories = getUniqueCategories(values);
-      const colors = generateDefaultCategoryColors(categories);
-      setStateCategoryColors(colors);
-      setStateColorBarSettings((prev) => ({
-        ...prev,
-        isDiscrete: true,
-      }));
+      const categoryColors = generateDefaultCategoryColors(categories);
+      setStateCategoryColors(categoryColors);
+      setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
     }
   };
 
-  // ------------------------------
-// FIXED district data loader
-// ------------------------------
-const handleDistrictDataLoad = (
-  rawData: any[],
-  title?: string,
-  naInfo?: NAInfo
-) => {
-  // Normalize: ensure every row contains {state, district, value}
-  const data: DistrictMapData[] = rawData.map(row => ({
-    state: row.state || row.state_name || "",
-    district: row.district || row.district_name || "",
-    value: row.value === "" || row.value === "NA" ? null : row.value
-  }));
+  const handleDistrictDataLoad = (rawData: any[], title?: string, naInfo?: NAInfo) => {
+    const data: DistrictMapData[] = rawData.map(row => ({
+      state: row.state || row.state_name || '',
+      district: row.district || row.district_name || '',
+      value: row.value === '' || row.value === 'NA' ? null : row.value
+    }));
 
-  setDistrictMapData(data);
-  setDistrictDataTitle(title || "");
-  setDistrictNAInfo(naInfo);
+    setDistrictMapData(data);
+    setDistrictDataTitle(title || '');
+    setDistrictNAInfo(naInfo);
 
-  const values = data.map(d => d.value);
-  const dataType = detectDataType(values);
-  setDistrictDataType(dataType);
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setDistrictDataType(dataType);
 
-  if (dataType === "categorical") {
-    const categories = getUniqueCategories(values);
-    setDistrictCategoryColors(generateDefaultCategoryColors(categories));
-    setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
-  }
-};
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(values);
+      setDistrictCategoryColors(generateDefaultCategoryColors(categories));
+      setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
+  };
 
-// ------------------------------
-// FIXED state-district loader
-// ------------------------------
-const handleStateDistrictDataLoad = (
-  rawData: any[],
-  title?: string,
-  naInfo?: NAInfo
-) => {
-  const data: DistrictMapData[] = rawData.map(row => ({
-    state: row.state || row.state_name || "",
-    district: row.district || row.district_name || "",
-    value: row.value === "" || row.value === "NA" ? null : row.value
-  }));
+  const handleStateDistrictDataLoad = (rawData: any[], title?: string, naInfo?: NAInfo) => {
+    const data: DistrictMapData[] = rawData.map(row => ({
+      state: row.state || row.state_name || '',
+      district: row.district || row.district_name || '',
+      value: row.value === '' || row.value === 'NA' ? null : row.value
+    }));
 
-  setStateDistrictMapData(data);
-  setStateDistrictDataTitle(title || "");
-  setStateDistrictNAInfo(naInfo);
+    setStateDistrictMapData(data);
+    setStateDistrictDataTitle(title || '');
+    setStateDistrictNAInfo(naInfo);
 
-  const values = data.map(d => d.value);
-  const dataType = detectDataType(values);
-  setStateDistrictDataType(dataType);
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setStateDistrictDataType(dataType);
 
-  if (dataType === "categorical") {
-    const categories = getUniqueCategories(values);
-    setStateDistrictCategoryColors(generateDefaultCategoryColors(categories));
-    setStateDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
-  }
-};
-
-  /* ----------------------------------------- */
-  /*               EXPORT HANDLERS             */
-  /* ----------------------------------------- */
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(values);
+      setStateDistrictCategoryColors(generateDefaultCategoryColors(categories));
+      setStateDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
+  };
 
   const handleExportPNG = () => {
-    if (activeTab === "states") stateMapRef.current?.exportPNG();
-    else if (activeTab === "districts" || activeTab === "regions")
+    if (activeTab === 'states') {
+      stateMapRef.current?.exportPNG();
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPNG();
-    else stateDistrictMapRef.current?.exportPNG();
+    } else {
+      stateDistrictMapRef.current?.exportPNG();
+    }
   };
 
   const handleExportSVG = () => {
-    if (activeTab === "states") stateMapRef.current?.exportSVG();
-    else if (activeTab === "districts" || activeTab === "regions")
+    if (activeTab === 'states') {
+      stateMapRef.current?.exportSVG();
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportSVG();
-    else stateDistrictMapRef.current?.exportSVG();
+    } else {
+      stateDistrictMapRef.current?.exportSVG();
+    }
   };
 
   const handleExportPDF = () => {
-    if (activeTab === "states") stateMapRef.current?.exportPDF();
-    else if (activeTab === "districts" || activeTab === "regions")
+    if (activeTab === 'states') {
+      stateMapRef.current?.exportPDF();
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPDF();
-    else stateDistrictMapRef.current?.exportPDF();
+    } else {
+      stateDistrictMapRef.current?.exportPDF();
+    }
   };
 
   const handleDownloadCSVTemplate = () => {
-    if (activeTab === "states") stateMapRef.current?.downloadCSVTemplate();
-    else if (activeTab === "districts" || activeTab === "regions")
+    if (activeTab === 'states') {
+      stateMapRef.current?.downloadCSVTemplate();
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.downloadCSVTemplate();
-    else stateDistrictMapRef.current?.downloadCSVTemplate();
+    } else {
+      stateDistrictMapRef.current?.downloadCSVTemplate();
+    }
   };
 
   const createGistUrlProvider = () => {
     return (stateName: string) => {
       if (!stateGistMapping) return null;
-      return getStateGeoJSONUrl(
-        stateGistMapping,
-        selectedStateMapType,
-        stateName
-      );
+      return getStateGeoJSONUrl(stateGistMapping, selectedStateMapType, stateName);
     };
   };
 
-  /* ----------------------------------------- */
-  /*                MAIN RENDER                */
-  /* ----------------------------------------- */
+  const getSEOContent = () => {
+    const baseUrl = 'https://bharatviz.saketlab.in';
+
+    const seoConfigs = {
+      states: {
+        title: 'BharatViz - Fast Choropleth Maps for India | State-Level Data Visualization',
+        description: 'Create beautiful, publication-ready choropleth maps of Indian states. Free online tool for data visualization with customizable color scales, export to PNG/SVG/PDF. Perfect for research, journalism, and presentations.',
+        keywords: 'India maps, choropleth, state maps, data visualization, India states, interactive maps, geospatial analysis, India data, map maker, research visualization',
+        canonical: baseUrl,
+        ogTitle: 'BharatViz - Fast Choropleth Maps for India',
+        ogDescription: 'Create beautiful choropleth maps of Indian states with customizable colors and export to PNG/SVG/PDF. Free and open source.'
+      },
+      districts: {
+        title: 'District-Level Maps of India | BharatViz Choropleth Visualization',
+        description: 'Visualize 800+ Indian districts with choropleth maps. Support for LGD, NFHS-5, and NFHS-4 boundaries. Export to PNG, SVG, PDF. Free tool for district-level data analysis and visualization.',
+        keywords: 'India district maps, district choropleth, LGD districts, NFHS-5, NFHS-4, district data visualization, India geography, granular maps, district boundaries',
+        canonical: `${baseUrl}/districts`,
+        ogTitle: 'District-Level Maps of India | BharatViz',
+        ogDescription: 'Visualize 800+ Indian districts with customizable choropleth maps. Support for LGD, NFHS-5, and NFHS-4 boundaries.'
+      },
+      regions: {
+        title: 'NSSO Regions Maps | BharatViz India Regional Visualization',
+        description: 'Create choropleth maps of NSSO (National Sample Survey Organization) regions in India. Ideal for survey analysis and regional statistical visualization. Free online mapping tool.',
+        keywords: 'NSSO regions, India regions, survey regions, NSSO maps, regional analysis, statistical regions, sample survey, India geography',
+        canonical: `${baseUrl}/regions`,
+        ogTitle: 'NSSO Regions Maps | BharatViz',
+        ogDescription: 'Visualize NSSO (National Sample Survey Organization) regions with customizable choropleth maps. Perfect for survey and statistical analysis.'
+      },
+      'state-districts': {
+        title: 'Individual State District Maps | BharatViz State-Wise Visualization',
+        description: 'Create detailed district-level maps for individual Indian states. High-resolution visualization with support for all major states. Export to PNG, SVG, PDF for presentations and publications.',
+        keywords: 'state district maps, Maharashtra districts, Karnataka districts, Tamil Nadu districts, state-wise maps, detailed district maps, India state geography',
+        canonical: `${baseUrl}/state-districts`,
+        ogTitle: 'Individual State District Maps | BharatViz',
+        ogDescription: 'Create detailed district-level maps for individual Indian states with customizable visualization options.'
+      },
+      help: {
+        title: 'Help & API Documentation | BharatViz India Maps',
+        description: 'Complete guide to using BharatViz: web interface, Python/R API, embedding maps, and programmatic access. Learn how to create choropleth maps of India with our comprehensive documentation.',
+        keywords: 'BharatViz help, map API, Python India maps, R India maps, API documentation, embed maps, India map tutorial, choropleth API',
+        canonical: `${baseUrl}/help`,
+        ogTitle: 'BharatViz Help & API Documentation',
+        ogDescription: 'Complete guide to using BharatViz for web, Python, R, and embedding maps. API documentation and examples included.'
+      },
+      credits: {
+        title: 'Credits & Acknowledgments | BharatViz',
+        description: 'Acknowledgments and credits for BharatViz - data sources, open source libraries, and contributors. Built with open data from Government of India sources.',
+        keywords: 'BharatViz credits, data sources, acknowledgments, open source, India government data, LGD, NFHS',
+        canonical: `${baseUrl}/credits`,
+        ogTitle: 'Credits & Acknowledgments | BharatViz',
+        ogDescription: 'Acknowledgments for BharatViz - data sources, libraries, and contributors.'
+      }
+    };
+
+    return seoConfigs[activeTab as keyof typeof seoConfigs] || seoConfigs.states;
+  };
+
+  const seoContent = getSEOContent();
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-6">
+      <Helmet>
+        <title>{seoContent.title}</title>
+        <meta name="title" content={seoContent.title} />
+        <meta name="description" content={seoContent.description} />
+        <meta name="keywords" content={seoContent.keywords} />
+
+        <link rel="canonical" href={seoContent.canonical} />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content={seoContent.canonical} />
+        <meta property="og:title" content={seoContent.ogTitle} />
+        <meta property="og:description" content={seoContent.ogDescription} />
+        <meta property="og:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="BharatViz - Interactive India Maps" />
+        <meta property="og:site_name" content="BharatViz" />
+        <meta property="og:locale" content="en_US" />
+
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:url" content={seoContent.canonical} />
+        <meta name="twitter:title" content={seoContent.ogTitle} />
+        <meta name="twitter:description" content={seoContent.ogDescription} />
+        <meta name="twitter:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+        <meta name="twitter:image:alt" content="BharatViz - Interactive India Maps" />
+        <meta name="twitter:site" content="@saketkc" />
+        <meta name="twitter:creator" content="@saketkc" />
+
+        <meta name="author" content="Saket Choudhary" />
+        <meta name="robots" content="index, follow" />
+        <meta name="language" content="English" />
+        <meta name="geo.region" content="IN" />
+        <meta name="geo.placename" content="India" />
+
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            "name": "BharatViz",
+            "description": "Fast choropleth maps for India - visualize state and district level data",
+            "url": "https://bharatviz.saketlab.in",
+            "applicationCategory": "DataVisualization",
+            "operatingSystem": "Web Browser",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD"
+            },
+            "author": {
+              "@type": "Person",
+              "name": "Saket Choudhary"
+            },
+            "provider": {
+              "@type": "Organization",
+              "name": "Saket Lab",
+              "url": "http://saketlab.in"
+            }
+          })}
+        </script>
+      </Helmet>
       <div className="max-w-7xl mx-auto">
-        {/* HEADER */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3">
-            <img
-              src="/bharatviz_favicon.png"
-              alt="BharatViz Logo"
-              className="h-8 sm:h-12 w-auto"
-            />
+            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-8 sm:h-12 w-auto" />
             <span>BharatViz - Fast choropleths for India</span>
           </h1>
         </div>
 
-        {/* TABS */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-6 gap-2 bg-transparent p-0 h-auto">
-              {/* STATES TAB */}
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 
-                transition-all duration-200 hover:border-blue-400 hover:text-blue-700 
-                data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 
-                data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 States
               </TabsTrigger>
-
-              {/* DISTRICTS TAB */}
               <TabsTrigger
                 value="districts"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 
-                transition-all duration-200 hover:border-blue-400 hover:text-blue-700 
-                data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 
-                data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Districts
               </TabsTrigger>
-
-              {/* REGIONS TAB */}
               <TabsTrigger
                 value="regions"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 
-                transition-all duration-200 hover:border-blue-400 hover:text-blue-700 
-                data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 
-                data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Regions
               </TabsTrigger>
-
-              {/* STATE–DISTRICTS TAB */}
               <TabsTrigger
                 value="state-districts"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 
-                transition-all duration-200 hover:border-blue-400 hover:text-blue-700 
-                data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 
-                data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 State-District
               </TabsTrigger>
-
-              {/* HELP TAB */}
               <TabsTrigger
                 value="help"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 
-                transition-all duration-200 hover:border-blue-400 hover:text-blue-700 
-                data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 
-                data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Help
               </TabsTrigger>
-
-              {/* CREDITS TAB */}
               <TabsTrigger
                 value="credits"
-                className="rounded-lg border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-600 
-                transition-all duration-200 hover:border-blue-400 hover:text-blue-700 
-                data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 
-                data-[state=active]:bg-blue-50"
+                className="rounded-lg border-2 border-gray-300 bg-white px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base text-gray-600 transition-all duration-200 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50"
               >
                 Credits
               </TabsTrigger>
             </TabsList>
           </div>
 
-          {/* ---------------------------- */}
-          {/*        STATES TAB UI         */}
-          {/* ---------------------------- */}
-
-          <div className={`space-y-6 ${activeTab === "states" ? "block" : "hidden"}`}>
+          <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              
-              {/* MAP */}
               <div className="lg:col-span-2 order-2 lg:order-2">
-                <IndiaMap
-                  ref={stateMapRef}
-                  data={stateMapData}
-                  colorScale={stateColorScale}
+                <IndiaMap ref={stateMapRef} data={stateMapData} colorScale={stateColorScale}
                   invertColors={stateInvertColors}
                   hideStateNames={stateHideNames}
                   hideValues={stateHideValues}
@@ -575,8 +649,6 @@ const handleStateDistrictDataLoad = (
                   categoryColors={stateCategoryColors}
                   naInfo={stateNAInfo}
                 />
-
-                {/* EXPORT BUTTONS */}
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
                     onExportPNG={handleExportPNG}
@@ -587,14 +659,12 @@ const handleStateDistrictDataLoad = (
                 </div>
               </div>
 
-              {/* CONTROLS */}
               <div className="lg:col-span-1 order-1 lg:order-1">
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
                   mode="states"
                   geojsonPath="/India_LGD_states.geojson"
                 />
-
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser
                     selectedScale={stateColorScale}
@@ -608,27 +678,19 @@ const handleStateDistrictDataLoad = (
                     colorBarSettings={stateColorBarSettings}
                     onColorBarSettingsChange={setStateColorBarSettings}
                     dataType={stateDataType}
-                    categories={getUniqueCategories(stateMapData.map((d) => d.value))}
+                    categories={getUniqueCategories(stateMapData.map(d => d.value))}
                     categoryColors={stateCategoryColors}
-                    onCategoryColorChange={(category, color) =>
-                      setStateCategoryColors((prev) => ({
-                        ...prev,
-                        [category]: color,
-                      }))
-                    }
+                    onCategoryColorChange={(category, color) => {
+                      setStateCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
                   />
                 </div>
               </div>
             </div>
           </div>
-          {/* ---------------------------------- */}
-          {/*         DISTRICTS TAB UI           */}
-          {/* ---------------------------------- */}
 
-          <div className={`space-y-6 ${activeTab === "districts" ? "block" : "hidden"}`}>
+          <div className={`space-y-6 ${activeTab === 'districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-
-              {/* MAP */}
               <div className="lg:col-span-2 order-2 lg:order-2">
                 <IndiaDistrictsMap
                   ref={districtMapRef}
@@ -644,8 +706,6 @@ const handleStateDistrictDataLoad = (
                   categoryColors={districtCategoryColors}
                   naInfo={districtNAInfo}
                 />
-
-                {/* EXPORT */}
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
                     onExportPNG={handleExportPNG}
@@ -656,26 +716,22 @@ const handleStateDistrictDataLoad = (
                 </div>
               </div>
 
-              {/* CONTROLS */}
               <div className="lg:col-span-1 order-1 lg:order-1">
-                
-                {/* Map type selector */}
                 <div className="mb-4 p-4 border rounded-lg bg-card">
-                  <Label className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
                   </Label>
-
                   <Select value={selectedDistrictMapType} onValueChange={setSelectedDistrictMapType}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="district-map-type" className="w-full">
                       <SelectValue placeholder="Select district map type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getDistrictMapTypesList().map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
+                      {getDistrictMapTypesList().map((mapType) => (
+                        <SelectItem key={mapType.id} value={mapType.id}>
                           <div className="flex flex-col">
-                            <span>{m.displayName}</span>
-                            {m.description && (
-                              <span className="text-xs text-muted-foreground">{m.description}</span>
+                            <span>{mapType.displayName}</span>
+                            {mapType.description && (
+                              <span className="text-xs text-muted-foreground">{mapType.description}</span>
                             )}
                           </div>
                         </SelectItem>
@@ -684,7 +740,6 @@ const handleStateDistrictDataLoad = (
                   </Select>
                 </div>
 
-                {/* DATA UPLOAD */}
                 <FileUpload
                   onDataLoad={handleDistrictDataLoad}
                   mode="districts"
@@ -693,8 +748,6 @@ const handleStateDistrictDataLoad = (
                   googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
                 />
-
-                {/* COLOR OPTIONS */}
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser
                     selectedScale={districtColorScale}
@@ -706,25 +759,19 @@ const handleStateDistrictDataLoad = (
                     colorBarSettings={districtColorBarSettings}
                     onColorBarSettingsChange={setDistrictColorBarSettings}
                     dataType={districtDataType}
-                    categories={getUniqueCategories(districtMapData.map((d) => d.value))}
+                    categories={getUniqueCategories(districtMapData.map(d => d.value))}
                     categoryColors={districtCategoryColors}
-                    onCategoryColorChange={(category, color) =>
-                      setDistrictCategoryColors((prev) => ({ ...prev, [category]: color }))
-                    }
+                    onCategoryColorChange={(category, color) => {
+                      setDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ---------------------------------- */}
-          {/*             REGIONS TAB            */}
-          {/* ---------------------------------- */}
-
-          <div className={`space-y-6 ${activeTab === "regions" ? "block" : "hidden"}`}>
+          <div className={`space-y-6 ${activeTab === 'regions' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-
-              {/* MAP */}
               <div className="lg:col-span-2 order-2 lg:order-2">
                 <IndiaDistrictsMap
                   ref={districtMapRef}
@@ -733,9 +780,9 @@ const handleStateDistrictDataLoad = (
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
                   showStateBoundaries={showStateBoundaries}
-                  geojsonPath={getDistrictMapConfig("NSSO").geojsonPath}
-                  statesGeojsonPath={getDistrictMapConfig("NSSO").states}
                   colorBarSettings={districtColorBarSettings}
+                  geojsonPath={getDistrictMapConfig('NSSO').geojsonPath}
+                  statesGeojsonPath={getDistrictMapConfig('NSSO').states}
                   dataType={districtDataType}
                   categoryColors={districtCategoryColors}
                   naInfo={districtNAInfo}
@@ -750,26 +797,22 @@ const handleStateDistrictDataLoad = (
                 </div>
               </div>
 
-              {/* SIDEBAR */}
               <div className="lg:col-span-1 order-1 lg:order-1">
-                
-                {/* Info box */}
                 <div className="mb-4 p-4 border rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
                   <h3 className="text-lg font-semibold mb-2 text-black">NSSO Regions</h3>
                   <p className="text-sm text-black">
-                    NSSO regions are used for survey sampling and statistics.
+                    National Sample Survey Organization (NSSO) regions are geographical divisions used for survey sampling and statistical analysis across India.
                   </p>
                 </div>
 
                 <FileUpload
                   onDataLoad={handleDistrictDataLoad}
                   mode="districts"
-                  templateCsvPath={getDistrictMapConfig("NSSO").templateCsvPath}
-                  demoDataPath={getDistrictMapConfig("NSSO").demoDataPath}
-                  googleSheetLink={getDistrictMapConfig("NSSO").googleSheetLink}
-                  geojsonPath={getDistrictMapConfig("NSSO").geojsonPath}
+                  templateCsvPath={getDistrictMapConfig('NSSO').templateCsvPath}
+                  demoDataPath={getDistrictMapConfig('NSSO').demoDataPath}
+                  googleSheetLink={getDistrictMapConfig('NSSO').googleSheetLink}
+                  geojsonPath={getDistrictMapConfig('NSSO').geojsonPath}
                 />
-
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser
                     selectedScale={districtColorScale}
@@ -781,25 +824,19 @@ const handleStateDistrictDataLoad = (
                     colorBarSettings={districtColorBarSettings}
                     onColorBarSettingsChange={setDistrictColorBarSettings}
                     dataType={districtDataType}
-                    categories={getUniqueCategories(districtMapData.map((d) => d.value))}
+                    categories={getUniqueCategories(districtMapData.map(d => d.value))}
                     categoryColors={districtCategoryColors}
-                    onCategoryColorChange={(category, color) =>
-                      setDistrictCategoryColors((prev) => ({ ...prev, [category]: color }))
-                    }
+                    onCategoryColorChange={(category, color) => {
+                      setDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ---------------------------------- */}
-          {/*         STATE–DISTRICTS TAB        */}
-          {/* ---------------------------------- */}
-
-          <div className={`space-y-6 ${activeTab === "state-districts" ? "block" : "hidden"}`}>
+          <div className={`space-y-6 ${activeTab === 'state-districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-
-              {/* MAP */}
               <div className="lg:col-span-2 order-2 lg:order-2">
                 <IndiaDistrictsMap
                   ref={stateDistrictMapRef}
@@ -808,19 +845,19 @@ const handleStateDistrictDataLoad = (
                   invertColors={stateDistrictInvertColors}
                   dataTitle={stateDistrictDataTitle}
                   showStateBoundaries={true}
+                  colorBarSettings={stateDistrictColorBarSettings}
                   geojsonPath={getDistrictMapConfig(selectedStateMapType).geojsonPath}
                   statesGeojsonPath={getDistrictMapConfig(selectedStateMapType).states}
                   selectedState={selectedStateForMap}
                   gistUrlProvider={createGistUrlProvider()}
                   hideDistrictNames={stateDistrictHideNames}
                   hideDistrictValues={stateDistrictHideValues}
-                  colorBarSettings={stateDistrictColorBarSettings}
+                  onHideDistrictNamesChange={setStateDistrictHideNames}
+                  onHideDistrictValuesChange={setStateDistrictHideValues}
                   dataType={stateDistrictDataType}
                   categoryColors={stateDistrictCategoryColors}
                   naInfo={stateDistrictNAInfo}
                 />
-
-                {/* EXPORT */}
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
                     onExportPNG={handleExportPNG}
@@ -831,66 +868,71 @@ const handleStateDistrictDataLoad = (
                 </div>
               </div>
 
-              {/* CONTROLS */}
               <div className="lg:col-span-1 order-1 lg:order-1">
-
-                {/* MAP TYPE */}
                 <div className="mb-4 p-4 border rounded-lg bg-card">
-                  <Label className="text-sm font-medium mb-2 block">
+                  <Label htmlFor="state-district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
                   </Label>
                   <Select value={selectedStateMapType} onValueChange={setSelectedStateMapType}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger id="state-district-map-type" className="w-full">
                       <SelectValue placeholder="Select district map type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getDistrictMapTypesList().map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.displayName}
+                      {getDistrictMapTypesList().map((mapType) => (
+                        <SelectItem key={mapType.id} value={mapType.id}>
+                          <div className="flex flex-col">
+                            <span>{mapType.displayName}</span>
+                            {mapType.description && (
+                              <span className="text-xs text-muted-foreground">{mapType.description}</span>
+                            )}
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* STATE SELECTOR */}
                 <div className="mb-4 p-4 border rounded-lg bg-card">
-                  <Label className="text-sm font-medium mb-2 block">Select State</Label>
-
+                  <Label htmlFor="state-selector" className="text-sm font-medium mb-2 block">
+                    Select State
+                  </Label>
                   <input
                     type="text"
-                    placeholder="Search state…"
+                    placeholder="Search state..."
                     value={stateSearchQuery}
                     onChange={(e) => setStateSearchQuery(e.target.value)}
-                    className="w-full mb-2 px-3 py-2 border rounded-md bg-background text-sm"
+                    className="w-full mb-2 px-3 py-2 border border-input rounded-md bg-background text-sm"
                   />
-
-                  <Select
-                    value={selectedStateForMap}
-                    onValueChange={(v) => {
-                      setSelectedStateForMap(v);
-                      setStateSearchQuery("");
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue>{selectedStateForMap}</SelectValue>
+                  <Select value={selectedStateForMap} onValueChange={(value) => {
+                    setSelectedStateForMap(value);
+                    setStateSearchQuery('');
+                  }}>
+                    <SelectTrigger id="state-selector" className="w-full">
+                      <SelectValue placeholder="Select a state">
+                        {selectedStateForMap}
+                      </SelectValue>
                     </SelectTrigger>
-
                     <SelectContent className="max-h-[300px]">
                       {availableStates
-                        .filter((s) =>
-                          s.toLowerCase().includes(stateSearchQuery.toLowerCase())
+                        .filter((state) =>
+                          state.toLowerCase().includes(stateSearchQuery.toLowerCase())
                         )
-                        .map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
+                        .map((state) => (
+                          <SelectItem key={state} value={state}>
+                            {state}
                           </SelectItem>
                         ))}
+                      {stateSearchQuery.length > 0 && availableStates.filter((state) =>
+                        state.toLowerCase().includes(stateSearchQuery.toLowerCase())
+                      ).length === 0 && (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No states found
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* UPLOAD */}
                 <FileUpload
                   onDataLoad={handleStateDistrictDataLoad}
                   mode="districts"
@@ -900,8 +942,6 @@ const handleStateDistrictDataLoad = (
                   geojsonPath={getDistrictMapConfig(selectedStateMapType).geojsonPath}
                   selectedState={selectedStateForMap}
                 />
-
-                {/* COLOR OPTIONS */}
                 <div className="space-y-4 mt-6">
                   <ColorMapChooser
                     selectedScale={stateDistrictColorScale}
@@ -910,125 +950,291 @@ const handleStateDistrictDataLoad = (
                     onInvertColorsChange={setStateDistrictInvertColors}
                     showStateBoundaries={true}
                     hideDistrictNames={stateDistrictHideNames}
-                    hideDistrictValues={stateDistrictHideValues}
+                    hideValues={stateDistrictHideValues}
                     onHideDistrictNamesChange={setStateDistrictHideNames}
                     onHideDistrictValuesChange={setStateDistrictHideValues}
                     colorBarSettings={stateDistrictColorBarSettings}
                     onColorBarSettingsChange={setStateDistrictColorBarSettings}
                     dataType={stateDistrictDataType}
-                    categories={getUniqueCategories(stateDistrictMapData.map((d) => d.value))}
+                    categories={getUniqueCategories(stateDistrictMapData.map(d => d.value))}
                     categoryColors={stateDistrictCategoryColors}
-                    onCategoryColorChange={(category, color) =>
-                      setStateDistrictCategoryColors((prev) => ({ ...prev, [category]: color }))
-                    }
+                    onCategoryColorChange={(category, color) => {
+                      setStateDistrictCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ---------------------------------- */}
-          {/*              HELP TAB              */}
-          {/* ---------------------------------- */}
-
-          <div className={`space-y-6 ${activeTab === "help" ? "block" : "hidden"}`}>
+          <div className={`space-y-6 ${activeTab === 'help' ? 'block' : 'hidden'}`}>
             <div className="max-w-4xl mx-auto p-6 space-y-8">
-
-              <div className="p-4 border-2 border-green-500 rounded-lg bg-green-50">
-                <h2 className="text-xl font-bold mb-2 text-green-800">Privacy & Data Security</h2>
-                <p className="text-green-700">
-                  <strong>Your data is never stored.</strong>  
-                  All processing happens in your browser or transiently on servers.
+              <div className="p-4 border-2 border-green-500 rounded-lg bg-green-50 dark:bg-green-950">
+                <h2 className="text-xl font-bold mb-2 text-green-800 dark:text-green-200">Privacy & Data Security</h2>
+                <p className="text-green-700 dark:text-green-300">
+                  <strong>Your data is never stored.</strong> All processing happens in your browser or transiently on our servers.
+                  We do not collect, store, or share any of your uploaded data.
                 </p>
               </div>
 
-              {/* Full help text (unchanged from professor version) */}
-              {/* ───────────────────────────── */}
-              {/* I am keeping EXACT content — no deletions */}
-              {/* ───────────────────────────── */}
-
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold mb-4">Web Interface</h2>
-                <p className="text-muted-foreground mb-4">
-                  BharatViz helps you create publication-ready maps.
-                </p>
-
-                {/* UPLOAD */}
-                <div className="p-4 border rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">1. Upload Your Data</h3>
-                  <p className="text-muted-foreground mb-2">
-                    Required columns:
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Web Interface</h2>
+                  <p className="text-muted-foreground mb-4">
+                    BharatViz helps you create publication-ready choropleth maps of India at state and district levels with just a few clicks.
                   </p>
-                  <ul className="list-disc list-inside text-sm">
-                    <li><strong>States:</strong> <code>state</code>, <code>value</code></li>
-                    <li><strong>Districts:</strong> <code>state_name</code>, <code>district_name</code>, <code>value</code></li>
-                  </ul>
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">1. Upload Your Data</h3>
+                      <p className="text-muted-foreground mb-2">Upload a CSV file with your data. Required columns:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm">
+                        <li><strong>States:</strong> <code>state</code> and <code>value</code></li>
+                        <li><strong>Districts:</strong> <code>state_name</code>, <code>district_name</code>, and <code>value</code></li>
+                      </ul>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Download the CSV template or load demo data to get started quickly.
+                      </p>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">2. Customize Your Map</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                        <li><strong>Color Scale:</strong> Choose from sequential (blues, greens, viridis) or diverging (spectral, rdylbu) scales</li>
+                        <li><strong>Invert Colors:</strong> Flip the color mapping (useful when lower values are better)</li>
+                        <li><strong>Discrete vs Continuous:</strong> Use discrete bins or smooth gradients</li>
+                        <li><strong>Labels:</strong> Toggle state names and values on/off</li>
+                        <li><strong>District Maps:</strong> Choose between LGD, NFHS-5, or NFHS-4 boundaries</li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">3. Export Your Map</h3>
+                      <p className="text-muted-foreground">Export in multiple formats:</p>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                        <li><strong>PNG:</strong> High-resolution raster image (300 DPI)</li>
+                        <li><strong>SVG:</strong> Vector format for editing in Adobe Illustrator, Inkscape, etc.</li>
+                        <li><strong>PDF:</strong> Publication-ready format</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
 
-                {/* CUSTOMIZE */}
-                <div className="p-4 border rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">2. Customize Your Map</h3>
-                  <ul className="list-disc list-inside text-muted-foreground text-sm">
-                    <li>Color scales</li>
-                    <li>Invert colors</li>
-                    <li>Discrete / continuous</li>
-                    <li>Toggle labels</li>
-                  </ul>
+                <div className="pt-6 border-t">
+                  <h2 className="text-2xl font-bold mb-4">Programmatic Access (API)</h2>
+                  <p className="text-muted-foreground mb-4">
+                    The API supports state and district-level maps (LGD, NFHS-5, NFHS-4), all color scales, and exports to PNG, SVG, and PDF formats from Python or R.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Documentation & Examples</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                        <li>
+                          <a
+                            href="https://colab.research.google.com/github/saketlab/bharatviz/blob/main/server/examples/BharatViz_demo.ipynb"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            Try Python notebook in Google Colab
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="https://rpubs.com/saketkc/bharatviz"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-blue-900 dark:hover:text-blue-100"
+                          >
+                            View R notebook on RPubs
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">Python</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# Install dependencies
+pip install requests pillow pandas
+
+# Download client
+wget -q https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.py
+
+# Use in your code
+from bharatviz import BharatViz
+
+bv = BharatViz()
+# States map
+data = [{"state": "Maharashtra", "value": 75.8}]
+bv.generate_map(data, title="My Map", show=True)
+
+# Districts map (LGD)
+dist_data = [{"state_name": "Telangana", "district_name": "Adilabad", "value": 45.2}]
+bv.generate_districts_map(dist_data, map_type="LGD", show=True)
+
+# Districts map (NFHS5)
+bv.generate_districts_map(dist_data, map_type="NFHS5", show=True)`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">R</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# Install dependencies
+install.packages(c("R6", "httr", "jsonlite", "base64enc", "png"))
+
+# Source client
+source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
+
+# Use in your code
+library(R6)
+bv <- BharatViz$new()
+# States map
+data <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
+result <- bv$generate_map(data, title = "My Map")
+bv$show_map(result)
+
+# Districts map (LGD)
+dist_data <- data.frame(state_name = "Telangana", district_name = "Adilabad", value = 45.2)
+result_lgd <- bv$generate_districts_map(dist_data, map_type = "LGD")
+bv$show_map(result_lgd)
+
+# Districts map (NFHS5)
+result_nfhs5 <- bv$generate_districts_map(dist_data, map_type = "NFHS5")
+bv$show_map(result_nfhs5)`}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
 
-                {/* EXPORT */}
-                <div className="p-4 border rounded-lg">
-                  <h3 className="text-lg font-semibold mb-2">3. Export</h3>
-                  <ul className="list-disc list-inside text-sm text-muted-foreground">
-                    <li>PNG</li>
-                    <li>SVG</li>
-                    <li>PDF</li>
-                  </ul>
+                <div className="pt-6 border-t">
+                  <h2 className="text-2xl font-bold mb-4">Embedding maps</h2>
+                  <p className="text-muted-foreground mb-4">
+                    Embed interactive BharatViz maps directly into your website, blog, or GitHub Pages without downloading files.
+                  </p>
+                  <div className="space-y-4">
+                    <div className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-950">
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Live Demo & Interactive Examples</h3>
+                      <p className="text-blue-700 dark:text-blue-300 mb-3">
+                        See both embedding methods in action with live, working examples.
+                      </p>
+                      <a
+                        href="/embed-demo"
+                        className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                      >
+                        View Embed Demo →
+                      </a>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">iframe embed</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`<iframe
+  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://yoursite.com/data.csv&colorScale=viridis&title=My%20Map"
+  width="800"
+  height="600"
+  frameborder="0">
+</iframe>`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">JavaScript widget</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`<div id="my-map"></div>
+<script src="https://bharatviz.saketlab.in/api/embed.js"></script>
+<script>
+  BharatViz.embed({
+    container: '#my-map',
+    dataUrl: 'https://yoursite.com/data.csv',
+    colorScale: 'viridis',
+    title: 'My Map'
+  });
+</script>`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">Direct SVG</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`<img src="https://bharatviz.saketlab.in/api/v1/embed/svg?dataUrl=https://yoursite.com/data.csv&colorScale=viridis" />`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">GitHub Pages example</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# 1. Create data.csv in your GitHub repo
+# 2. Enable GitHub Pages in repo settings
+# 3. Embed using your GitHub Pages URL:
+<iframe src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://USERNAME.github.io/REPO/data.csv&colorScale=viridis"></iframe>`}
+                      </pre>
+                    </div>
+
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">Available parameters</h3>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p><code className="bg-muted px-1 py-0.5 rounded">dataUrl</code> - URL to your CSV file (required)</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">mapType</code> - 'states', 'districts', or 'state-districts' (default: 'states')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">colorScale</code> - 'viridis', 'spectral', 'blues', 'greens', etc. (default: 'spectral')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">title</code> - Map title (default: 'BharatViz')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">legendTitle</code> - Legend label (default: 'Values')</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">invertColors</code> - true/false to reverse color scale</p>
+                        <p><code className="bg-muted px-1 py-0.5 rounded">districtBoundary</code> - 'LGD', 'NFHS4', or 'NFHS5' for district maps</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* API SECTION */}
-                <h2 className="text-2xl font-bold mt-8">API Examples</h2>
-
-                {/* Python + R blocks */}
-                {/* (unchanged — preserved exactly) */}
+                <div className="pt-6 border-t">
+                  <div className="p-4 border rounded-lg bg-muted/50">
+                    <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
+                      <Github className="h-5 w-5" />
+                      Open Source
+                    </h2>
+                    <p className="text-muted-foreground">
+                      BharatViz is open source and available on GitHub. Contributions, issues, and feedback are welcome!
+                    </p>
+                    <a
+                      href="https://github.com/saketlab/bharatviz"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block mt-3 text-primary underline hover:text-primary/80"
+                    >
+                      https://github.com/saketlab/bharatviz
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ---------------------------------- */}
-          {/*             CREDITS TAB            */}
-          {/* ---------------------------------- */}
-
-          <div className={`space-y-6 ${activeTab === "credits" ? "block" : "hidden"}`}>
+          <div className={`space-y-6 ${activeTab === 'credits' ? 'block' : 'hidden'}`}>
             <Credits />
           </div>
         </Tabs>
       </div>
-
-      {/* FOOTER */}
       <footer className="w-full text-center text-xs text-muted-foreground mt-8 mb-2">
         <div className="flex flex-col items-center gap-2">
           <div>
-            © 2025 Saket Choudhary |{" "}
-            <a href="http://saketlab.in/" target="_blank" className="underline">
-              Saket Lab
+            © 2025 Saket Choudhary | <a href="http://saketlab.in/" target="_blank" rel="noopener noreferrer" className="underline">Saket Lab</a>
+          </div>
+          <div className="flex items-center gap-1">
+            <a
+              href="https://github.com/saketlab/bharatviz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <Github className="h-4 w-4" />
+              <span>saketlab/bharatviz</span>
             </a>
           </div>
-
-          <a
-            href="https://github.com/saketlab/bharatviz"
-            target="_blank"
-            className="flex items-center gap-1 hover:text-foreground"
-          >
-            <Github className="h-4 w-4" />
-            saketlab/bharatviz
-          </a>
         </div>
       </footer>
 
-      {/* CHAT PANEL (full functionality preserved) */}
       <ChatPanel
-        key={`${activeTab}-${activeTab === "districts" ? selectedDistrictMapType : selectedStateMapType}-${selectedStateForMap || ""}`}
+        key={`${activeTab}-${activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType}-${selectedStateForMap || ''}`}
         context={chatContext}
       />
     </div>

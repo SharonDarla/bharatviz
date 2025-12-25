@@ -46,6 +46,15 @@ export async function buildDynamicContext(
     conversationHistory = []
   } = params;
 
+  console.log('Building chat context with params:', {
+    activeTab,
+    selectedState,
+    mapType,
+    dataLength: data.length,
+    geoJsonPath,
+    metricName
+  });
+
   // Load GeoJSON for current map
   const geoJson = await fetchGeoJSON(geoJsonPath);
 
@@ -81,7 +90,10 @@ export async function buildDynamicContext(
   // Get all data with non-null values
   const allData = normalizedData
     .filter(d => d.value !== null && d.value !== undefined && !isNaN(d.value))
-    .map(d => ({ name: d.name, value: d.value as number }))
+    .map(d => ({
+      name: d.state ? `${d.name}, ${d.state}` : d.name,
+      value: d.value as number
+    }))
     .sort((a, b) => b.value - a.value);
 
   return {
@@ -386,11 +398,14 @@ function buildHierarchicalStats(
  * Get top and bottom rankings
  */
 function getRankings(
-  data: Array<{ name: string; value: number | null }>
+  data: Array<{ name: string; value: number | null; state?: string }>
 ): { top10: Array<{ name: string; value: number }>; bottom10: Array<{ name: string; value: number }> } {
   const sorted = data
     .filter(d => d.value !== null && d.value !== undefined && !isNaN(d.value))
-    .map(d => ({ name: d.name, value: d.value as number }))
+    .map(d => ({
+      name: d.state ? `${d.name}, ${d.state}` : d.name,
+      value: d.value as number
+    }))
     .sort((a, b) => b.value - a.value);
 
   return {

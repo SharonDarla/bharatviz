@@ -7,7 +7,6 @@
 - **Web application**: [bharatviz.saketlab.in](https://bharatviz.saketlab.in/)
 - **REST api**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.in/api/)
 - **API documentation**: [server/README.md](server/README.md)
-- **Embed in websites**: [EMBED.md](EMBED.md) - Embed maps directly in any website
 
 ## Supported maps
 

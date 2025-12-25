@@ -17,7 +17,26 @@ import type {
  * Build system prompt with current context
  */
 export function buildSystemPrompt(context: DynamicChatContext): string {
+  console.log('promptBuilder - buildSystemPrompt called, context:', {
+    contextType: typeof context,
+    contextIsNull: context === null,
+    contextIsUndefined: context === undefined,
+    contextValue: context
+  });
+
+  // Defensive check: ensure context exists
+  if (!context) {
+    console.error('promptBuilder - context check failed');
+    throw new Error('context is not defined');
+  }
+
+  console.log('promptBuilder - destructuring context properties');
   const { currentView, geoMetadata, userData } = context;
+  console.log('promptBuilder - destructured:', {
+    hasCurrentView: !!currentView,
+    hasGeoMetadata: !!geoMetadata,
+    hasUserData: !!userData
+  });
 
   let prompt = `You are a data analysis assistant for BharatViz, an interactive map visualization tool for India.
 
@@ -34,7 +53,7 @@ export function buildSystemPrompt(context: DynamicChatContext): string {
   }
 
   if (userData.hasData) {
-    prompt += buildUserDataSection(userData, currentView);
+    prompt += buildUserDataSection(userData, currentView, context);
   } else {
     prompt += buildNoDataSection();
   }
@@ -62,7 +81,7 @@ function getViewDescription(tab: string, selectedState?: string): string {
   }
 }
 
-function buildUserDataSection(userData: UserData, currentView: CurrentView): string {
+function buildUserDataSection(userData: UserData, currentView: CurrentView, context: DynamicChatContext): string {
   // Use the actual metric name if provided, otherwise fall back to generic "values"
   const metricLabel = userData.metricName || 'values';
 

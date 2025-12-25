@@ -104,6 +104,10 @@ export class WebLLMEngine {
       throw new Error("WebLLM not initialized. Call initialize() first.");
     }
 
+    if (!context) {
+      throw new Error("context is not defined");
+    }
+
     const startTime = performance.now();
 
     try {
@@ -183,15 +187,38 @@ export class WebLLMEngine {
       throw new Error("WebLLM not initialized. Call initialize() first.");
     }
 
+    console.log('webLLMEngine streamQuery - received context:', {
+      contextExists: !!context,
+      hasCurrentView: !!context?.currentView,
+      hasGeoMetadata: !!context?.geoMetadata,
+      hasUserData: !!context?.userData,
+      contextKeys: context ? Object.keys(context) : []
+    });
+
+    if (!context) {
+      console.error('webLLMEngine streamQuery - context is null/undefined');
+      throw new Error("context is not defined");
+    }
+
+    if (!context.currentView || !context.geoMetadata || !context.userData) {
+      console.error('webLLMEngine streamQuery - context structure invalid:', context);
+      throw new Error("context structure is invalid");
+    }
+
     try {
+      console.log('webLLMEngine streamQuery - extracting mentioned states');
       // Extract states mentioned in the query for targeted context
       const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
+      console.log('webLLMEngine streamQuery - mentioned states:', mentionedStates);
+
       const contextWithMentions: DynamicChatContext = {
         ...context,
         mentionedStates
       };
 
+      console.log('webLLMEngine streamQuery - building system prompt');
       const systemPrompt = buildSystemPrompt(contextWithMentions);
+      console.log('webLLMEngine streamQuery - system prompt built successfully, length:', systemPrompt.length);
 
       const messages: webllm.ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt }

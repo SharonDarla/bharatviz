@@ -7,6 +7,7 @@ import { dirname, join } from 'path';
 import mapRoutes from './routes/mapRoutes.js';
 import districtsMapRoutes from './routes/districtsMapRoutes.js';
 import embedRoutes from './routes/embedRoutes.js';
+import proxyRoutes from './routes/proxyRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,14 +20,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://d3js.org"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'"]
+      frameSrc: ["'self'"],
+      frameAncestors: ["'self'", "http://localhost:*", "https://*"]
     }
   }
 }));
@@ -60,6 +62,7 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/states', mapRoutes);
 app.use('/api/v1/districts', districtsMapRoutes);
 app.use('/api/v1/embed', embedRoutes);
+app.use('/api/v1/proxy', proxyRoutes);
 
 // Serve embed.js from /api/embed.js to bypass nginx static file handling
 app.get('/api/embed.js', (req, res) => {
