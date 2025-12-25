@@ -121,6 +121,7 @@ const Index = () => {
     if (tabFromPath !== activeTab) {
       setActiveTab(tabFromPath);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   const handleTabChange = (value: string) => {
@@ -224,6 +225,7 @@ const Index = () => {
 
       loadDataFromUrl();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
   useEffect(() => {
@@ -344,6 +346,7 @@ const Index = () => {
     }
 
     updateChatContext();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeTab,
     selectedStateForMap,
@@ -374,7 +377,7 @@ const Index = () => {
     }
   };
 
-  const handleDistrictDataLoad = (rawData: any[], title?: string, naInfo?: NAInfo) => {
+  const handleDistrictDataLoad = (rawData: Array<{ state?: string; state_name?: string; district?: string; district_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
     const data: DistrictMapData[] = rawData.map(row => ({
       state: row.state || row.state_name || '',
       district: row.district || row.district_name || '',
@@ -396,7 +399,7 @@ const Index = () => {
     }
   };
 
-  const handleStateDistrictDataLoad = (rawData: any[], title?: string, naInfo?: NAInfo) => {
+  const handleStateDistrictDataLoad = (rawData: Array<{ state?: string; state_name?: string; district?: string; district_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
     const data: DistrictMapData[] = rawData.map(row => ({
       state: row.state || row.state_name || '',
       district: row.district || row.district_name || '',
