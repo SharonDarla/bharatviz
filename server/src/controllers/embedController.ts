@@ -551,22 +551,25 @@ export class EmbedController {
             padding: 0;
             box-sizing: border-box;
         }
+        html, body {
+            height: 100%;
+            overflow: auto;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
             padding: 20px;
-            overflow: hidden;
+            padding-bottom: 50px;
         }
         .map-container {
             max-width: 100%;
             width: auto;
             height: auto;
             position: relative;
+            flex-shrink: 0;
         }
         .map-container svg {
             max-width: 100%;
@@ -589,10 +592,12 @@ export class EmbedController {
             z-index: 1000;
         }
         .credits {
-            margin-top: 20px;
+            margin-top: 16px;
+            padding: 8px 0;
             font-size: 12px;
             color: #666;
             text-align: center;
+            flex-shrink: 0;
         }
         .credits a {
             color: #0066cc;
