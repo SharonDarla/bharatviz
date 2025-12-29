@@ -711,10 +711,19 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .attr('y1', '0%')
       .attr('y2', '0%');
 
-    // Color scale - continuous mode only for numerical data
     const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
+
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const getColorInterpolator = (scale: ColorScale) => {
       const baseInterpolator = colorScales[scale] || colorScales.spectral;
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
@@ -726,12 +735,12 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
       const value = minValue + t * (maxValue - minValue);
-      const color = colorScaleFunction(value);
+      const color = colorScale === 'aqi' ? getAQIColorAbsolute(value) : colorScaleFunction(value);
       gradient.append('stop')
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType, geojsonData]);
 
   const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];

@@ -1065,7 +1065,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType, mapData]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {
