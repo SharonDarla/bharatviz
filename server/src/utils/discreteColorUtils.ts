@@ -14,7 +14,7 @@ export interface ColorBarSettings {
  */
 export function getD3ColorInterpolator(scale: ColorScale) {
   const interpolators: Record<ColorScale, (t: number) => string> = {
-    aqi: (t: number) => d3.interpolateBlues(t),
+    aqi: (t: number) => getAQIColor(t * 500),
     blues: d3.interpolateBlues,
     greens: d3.interpolateGreens,
     reds: d3.interpolateReds,
