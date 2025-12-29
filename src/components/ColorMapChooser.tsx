@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { type DataType, type CategoryColorMapping } from '@/lib/categoricalUtils';
 import { CategoryColorPicker } from './CategoryColorPicker';
 
-export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
+export type ColorScale = 'aqi' | 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
 
 export interface ColorBarSettings {
   isDiscrete: boolean;
@@ -42,6 +42,7 @@ interface ColorMapChooserProps {
 
 const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverging' } } = {
   // Sequential scales
+  aqi: { name: 'AQI (Air Quality Index)', type: 'sequential' },
   blues: { name: 'Blues', type: 'sequential' },
   greens: { name: 'Greens', type: 'sequential' },
   reds: { name: 'Reds', type: 'sequential' },
@@ -52,7 +53,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   plasma: { name: 'Plasma', type: 'sequential' },
   inferno: { name: 'Inferno', type: 'sequential' },
   magma: { name: 'Magma', type: 'sequential' },
-  
+
   // Diverging scales
   rdylbu: { name: 'Red-Yellow-Blue', type: 'diverging' },
   rdylgn: { name: 'Red-Yellow-Green', type: 'diverging' },
@@ -352,10 +353,24 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
   );
 };
 
-// Helper function to get preview colors
+function getAQIColor(value: number): string {
+  if (value <= 50) return '#10b981';
+  if (value <= 100) return '#84cc16';
+  if (value <= 200) return '#eab308';
+  if (value <= 300) return '#f97316';
+  if (value <= 400) return '#ef4444';
+  return '#991b1b';
+}
+
 function getPreviewColor(scale: ColorScale, t: number): string {
+  if (scale === 'aqi') {
+    const value = t * 500;
+    return getAQIColor(value);
+  }
+
   // This is a simplified preview - in practice, you'd use the actual D3 color scales
   const colors: { [key in ColorScale]: string[] } = {
+    aqi: ['#10b981', '#10b981', '#84cc16', '#84cc16', '#eab308', '#eab308', '#f97316', '#ef4444', '#991b1b'],
     blues: ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'],
     greens: ['#f7fcf5', '#e5f5e0', '#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'],
     reds: ['#fff5f0', '#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15', '#67000d'],

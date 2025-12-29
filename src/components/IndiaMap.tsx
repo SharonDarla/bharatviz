@@ -160,8 +160,18 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const fixLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
 
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
+        aqi: (t: number) => d3.interpolateBlues(t), // Placeholder, won't be used with AQI
         blues: d3.interpolateBlues,
         greens: d3.interpolateGreens,
         reds: d3.interpolateReds,
@@ -210,7 +220,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
-          const color = colorScaleFunction(value);
+          const color = colorScale === 'aqi' ? getAQIColorAbsolute(value) : colorScaleFunction(value);
 
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
@@ -616,6 +626,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Get the appropriate D3 color interpolator
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
+        aqi: (t: number) => d3.interpolateBlues(t),
         blues: d3.interpolateBlues,
         greens: d3.interpolateGreens,
         reds: d3.interpolateReds,
@@ -1009,8 +1020,19 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
+
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
+        aqi: (t: number) => d3.interpolateBlues(t),
         blues: d3.interpolateBlues,
         greens: d3.interpolateGreens,
         reds: d3.interpolateReds,
@@ -1037,7 +1059,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
       const value = minValue + t * (maxValue - minValue);
-      const color = colorScaleFunction(value);
+      // For AQI, use absolute value mapping; otherwise use color scale function
+      const color = colorScale === 'aqi' ? getAQIColorAbsolute(value) : colorScaleFunction(value);
       gradient.append('stop')
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);

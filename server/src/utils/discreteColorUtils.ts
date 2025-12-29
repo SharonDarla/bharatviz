@@ -14,6 +14,7 @@ export interface ColorBarSettings {
  */
 export function getD3ColorInterpolator(scale: ColorScale) {
   const interpolators: Record<ColorScale, (t: number) => string> = {
+    aqi: (t: number) => d3.interpolateBlues(t),
     blues: d3.interpolateBlues,
     greens: d3.interpolateGreens,
     reds: d3.interpolateReds,
@@ -35,6 +36,15 @@ export function getD3ColorInterpolator(scale: ColorScale) {
   return interpolators[scale] || d3.interpolateBlues;
 }
 
+export function getAQIColor(value: number): string {
+  if (value <= 50) return '#10b981';
+  if (value <= 100) return '#84cc16';
+  if (value <= 200) return '#eab308';
+  if (value <= 300) return '#f97316';
+  if (value <= 400) return '#ef4444';
+  return '#991b1b';
+}
+
 /**
  * Gets a color for a value using continuous scaling
  */
@@ -47,11 +57,15 @@ export function getColorForValue(
   if (value === undefined) return 'white';
 
   if (isNaN(value)) {
-    return '#d1d5db'; // Light gray for NaN/NA values
+    return '#d1d5db';
   }
 
   if (values.length === 0) {
     return 'white';
+  }
+
+  if (colorScale === 'aqi') {
+    return invertColors ? getD3ColorInterpolator(colorScale)(1 - (value / 500)) : getAQIColor(value);
   }
 
   const minValue = Math.min(...values);
@@ -61,7 +75,6 @@ export function getColorForValue(
     return getD3ColorInterpolator(colorScale)(0.5);
   }
 
-  // Continuous scaling
   let normalizedValue = (value - minValue) / (maxValue - minValue);
   if (invertColors) {
     normalizedValue = 1 - normalizedValue;

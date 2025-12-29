@@ -79,6 +79,7 @@ interface Bounds {
 }
 
 const colorScales: Record<ColorScale, (t: number) => string> = {
+  aqi: (t: number) => interpolateBlues(t),
   blues: interpolateBlues,
   greens: interpolateGreens,
   reds: interpolateReds,
@@ -1021,8 +1022,18 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const fixDistrictsLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
 
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const colorScales = {
-      spectral: (t: number) => d3.interpolateSpectral(1 - t), 
+      aqi: (t: number) => d3.interpolateBlues(t), // Placeholder, AQI uses absolute values
+      spectral: (t: number) => d3.interpolateSpectral(1 - t),
       rdylbu: d3.interpolateRdYlBu,
       rdylgn: d3.interpolateRdYlGn,
       brbg: d3.interpolateBrBG,

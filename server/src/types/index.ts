@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Color scales matching the frontend
 export const ColorScales = [
-  'spectral', 'rdylbu', 'rdylgn', 'brbg', 'piyg', 'puor',
+  'aqi', 'spectral', 'rdylbu', 'rdylgn', 'brbg', 'piyg', 'puor',
   'blues', 'greens', 'reds', 'oranges', 'purples', 'pinks',
   'viridis', 'plasma', 'inferno', 'magma'
 ] as const;
