@@ -237,26 +237,24 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
     }
   };
 
-  // Floating button when closed
   if (!isOpen) {
     return (
       <Button
-        className="fixed bottom-6 right-6 rounded-full h-14 w-14 shadow-lg"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 rounded-full h-12 w-12 sm:h-14 sm:w-14 shadow-lg z-50"
         size="icon"
         onClick={() => setIsOpen(true)}
       >
-        <MessageSquare className="h-6 w-6" />
+        <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
       </Button>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-[420px] h-[700px] bg-background border rounded-lg shadow-2xl flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
+    <div className="fixed inset-x-0 bottom-0 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[420px] h-[600px] sm:h-[700px] bg-background border sm:rounded-lg shadow-2xl flex flex-col overflow-hidden z-50">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-card">
         <div>
-          <h3 className="font-semibold flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
+          <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
             Map Assistant
           </h3>
           {context && (

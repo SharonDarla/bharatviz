@@ -218,20 +218,20 @@ const EmbedDemo = () => {
       </Helmet>
 
       <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-6">
-          <a href="/" className="text-blue-600 hover:text-blue-700 text-sm mb-2 inline-block">
+        <div className="container mx-auto px-4 py-4 sm:py-6">
+          <a href="/" className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm mb-2 inline-block">
             ← Back to BharatViz
           </a>
-          <h1 className="text-4xl font-bold text-gray-900">Embed BharatViz Maps</h1>
-          <p className="text-gray-600 mt-2 text-lg">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Embed BharatViz Maps</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base md:text-lg">
             Add live, interactive India maps to your website with just a few lines of code
           </p>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12 max-w-6xl">
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Method 1: iframe Embed</h2>
+      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-6xl">
+        <section className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Method 1: iframe Embed</h2>
 
           <Card className="mb-6">
             <CardHeader>
@@ -286,8 +286,8 @@ const EmbedDemo = () => {
           </Card>
         </section>
 
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Method 2: JavaScript widget</h2>
+        <section className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Method 2: JavaScript widget</h2>
 
           <Card className="mb-6">
             <CardHeader>
@@ -339,13 +339,13 @@ const EmbedDemo = () => {
           </Card>
         </section>
 
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">District-level maps</h2>
-          <p className="text-gray-600 mb-8">
+        <section className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">District-level maps</h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
             BharatViz also supports district-level choropleth maps across India. Hover over districts to see their names and values.
           </p>
 
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">iframe embed (district-level)</h3>
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">iframe embed (district-level)</h3>
 
           <Card className="mb-6">
             <CardHeader>
@@ -399,7 +399,7 @@ const EmbedDemo = () => {
             </CardContent>
           </Card>
 
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">JavaScript widget (district-level)</h3>
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">JavaScript widget (district-level)</h3>
 
           <Card className="mb-6">
             <CardHeader>
@@ -451,14 +451,14 @@ const EmbedDemo = () => {
           </Card>
         </section>
 
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">AQI Color Scale Demo</h2>
-          <p className="text-gray-600 mb-8">
+        <section className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">AQI Color Scale Demo</h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
             Demonstrate AQI (Air Quality Index) data with the specialized AQI color scale. This scale uses absolute thresholds:
             0-50 (Good), 51-100 (Satisfactory), 101-200 (Moderate), 201-300 (Poor), 301-400 (Very Poor), 401-500 (Severe).
           </p>
 
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">iframe embed with AQI scale</h3>
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">iframe embed with AQI scale</h3>
 
           <Card className="mb-6">
             <CardHeader>
@@ -512,7 +512,7 @@ const EmbedDemo = () => {
             </CardContent>
           </Card>
 
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">JavaScript widget with AQI scale</h3>
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">JavaScript widget with AQI scale</h3>
 
           <Card className="mb-6">
             <CardHeader>
@@ -564,8 +564,8 @@ const EmbedDemo = () => {
           </Card>
         </section>
 
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">Configuration options</h2>
+        <section className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Configuration options</h2>
 
           <Card>
             <CardHeader>
@@ -575,20 +575,20 @@ const EmbedDemo = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <table className="w-full text-xs sm:text-sm min-w-[500px]">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-2 pr-4">Parameter</th>
+                      <th className="text-left py-2 pl-4 sm:pl-0 pr-4">Parameter</th>
                       <th className="text-left py-2 pr-4">Type</th>
-                      <th className="text-left py-2">Description</th>
+                      <th className="text-left py-2 pr-4 sm:pr-0">Description</th>
                     </tr>
                   </thead>
                   <tbody className="text-gray-600">
                     <tr className="border-b">
-                      <td className="py-2 pr-4 font-mono">dataUrl</td>
+                      <td className="py-2 pl-4 sm:pl-0 pr-4 font-mono">dataUrl</td>
                       <td className="py-2 pr-4">string</td>
-                      <td className="py-2">URL to your CSV data file (required)</td>
+                      <td className="py-2 pr-4 sm:pr-0">URL to your CSV data file (required)</td>
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 pr-4 font-mono">colorScale</td>
