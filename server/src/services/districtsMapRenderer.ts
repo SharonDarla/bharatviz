@@ -545,13 +545,22 @@ export class DistrictsMapRenderer {
 
     // Create gradient stops
     for (let i = 0; i <= 10; i++) {
-      let t = i / 10;
-      if (options.invertColors) {
-        t = 1 - t;
+      const t = i / 10;
+      let color: string;
+
+      if (options.colorScale === 'aqi') {
+        // For AQI, use absolute value mapping
+        const value = options.minValue + t * (options.maxValue - options.minValue);
+        color = getColorForValue(value, [options.minValue, options.maxValue], 'aqi', options.invertColors);
+      } else {
+        // For other scales, use normalized interpolation
+        const normalizedT = options.invertColors ? (1 - t) : t;
+        color = interpolator(normalizedT);
       }
+
       gradient.append('stop')
         .attr('offset', `${i * 10}%`)
-        .attr('stop-color', interpolator(t));
+        .attr('stop-color', color);
     }
 
     // Add gradient rectangle with border (matching frontend exactly)

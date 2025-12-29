@@ -9,11 +9,14 @@ const EmbedDemo = () => {
   const [copiedJS, setCopiedJS] = useState(false);
   const [copiedDistrictIframe, setCopiedDistrictIframe] = useState(false);
   const [copiedDistrictJS, setCopiedDistrictJS] = useState(false);
+  const [copiedAQIIframe, setCopiedAQIIframe] = useState(false);
+  const [copiedAQIJS, setCopiedAQIJS] = useState(false);
 
   const baseUrl = window.location.origin;
   const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
   const dataUrl = `${baseUrl}/nfhs5_protein_consumption_eggs.csv`;
   const districtDataUrl = 'https://saketkc.github.io/vayuayan-archive/daily_average_district/20251219_daily_AQI_mean.csv.gz';
+  const aqiDataUrl = 'https://saketkc.github.io/vayuayan-archive/daily_average_district/20251227_daily_AQI_mean.csv.gz';
 
   const iframeCode = `<iframe
   src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(dataUrl)}&colorScale=viridis&title=Protein%20consumption%20in%20India"
@@ -67,6 +70,34 @@ const EmbedDemo = () => {
   });
 </script>`;
 
+  const aqiIframeCode = `<iframe
+  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(aqiDataUrl)}&colorScale=aqi&title=AQI%20-%20Mean%20(2025-12-27)&legendTitle=AQI&boundary=LGD&showStateBoundaries=true"
+  width="800"
+  height="800"
+  frameborder="0"
+  sandbox="allow-scripts allow-same-origin"
+  style="border: none; max-width: 100%;">
+</iframe>`;
+
+  const aqiJsCode = `<!-- Container for the map -->
+<div id="bharatviz-aqi-map"></div>
+
+<!-- Load BharatViz embed script -->
+<script src="${apiUrl}/embed.js"></script>
+
+<!-- Initialize the map -->
+<script>
+  BharatViz.embed({
+    container: '#bharatviz-aqi-map',
+    dataUrl: '${aqiDataUrl}',
+    colorScale: 'aqi',
+    title: 'AQI - Mean (2025-12-27)',
+    legendTitle: 'AQI',
+    boundary: 'LGD',
+    showStateBoundaries: true
+  });
+</script>`;
+
   const copyToClipboard = (text: string, setter: (val: boolean) => void) => {
     navigator.clipboard.writeText(text);
     setter(true);
@@ -78,6 +109,7 @@ const EmbedDemo = () => {
     const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
     const dataUrl = `${baseUrl}/nfhs5_protein_consumption_eggs.csv`;
     const districtDataUrl = 'https://saketkc.github.io/vayuayan-archive/daily_average_district/20251219_daily_AQI_mean.csv.gz';
+    const aqiDataUrl = 'https://saketkc.github.io/vayuayan-archive/daily_average_district/20251227_daily_AQI_mean.csv.gz';
 
     const script = document.createElement('script');
     script.src = `${apiUrl}/embed.js`;
@@ -100,6 +132,16 @@ const EmbedDemo = () => {
           title: 'AQI - Mean (2025-12-19)',
           hideDistrictNames: true,
           hideValues: true
+        });
+
+        window.BharatViz.embed({
+          container: '#js-aqi-embed-demo',
+          dataUrl: aqiDataUrl,
+          colorScale: 'aqi',
+          title: 'AQI - Mean (2025-12-27)',
+          legendTitle: 'AQI',
+          boundary: 'LGD',
+          showStateBoundaries: true
         });
       }
     };
@@ -410,6 +452,119 @@ const EmbedDemo = () => {
         </section>
 
         <section className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6">AQI Color Scale Demo</h2>
+          <p className="text-gray-600 mb-8">
+            Demonstrate AQI (Air Quality Index) data with the specialized AQI color scale. This scale uses absolute thresholds:
+            0-50 (Good), 51-100 (Satisfactory), 101-200 (Moderate), 201-300 (Poor), 301-400 (Very Poor), 401-500 (Severe).
+          </p>
+
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">iframe embed with AQI scale</h3>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Code example</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(aqiIframeCode, setCopiedAQIIframe)}
+                >
+                  {copiedAQIIframe ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy code
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                AQI map with specialized color scale
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{aqiIframeCode}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Live demo</CardTitle>
+              <CardDescription>AQI map showing data from 2025-12-27</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden">
+                <iframe
+                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(aqiDataUrl)}&colorScale=aqi&title=AQI%20-%20Mean%20(2025-12-27)&legendTitle=AQI&boundary=LGD&showStateBoundaries=true`}
+                  width="100%"
+                  height="800"
+                  style={{ border: 'none' }}
+                  sandbox="allow-scripts allow-same-origin"
+                  title="BharatViz AQI iframe embed demo"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <h3 className="text-2xl font-semibold text-gray-800 mb-4">JavaScript widget with AQI scale</h3>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Code example</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(aqiJsCode, setCopiedAQIJS)}
+                >
+                  {copiedAQIJS ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy code
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                JavaScript widget for AQI maps
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{aqiJsCode}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Live demo</CardTitle>
+              <CardDescription>JavaScript widget with AQI color scale</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-4">
+                <div id="js-aqi-embed-demo" className="min-h-[700px]">
+                  <div className="text-center py-20 text-gray-500">
+                    Loading AQI map...
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-6">Configuration options</h2>
 
           <Card>
@@ -438,7 +593,7 @@ const EmbedDemo = () => {
                     <tr className="border-b">
                       <td className="py-2 pr-4 font-mono">colorScale</td>
                       <td className="py-2 pr-4">string</td>
-                      <td className="py-2">Color scheme: viridis, blues, greens, spectral, etc.</td>
+                      <td className="py-2">Color scheme: viridis, blues, greens, spectral, aqi (for Air Quality Index), etc.</td>
                     </tr>
                     <tr className="border-b">
                       <td className="py-2 pr-4 font-mono">title</td>
