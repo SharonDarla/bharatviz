@@ -308,7 +308,7 @@
       credits.style.marginTop = '20px';
       credits.style.fontSize = '12px';
       credits.style.color = '#666';
-      credits.innerHTML = 'Created with <a href="https://bharatviz.saketlab.in" target="_blank" style="color: #0066cc; text-decoration: none;">BharatViz</a>';
+      credits.innerHTML = 'Created with <a href="https://bharatviz.saketlab.org/" target="_blank" style="color: #0066cc; text-decoration: none;">BharatViz</a>';
       wrapper.appendChild(credits);
 
       container.innerHTML = '';
