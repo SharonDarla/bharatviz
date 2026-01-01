@@ -121,6 +121,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
+  const [renderingData, setRenderingData] = useState(false);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number | string } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
@@ -250,6 +251,15 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   useEffect(() => {
     rotationCalculator.current.clearCache();
   }, [geojsonData]);
+
+  useEffect(() => {
+    if (geojsonData && bounds && data.length > 0) {
+      setRenderingData(true);
+      setTimeout(() => {
+        setRenderingData(false);
+      }, 300);
+    }
+  }, [data, geojsonData, bounds, colorScale, invertColors, selectedState, colorBarSettings, dataType]);
 
   const calculateBounds = (data: { features: GeoJSONFeature[] }) => {
     let minLng = Infinity, maxLng = -Infinity;
@@ -1394,6 +1404,14 @@ Chittoor,50`;
 
   return (
     <div className="w-full flex justify-center relative" ref={containerRef}>
+      {renderingData && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm font-medium text-foreground">Rendering data...</p>
+          </div>
+        </div>
+      )}
             <svg
               ref={svgRef}
               width={isMobile ? "350" : "800"}

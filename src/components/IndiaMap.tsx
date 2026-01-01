@@ -53,6 +53,7 @@ export interface IndiaMapRef {
 export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [renderingData, setRenderingData] = useState(false);
 
   const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>(DEFAULT_LEGEND_POSITION.STATES);
   const [dragging, setDragging] = useState(false);
@@ -595,12 +596,14 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   useEffect(() => {
     if (!mapData || !svgRef.current) return;
-    
+
     // Check if mapData has features property
     if (!mapData.features || !Array.isArray(mapData.features)) {
       // Invalid GeoJSON data - skip rendering
       return;
     }
+
+    setRenderingData(true);
 
     try {
       const svg = d3.select(svgRef.current);
@@ -969,6 +972,10 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Legend will be handled by separate effect
     } catch (error) {
       // Map rendering failed - component will continue to show current state
+    } finally {
+      setTimeout(() => {
+        setRenderingData(false);
+      }, 300);
     }
 
   }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType]);
@@ -1191,6 +1198,14 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   return (
     <div className="w-full flex justify-center relative">
+      {renderingData && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm font-medium text-foreground">Rendering data...</p>
+          </div>
+        </div>
+      )}
       <svg
         ref={svgRef}
         className="max-w-full h-auto border rounded-lg"
