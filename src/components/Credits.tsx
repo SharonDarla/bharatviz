@@ -9,7 +9,11 @@ interface CreditSource {
   geojsonFiles?: { name: string; path: string }[];
 }
 
-const Credits: React.FC = () => {
+interface CreditsProps {
+  darkMode?: boolean;
+}
+
+const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
   const sources: CreditSource[] = [
     {
       title: 'BharatMap service - state boundaries',
@@ -67,16 +71,16 @@ const Credits: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="border rounded-lg p-6 bg-muted/50">
-        <h2 className="text-xl font-bold mb-3">About BharatViz</h2>
-        <p className="text-muted-foreground mb-4">
-          BharatViz is an open-source tool for creating fast, interactive choropleths (thematic maps) of India at state and district levels. 
+      <div className={`border rounded-lg p-6 ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-muted/50'}`}>
+        <h2 className={`text-xl font-bold mb-3 ${darkMode ? 'text-white' : ''}`}>About BharatViz</h2>
+        <p className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
+          BharatViz is an open-source tool for creating fast, interactive choropleths (thematic maps) of India at state and district levels.
         </p>
       </div>
 
-      <div className="border rounded-lg p-6 bg-primary/5 border-primary/20">
-        <h2 className="text-lg font-bold mb-3">Special Thanks</h2>
-        <p className="text-muted-foreground mb-4">
+      <div className={`border rounded-lg p-6 ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : 'bg-primary/5 border-primary/20'}`}>
+        <h2 className={`text-lg font-bold mb-3 ${darkMode ? 'text-white' : ''}`}>Special Thanks</h2>
+        <p className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
 			  BharatViz is made possible by the community efforts of collating shapefiles (geojsons) for India across the years.
 			  Sources and contributors are mentioned below. We thank all the contributors for generating and sharing the shape files!
           In particular, we would like to thank{' '}
@@ -84,7 +88,7 @@ const Credits: React.FC = () => {
             href="https://github.com/ramSeraph/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline transition-colors"
+            className={`underline transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
           >
             Sreeram Kandimalla
           </a>
@@ -93,7 +97,7 @@ const Credits: React.FC = () => {
             href="https://www.flame.edu.in/faculty/shivakumar-jolad"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline transition-colors"
+            className={`underline transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
           >
             Shivakumar Jolad's group
           </a>
@@ -102,7 +106,7 @@ const Credits: React.FC = () => {
             href="http://github.com/ramSeraph/indian_admin_boundaries/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline transition-colors"
+            className={`underline transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
           >
             indian_admin_boundaries
           </a>
@@ -111,19 +115,19 @@ const Credits: React.FC = () => {
             href="https://www.indiastatestory.in/datadownloads"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline transition-colors"
+            className={`underline transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
           >
             India State Stories
           </a>
           .
         </p>
-        <p className="text-muted-foreground">
+        <p className={darkMode ? 'text-gray-300' : 'text-muted-foreground'}>
           This project was initially prototyped using{' '}
           <a
             href="https://lovable.dev"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline transition-colors"
+            className={`underline transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
           >
             Lovable.dev
           </a>
@@ -132,7 +136,7 @@ const Credits: React.FC = () => {
             href="https://claude.ai"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary hover:text-primary/80 underline transition-colors"
+            className={`underline transition-colors ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
           >
             Claude.ai
           </a>
@@ -142,19 +146,19 @@ const Credits: React.FC = () => {
 
       <div className="grid gap-4">
         {sources.map((source, index) => (
-          <div key={index} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
+          <div key={index} className={`border rounded-lg p-6 hover:shadow-md transition-shadow ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-2">{source.title}</h3>
-                <p className="text-muted-foreground mb-4">{source.description}</p>
+                <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>{source.title}</h3>
+                <p className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>{source.description}</p>
 
                 <div className="mb-4">
-                  <p className="text-sm font-medium text-muted-foreground mb-2">Used for:</p>
+                  <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`}>Used for:</p>
                   <div className="flex flex-wrap gap-2">
                     {source.usedFor.map((use, i) => (
                       <span
                         key={i}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary"
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${darkMode ? 'bg-blue-900/30 text-blue-400' : 'bg-primary/10 text-primary'}`}
                       >
                         {use}
                       </span>
@@ -164,14 +168,14 @@ const Credits: React.FC = () => {
 
                 {source.geojsonFiles && source.geojsonFiles.length > 0 && (
                   <div className="mb-4">
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Download GeoJSON:</p>
+                    <p className={`text-sm font-medium mb-2 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`}>Download GeoJSON:</p>
                     <div className="flex flex-wrap gap-2">
                       {source.geojsonFiles.map((file, i) => (
                         <a
                           key={i}
                           href={file.path}
                           download
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded text-sm font-medium bg-secondary hover:bg-secondary/80 text-secondary-foreground transition-colors"
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded text-sm font-medium transition-colors ${darkMode ? 'bg-[#333] hover:bg-[#444] text-gray-200' : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'}`}
                         >
                           <Download className="h-3 w-3" />
                           {file.name}
@@ -185,7 +189,7 @@ const Credits: React.FC = () => {
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors underline text-sm"
+                  className={`inline-flex items-center gap-2 transition-colors underline text-sm ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-primary hover:text-primary/80'}`}
                 >
                   Visit source
                   <ExternalLink className="h-4 w-4" />

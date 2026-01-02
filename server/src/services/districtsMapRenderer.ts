@@ -81,7 +81,6 @@ export class DistrictsMapRenderer {
       this.districtsGeojson = JSON.parse(districtsContent);
     } catch (error) {
       // If local file doesn't exist, fetch from the live BharatViz site
-      console.log('Local districts GeoJSON not found, fetching from bharatviz.web.app...');
       const response = await fetch(`https://bharatviz.web.app/${config.geojsonPath}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch districts GeoJSON: ${response.status} ${response.statusText}`);
@@ -96,7 +95,6 @@ export class DistrictsMapRenderer {
       this.statesGeojson = JSON.parse(statesContent);
     } catch (error) {
       // If local file doesn't exist, fetch from the live BharatViz site
-      console.log('Local states GeoJSON not found, fetching from bharatviz.web.app...');
       const response = await fetch(`https://bharatviz.web.app/${config.statesPath}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch states GeoJSON: ${response.status} ${response.statusText}`);
@@ -229,7 +227,8 @@ export class DistrictsMapRenderer {
       mainTitle = 'BharatViz',
       legendTitle = 'Values',
       showStateBoundaries = true,
-      state
+      state,
+      darkMode = false
     } = request;
 
     // Calculate statistics
@@ -252,13 +251,16 @@ export class DistrictsMapRenderer {
       .attr('width', width)
       .attr('height', height)
       .attr('viewBox', `0 0 ${width} ${height}`)
-      .style('font-family', 'Arial, Helvetica, sans-serif');
+      .style('font-family', 'Arial, Helvetica, sans-serif')
+      .style('background-color', darkMode ? '#000000' : '#ffffff');
 
-    // Add white background rectangle
+    // Add background rectangle
     svg.append('rect')
+      .attr('x', 0)
+      .attr('y', 0)
       .attr('width', width)
       .attr('height', height)
-      .attr('fill', 'white');
+      .attr('fill', darkMode ? '#000000' : 'white');
 
     // Create map content group
     const mapGroup = svg.append('g')
@@ -351,7 +353,7 @@ export class DistrictsMapRenderer {
     featuresToRender.forEach((feature: Feature) => {
       const value = getDistrictValue(feature.properties);
 
-      let fillColor = 'white'; // Default white for no data (matching frontend)
+      let fillColor = darkMode ? '#1a1a1a' : 'white'; // Default for no data
 
       if (value !== undefined) {
         const t = (value - minValue) / (maxValue - minValue);
@@ -360,8 +362,8 @@ export class DistrictsMapRenderer {
       }
 
       // Determine stroke color based on fill color darkness (matching frontend)
-      const strokeColor = (fillColor === 'white' || !isColorDark(fillColor))
-        ? '#0f172a'  // Dark stroke for light fills
+      const strokeColor = (fillColor === 'white' || fillColor === '#1a1a1a' || !isColorDark(fillColor))
+        ? (darkMode ? '#ffffff' : '#0f172a')  // White stroke in dark mode, dark stroke in light mode
         : '#ffffff'; // White stroke for dark fills
 
       let pathData = '';
@@ -473,7 +475,7 @@ export class DistrictsMapRenderer {
         mapGroup.append('path')
           .attr('d', pathData)
           .attr('fill', 'none')
-          .attr('stroke', '#1f2937')
+          .attr('stroke', darkMode ? '#ffffff' : '#1f2937')
           .attr('stroke-width', 1.2);
       });
     }
@@ -485,6 +487,7 @@ export class DistrictsMapRenderer {
       .attr('text-anchor', 'middle')
       .attr('font-size', '20px')
       .attr('font-weight', 'bold')
+      .attr('fill', darkMode ? '#ffffff' : '#000000')
       .text(mainTitle);
 
     // Add legend
@@ -494,7 +497,8 @@ export class DistrictsMapRenderer {
       meanValue,
       colorScale,
       invertColors,
-      legendTitle
+      legendTitle,
+      darkMode
     });
 
     return document.body.innerHTML;
@@ -512,6 +516,7 @@ export class DistrictsMapRenderer {
       colorScale: string;
       invertColors: boolean;
       legendTitle: string;
+      darkMode?: boolean;
     }
   ): void {
     const legendPosition = { x: 570, y: 130 };
@@ -529,7 +534,7 @@ export class DistrictsMapRenderer {
       .attr('text-anchor', 'middle')
       .attr('font-size', '13px')
       .attr('font-weight', '600')
-      .attr('fill', '#374151')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(options.legendTitle);
 
     // Create horizontal gradient
@@ -581,7 +586,7 @@ export class DistrictsMapRenderer {
       .attr('text-anchor', 'start')
       .attr('font-size', '12px')
       .attr('font-weight', '500')
-      .attr('fill', '#374151')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(roundToSignificantDigits(options.minValue));
 
     legendGroup.append('text')
@@ -590,7 +595,7 @@ export class DistrictsMapRenderer {
       .attr('text-anchor', 'middle')
       .attr('font-size', '12px')
       .attr('font-weight', '500')
-      .attr('fill', '#374151')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(roundToSignificantDigits(options.meanValue));
 
     legendGroup.append('text')
@@ -599,7 +604,7 @@ export class DistrictsMapRenderer {
       .attr('text-anchor', 'end')
       .attr('font-size', '12px')
       .attr('font-weight', '500')
-      .attr('fill', '#374151')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(roundToSignificantDigits(options.maxValue));
   }
 }

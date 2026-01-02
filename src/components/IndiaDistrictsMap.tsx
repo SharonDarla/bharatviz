@@ -46,6 +46,7 @@ interface IndiaDistrictsMapProps {
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
+  darkMode?: boolean;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -116,7 +117,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   enableRotation = false,
   dataType = 'numerical',
   categoryColors = {},
-  naInfo
+  naInfo,
+  darkMode = false
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -259,7 +261,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         setRenderingData(false);
       }, 300);
     }
-  }, [data, geojsonData, bounds, colorScale, invertColors, selectedState, colorBarSettings, dataType]);
+  }, [data, geojsonData, bounds, colorScale, invertColors, selectedState, colorBarSettings, dataType, darkMode]);
 
   const calculateBounds = (data: { features: GeoJSONFeature[] }) => {
     let minLng = Infinity, maxLng = -Infinity;
@@ -809,16 +811,16 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   };
 
   const getDistrictColorForValue = (value: number | string | undefined, dataExtent: [number, number] | undefined): string => {
-    if (value === undefined) return 'white';
+    if (value === undefined) return darkMode ? '#1a1a1a' : 'white';
 
     if (dataType === 'categorical' && typeof value === 'string') {
-      return getCategoryColor(value, categoryColors, '#e5e7eb');
+      return getCategoryColor(value, categoryColors, darkMode ? '#1a1a1a' : '#e5e7eb');
     }
 
     if (typeof value === 'number') {
-      if (!dataExtent) return 'white';
+      if (!dataExtent) return darkMode ? '#1a1a1a' : 'white';
       if (isNaN(value)) {
-        return 'white';
+        return darkMode ? '#1a1a1a' : 'white';
       }
 
       const [minVal, maxVal] = dataExtent;
@@ -828,7 +830,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     }
 
-    return '#e5e7eb';
+    return darkMode ? '#1a1a1a' : '#e5e7eb';
   };
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
@@ -1417,7 +1419,8 @@ Chittoor,50`;
               width={isMobile ? "350" : "800"}
               height={isMobile ? "440" : selectedState ? "1100" : "890"}
               viewBox={isMobile ? "0 0 350 440" : selectedState ? "0 0 800 1100" : "0 0 800 890"}
-              className="border border-border rounded bg-background max-w-full h-auto"
+              className="border border-border rounded max-w-full h-auto"
+              style={{ backgroundColor: darkMode ? '#000000' : '#ffffff' }}
             >
               {geojsonData.features.map((feature, index) => {
                 const mapWidth = isMobile ? 320 : 760;
@@ -1439,8 +1442,8 @@ Chittoor,50`;
                     d={path}
                     fill={fillColor}
                     stroke={
-                      data.length === 0 ? "#0f172a" :
-                      fillColor === 'white' || !isColorDark(fillColor) ? "#0f172a" : "#ffffff"
+                      data.length === 0 ? (darkMode ? "#ffffff" : "#0f172a") :
+                      fillColor === 'white' || fillColor === '#1a1a1a' || !isColorDark(fillColor) ? (darkMode ? "#ffffff" : "#0f172a") : "#ffffff"
                     }
                     strokeWidth={isHovered ? "1.5" : "0.3"}
                     className="cursor-pointer transition-all duration-200"
@@ -1684,7 +1687,7 @@ Chittoor,50`;
                     key={`state-boundary-${index}`}
                     d={path}
                     fill="none"
-                    stroke="#1f2937"
+                    stroke={darkMode ? "#ffffff" : "#1f2937"}
                     strokeWidth="1.2"
                     pointerEvents="none"
                     className="state-boundary"
@@ -1729,7 +1732,7 @@ Chittoor,50`;
                       fontFamily: 'Arial, Helvetica, sans-serif',
                       fontSize: isMobile ? 16 : 20,
                       fontWeight: 700,
-                      fill: '#1f2937',
+                      fill: darkMode ? '#ffffff' : '#1f2937',
                       cursor: draggingTitle ? 'grabbing' : 'grab',
                       userSelect: 'none'
                     }}
@@ -1761,6 +1764,7 @@ Chittoor,50`;
                       editingTitle={editingTitle}
                       setEditingTitle={setEditingTitle}
                       setLegendTitle={setLegendTitle}
+                      darkMode={darkMode}
                     />
                   ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
                     /* Discrete Legend */
@@ -1777,6 +1781,7 @@ Chittoor,50`;
                       editingTitle={editingTitle}
                       setEditingTitle={setEditingTitle}
                       setLegendTitle={setLegendTitle}
+                      darkMode={darkMode}
                     />
                   ) : dataType === 'numerical' ? (
                     /* Continuous Legend */
@@ -1790,8 +1795,8 @@ Chittoor,50`;
                         width={isMobile ? 150 : 200}
                         height={15}
                         fill="url(#districts-legend-gradient)"
-                        stroke="#374151"
-                        strokeWidth={0.5}
+                        stroke={darkMode ? 'none' : '#374151'}
+                        strokeWidth={darkMode ? 0 : 0.5}
                         rx={3}
                       />
                       {editingMin ? (
@@ -1811,7 +1816,7 @@ Chittoor,50`;
                           x={0}
                           y={30}
                           textAnchor="start"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
                         >
                           {legendMin}
@@ -1834,7 +1839,7 @@ Chittoor,50`;
                           x={isMobile ? 75 : 100}
                           y={30}
                           textAnchor="middle"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingMean(true); }}
                         >
                           {legendMean}
@@ -1857,7 +1862,7 @@ Chittoor,50`;
                           x={isMobile ? 150 : 200}
                           y={30}
                           textAnchor="end"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
                         >
                           {legendMax}
@@ -1880,7 +1885,7 @@ Chittoor,50`;
                           x={isMobile ? 75 : 100}
                           y={-5}
                           textAnchor="middle"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
                         >
                           {legendTitle}
@@ -1922,7 +1927,7 @@ Chittoor,50`;
                     style={{
                       fontFamily: 'Arial, Helvetica, sans-serif',
                       fontSize: isMobile ? 11 : 13,
-                      fill: '#374151'
+                      fill: darkMode ? '#ffffff' : '#374151'
                     }}
                   >
                     {naInfo.districts

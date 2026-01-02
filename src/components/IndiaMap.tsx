@@ -41,6 +41,7 @@ interface IndiaMapProps {
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
+  darkMode?: boolean;
 }
 
 export interface IndiaMapRef {
@@ -50,7 +51,7 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
   const [renderingData, setRenderingData] = useState(false);
@@ -686,9 +687,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .append("path")
       .attr("d", path)
       .attr("fill", (d: GeoJSON.Feature) => {
-        // If no data, show all states as white
+        // If no data, show all states with appropriate background
         if (data.length === 0) {
-          return "#ffffff";
+          return darkMode ? "#1a1a1a" : "#ffffff";
         }
 
         // Try different possible field names for state
@@ -696,7 +697,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         const value = dataMap.get(stateName);
 
         if (value === undefined) {
-          return "#ffffff"; // White for no data
+          return darkMode ? "#1a1a1a" : "#ffffff";
         }
 
         // Handle categorical data
@@ -709,25 +710,25 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         return getColorForValue(value as number, values, colorScale, invertColors, colorBarSettings);
       })
       .attr("stroke", (d: GeoJSON.Feature) => {
-        // If no data, use default gray stroke
+        // If no data, use appropriate stroke color
         if (data.length === 0) {
-          return "#0f172a";
+          return darkMode ? "#ffffff" : "#0f172a";
         }
-        
+
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
-        
+
         if (value === undefined || isNaN(value)) {
-          return "#0f172a"; // Default gray for no data or NaN
+          return darkMode ? "#ffffff" : "#0f172a";
         }
-        
+
         if (colorScaleFunction) {
           const fillColor = colorScaleFunction(value);
           return fillColor === "#ffffff" || !isColorDark(fillColor) ? "#0f172a" : "#ffffff";
         }
-        
-        return "#0f172a";
+
+        return darkMode ? "#ffffff" : "#0f172a";
       })
       .attr("stroke-width", 0.5)
       .style("cursor", "pointer")
@@ -978,7 +979,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       }, 300);
     }
 
-  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType, darkMode]);
 
   // Legend values from data (only for numerical data)
   useEffect(() => {
@@ -1211,7 +1212,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         className="max-w-full h-auto border rounded-lg"
         width={isMobile ? 350 : MAP_DIMENSIONS.STATES.width}
         height={isMobile ? 350 : MAP_DIMENSIONS.STATES.height}
-        style={{ userSelect: 'none' }}
+        style={{ userSelect: 'none', backgroundColor: darkMode ? '#000000' : '#ffffff' }}
         viewBox={isMobile ? "0 0 350 350" : `0 0 ${MAP_DIMENSIONS.STATES.width} ${MAP_DIMENSIONS.STATES.height}`}
       >
         {/* Legend overlay (React) */}
@@ -1230,6 +1231,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 editingTitle={editingTitle}
                 setEditingTitle={setEditingTitle}
                 setLegendTitle={setLegendTitle}
+                darkMode={darkMode}
               />
             ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
               /* Discrete Legend */
@@ -1246,6 +1248,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 editingTitle={editingTitle}
                 setEditingTitle={setEditingTitle}
                 setLegendTitle={setLegendTitle}
+                darkMode={darkMode}
               />
             ) : dataType === 'numerical' ? (
               /* Continuous Legend */
@@ -1281,7 +1284,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={0}
                     y={30}
                     textAnchor="start"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
                   >
                     {legendMin}
@@ -1305,7 +1308,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={isMobile ? 75 : 100}
                     y={30}
                     textAnchor="middle"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingMean(true); }}
                   >
                     {legendMean}
@@ -1329,7 +1332,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={isMobile ? 150 : 200}
                     y={30}
                     textAnchor="end"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
                   >
                     {legendMax}
@@ -1353,7 +1356,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={isMobile ? 75 : 100}
                     y={-5}
                     textAnchor="middle"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
                   >
                     {legendTitle}
@@ -1400,7 +1403,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontSize: isMobile ? 16 : 20,
                 fontWeight: 700,
-                fill: '#1f2937',
+                fill: darkMode ? '#ffffff' : '#1f2937',
                 cursor: draggingTitle ? 'grabbing' : 'grab',
                 userSelect: 'none'
               }}
@@ -1450,7 +1453,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               style={{
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontSize: isMobile ? 11 : 13,
-                fill: '#374151'
+                fill: darkMode ? '#ffffff' : '#374151'
               }}
             >
               {naInfo.states

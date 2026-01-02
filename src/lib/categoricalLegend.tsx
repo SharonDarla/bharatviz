@@ -12,6 +12,7 @@ interface CategoricalLegendProps {
   editingTitle: boolean;
   setEditingTitle: (editing: boolean) => void;
   setLegendTitle: (title: string) => void;
+  darkMode?: boolean;
 }
 
 export const CategoricalLegend: React.FC<CategoricalLegendProps> = ({
@@ -25,6 +26,7 @@ export const CategoricalLegend: React.FC<CategoricalLegendProps> = ({
   editingTitle,
   setEditingTitle,
   setLegendTitle,
+  darkMode = false
 }) => {
   const [localTitle, setLocalTitle] = useState(legendTitle);
 
@@ -65,8 +67,8 @@ export const CategoricalLegend: React.FC<CategoricalLegendProps> = ({
         y="0"
         width={legendWidth}
         height={legendHeight}
-        fill="white"
-        stroke="#ccc"
+        fill={darkMode ? '#1a1a1a' : 'white'}
+        stroke={darkMode ? '#666' : '#ccc'}
         strokeWidth="1"
         rx="4"
         opacity="0.95"
@@ -101,7 +103,7 @@ export const CategoricalLegend: React.FC<CategoricalLegendProps> = ({
           textAnchor="middle"
           fontSize={fontSize}
           fontWeight="bold"
-          fill="#333"
+          fill={darkMode ? '#ffffff' : '#333'}
           style={{ cursor: 'text', userSelect: 'none' }}
           onDoubleClick={() => {
             setLocalTitle(legendTitle);
@@ -132,7 +134,7 @@ export const CategoricalLegend: React.FC<CategoricalLegendProps> = ({
             x={rectWidth + 6}
             y={rectHeight / 2 + 1}
             fontSize={fontSize}
-            fill="#333"
+            fill={darkMode ? '#ffffff' : '#333'}
             dominantBaseline="middle"
             style={{ userSelect: 'none' }}
           >
@@ -148,7 +150,7 @@ export const CategoricalLegend: React.FC<CategoricalLegendProps> = ({
           y={35 + visibleCategories.length * lineHeight + 12}
           textAnchor="middle"
           fontSize={fontSize - 1}
-          fill="#666"
+          fill={darkMode ? '#cccccc' : '#666'}
           fontStyle="italic"
           style={{ userSelect: 'none' }}
         >

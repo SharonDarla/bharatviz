@@ -97,6 +97,7 @@
       if (options.showStateBoundaries !== undefined) {
         params.append('showStateBoundaries', options.showStateBoundaries ? 'true' : 'false');
       }
+      if (options.darkMode) params.append('darkMode', 'true');
 
       const iframe = document.createElement('iframe');
       iframe.src = `${API_BASE}/embed?${params.toString()}`;
@@ -140,7 +141,7 @@
         if (cachedSVG) {
           updateStatus('Loading from cache...');
           await new Promise(resolve => setTimeout(resolve, 100));
-          this._renderSVG(container, cachedSVG, options.title);
+          this._renderSVG(container, cachedSVG, options.title, options.darkMode);
           return;
         }
 
@@ -165,6 +166,7 @@
           if (options.showStateBoundaries !== undefined) {
             params.append('showStateBoundaries', options.showStateBoundaries ? 'true' : 'false');
           }
+          if (options.darkMode) params.append('darkMode', 'true');
 
           const url = `${API_BASE}/embed/svg?${params.toString()}`;
 
@@ -226,6 +228,7 @@
           requestBody.hideStateNames = options.hideStateNames || false;
           requestBody.hideDistrictNames = options.hideDistrictNames || false;
           requestBody.showStateBoundaries = options.showStateBoundaries !== undefined ? options.showStateBoundaries : true;
+          requestBody.darkMode = options.darkMode || false;
 
           const generateUrl = `${API_BASE}/embed/generate`;
 
@@ -265,7 +268,7 @@
         }
 
         this._cache.set(cacheKey, svgContent);
-        this._renderSVG(container, svgContent, options.title);
+        this._renderSVG(container, svgContent, options.title, options.darkMode);
 
       } catch (error) {
         console.error('BharatViz embed error:', error);
@@ -279,16 +282,18 @@
       }
     },
 
-    _renderSVG: function(container, svgContent, title) {
+    _renderSVG: function(container, svgContent, title, darkMode) {
       const wrapper = document.createElement('div');
       wrapper.style.textAlign = 'center';
       wrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif';
+      wrapper.style.backgroundColor = darkMode ? '#000000' : 'transparent';
+      wrapper.style.padding = darkMode ? '20px' : '0';
 
       if (title) {
         const titleEl = document.createElement('h2');
         titleEl.textContent = title;
         titleEl.style.marginBottom = '20px';
-        titleEl.style.color = '#333';
+        titleEl.style.color = darkMode ? '#ffffff' : '#333';
         wrapper.appendChild(titleEl);
       }
 
@@ -307,8 +312,8 @@
       const credits = document.createElement('div');
       credits.style.marginTop = '20px';
       credits.style.fontSize = '12px';
-      credits.style.color = '#666';
-      credits.innerHTML = 'Created with <a href="https://bharatviz.saketlab.org/" target="_blank" style="color: #0066cc; text-decoration: none;">BharatViz</a>';
+      credits.style.color = darkMode ? '#999' : '#666';
+      credits.innerHTML = `Created with <a href="https://bharatviz.saketlab.org/" target="_blank" style="color: ${darkMode ? '#60a5fa' : '#0066cc'}; text-decoration: none;">BharatViz</a>`;
       wrapper.appendChild(credits);
 
       container.innerHTML = '';
@@ -333,6 +338,7 @@
       if (options.showStateBoundaries !== undefined) {
         params.append('showStateBoundaries', options.showStateBoundaries ? 'true' : 'false');
       }
+      if (options.darkMode) params.append('darkMode', 'true');
 
       return `${API_BASE}/embed?${params.toString()}`;
     },

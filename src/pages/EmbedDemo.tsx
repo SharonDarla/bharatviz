@@ -11,6 +11,8 @@ const EmbedDemo = () => {
   const [copiedDistrictJS, setCopiedDistrictJS] = useState(false);
   const [copiedAQIIframe, setCopiedAQIIframe] = useState(false);
   const [copiedAQIJS, setCopiedAQIJS] = useState(false);
+  const [copiedDarkIframe, setCopiedDarkIframe] = useState(false);
+  const [copiedDarkJS, setCopiedDarkJS] = useState(false);
 
   const baseUrl = window.location.origin;
   const apiUrl = baseUrl.includes('localhost') ? 'http://localhost:3001' : baseUrl;
@@ -44,7 +46,7 @@ const EmbedDemo = () => {
 </script>`;
 
   const districtIframeCode = `<iframe
-  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(districtDataUrl)}&colorScale=spectral&title=AQI%20-%20Mean%20(2025-12-19)&hideDistrictNames=true&hideValues=true"
+  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(districtDataUrl)}&colorScale=aqi&title=AQI%20-%20Mean%20(2025-12-19)&hideDistrictNames=true&hideValues=true"
   width="800"
   height="800"
   frameborder="0"
@@ -63,7 +65,7 @@ const EmbedDemo = () => {
   BharatViz.embed({
     container: '#bharatviz-district-map',
     dataUrl: '${districtDataUrl}',
-    colorScale: 'spectral',
+    colorScale: 'aqi',
     title: 'AQI - Mean (2025-12-19)',
     hideDistrictNames: true,
     hideValues: true
@@ -98,6 +100,35 @@ const EmbedDemo = () => {
   });
 </script>`;
 
+  const darkIframeCode = `<iframe
+  src="${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(aqiDataUrl)}&colorScale=aqi&title=AQI%20-%20Mean%20(2025-12-27)&legendTitle=AQI&boundary=LGD&showStateBoundaries=true&darkMode=true"
+  width="800"
+  height="800"
+  frameborder="0"
+  sandbox="allow-scripts allow-same-origin"
+  style="border: none; max-width: 100%; background: #000;">
+</iframe>`;
+
+  const darkJsCode = `<!-- Container for the map -->
+<div id="bharatviz-dark-map"></div>
+
+<!-- Load BharatViz embed script -->
+<script src="${apiUrl}/embed.js"></script>
+
+<!-- Initialize the map -->
+<script>
+  BharatViz.embed({
+    container: '#bharatviz-dark-map',
+    dataUrl: '${aqiDataUrl}',
+    colorScale: 'aqi',
+    title: 'AQI - Mean (2025-12-27)',
+    legendTitle: 'AQI',
+    boundary: 'LGD',
+    showStateBoundaries: true,
+    darkMode: true
+  });
+</script>`;
+
   const copyToClipboard = (text: string, setter: (val: boolean) => void) => {
     navigator.clipboard.writeText(text);
     setter(true);
@@ -128,7 +159,7 @@ const EmbedDemo = () => {
         window.BharatViz.embed({
           container: '#js-district-embed-demo',
           dataUrl: districtDataUrl,
-          colorScale: 'spectral',
+          colorScale: 'aqi',
           title: 'AQI - Mean (2025-12-19)',
           hideDistrictNames: true,
           hideValues: true
@@ -142,6 +173,17 @@ const EmbedDemo = () => {
           legendTitle: 'AQI',
           boundary: 'LGD',
           showStateBoundaries: true
+        });
+
+        window.BharatViz.embed({
+          container: '#js-dark-embed-demo',
+          dataUrl: aqiDataUrl,
+          colorScale: 'aqi',
+          title: 'AQI - Mean (2025-12-27)',
+          legendTitle: 'AQI',
+          boundary: 'LGD',
+          showStateBoundaries: true,
+          darkMode: true
         });
       }
     };
@@ -388,7 +430,7 @@ const EmbedDemo = () => {
             <CardContent>
               <div className="border rounded-lg overflow-hidden">
                 <iframe
-                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(districtDataUrl)}&colorScale=spectral&title=AQI%20-%20Mean%20(2025-12-19)&hideDistrictNames=true&hideValues=true`}
+                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(districtDataUrl)}&colorScale=aqi&title=AQI%20-%20Mean%20(2025-12-19)&hideDistrictNames=true&hideValues=true`}
                   width="100%"
                   height="800"
                   style={{ border: 'none' }}
@@ -565,6 +607,118 @@ const EmbedDemo = () => {
         </section>
 
         <section className="mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Dark Mode Demo - Districts AQI</h2>
+          <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">
+            Enable dark mode for maps with black backgrounds and white text/boundaries. This example shows district-level AQI data with the AQI color scale. Perfect for dark-themed websites or nighttime viewing.
+          </p>
+
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">iframe embed with dark mode</h3>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Code example</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(darkIframeCode, setCopiedDarkIframe)}
+                >
+                  {copiedDarkIframe ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy code
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                District AQI map with darkMode=true parameter and AQI color scale
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{darkIframeCode}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Live demo</CardTitle>
+              <CardDescription>District AQI map with dark background and white boundaries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-hidden bg-black">
+                <iframe
+                  src={`${apiUrl}/api/v1/embed?dataUrl=${encodeURIComponent(aqiDataUrl)}&colorScale=aqi&title=AQI%20-%20Mean%20(2025-12-27)&legendTitle=AQI&boundary=LGD&showStateBoundaries=true&darkMode=true`}
+                  width="100%"
+                  height="800"
+                  style={{ border: 'none', background: '#000' }}
+                  sandbox="allow-scripts allow-same-origin"
+                  title="BharatViz dark mode district AQI iframe embed demo"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 sm:mb-4">JavaScript widget with dark mode</h3>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Code example</CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(darkJsCode, setCopiedDarkJS)}
+                >
+                  {copiedDarkJS ? (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy code
+                    </>
+                  )}
+                </Button>
+              </div>
+              <CardDescription>
+                District AQI JavaScript widget with darkMode: true and AQI color scale
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
+                <code>{darkJsCode}</code>
+              </pre>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Live demo</CardTitle>
+              <CardDescription>District AQI JavaScript widget in dark mode</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg p-4 bg-black">
+                <div id="js-dark-embed-demo" className="min-h-[500px]">
+                  <div className="text-center py-20 text-gray-400">
+                    Loading dark mode AQI map...
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <section className="mb-12 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">Configuration options</h2>
 
           <Card>
@@ -624,6 +778,11 @@ const EmbedDemo = () => {
                       <td className="py-2 pr-4 font-mono">hideDistrictNames</td>
                       <td className="py-2 pr-4">boolean</td>
                       <td className="py-2">Hide district labels</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="py-2 pr-4 font-mono">darkMode</td>
+                      <td className="py-2 pr-4">boolean</td>
+                      <td className="py-2">Enable dark mode with black background and white text</td>
                     </tr>
                     <tr>
                       <td className="py-2 pr-4 font-mono">width</td>

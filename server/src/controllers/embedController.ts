@@ -163,7 +163,8 @@ export class EmbedController {
         hideStateNames = 'false',
         hideDistrictNames = 'true',
         showStateBoundaries = 'true',
-        valueColumn
+        valueColumn,
+        darkMode = 'false'
       } = req.query;
 
       if (!dataUrl || typeof dataUrl !== 'string') {
@@ -229,10 +230,11 @@ export class EmbedController {
         hideDistrictNames: finalHideDistrictNames,
         showStateBoundaries: showStateBoundaries === 'true',
         mainTitle: finalTitle as string,
-        legendTitle: finalLegendTitle as string
+        legendTitle: finalLegendTitle as string,
+        darkMode: darkMode === 'true'
       });
 
-      const html = this.generateEmbedHTML(svgContent, finalTitle as string);
+      const html = this.generateEmbedHTML(svgContent, finalTitle as string, darkMode === 'true');
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       res.send(html);
@@ -263,7 +265,8 @@ export class EmbedController {
         hideStateNames = 'false',
         hideDistrictNames = 'true',
         showStateBoundaries = 'true',
-        valueColumn
+        valueColumn,
+        darkMode = 'false'
       } = req.query;
 
       if (!dataUrl || typeof dataUrl !== 'string') {
@@ -338,7 +341,8 @@ export class EmbedController {
         hideDistrictNames: finalHideDistrictNames,
         showStateBoundaries: showStateBoundaries === 'true',
         mainTitle: '',
-        legendTitle: finalLegendTitle as string
+        legendTitle: finalLegendTitle as string,
+        darkMode: darkMode === 'true'
       });
 
       this.setCachedData(this.svgCache, svgCacheKey, svgContent);
@@ -374,7 +378,8 @@ export class EmbedController {
         hideDistrictNames = true,
         showStateBoundaries = true,
         format = 'html',
-        valueColumn
+        valueColumn,
+        darkMode = false
       } = req.body;
 
       if (!data || !Array.isArray(data)) {
@@ -427,7 +432,8 @@ export class EmbedController {
         hideDistrictNames,
         showStateBoundaries,
         mainTitle: title,
-        legendTitle
+        legendTitle,
+        darkMode
       });
 
       if (format === 'svg') {
@@ -442,7 +448,7 @@ export class EmbedController {
           }
         });
       } else {
-        const html = this.generateEmbedHTML(svgContent, title);
+        const html = this.generateEmbedHTML(svgContent, title, darkMode);
         res.json({
           success: true,
           html,
@@ -477,6 +483,7 @@ export class EmbedController {
     showStateBoundaries: boolean;
     mainTitle: string;
     legendTitle: string;
+    darkMode?: boolean;
   }): Promise<string> {
     const {
       data,
@@ -490,7 +497,8 @@ export class EmbedController {
       hideDistrictNames,
       showStateBoundaries,
       mainTitle,
-      legendTitle
+      legendTitle,
+      darkMode = false
     } = options;
 
     if (mapType === 'states') {
@@ -502,7 +510,8 @@ export class EmbedController {
         hideValues,
         hideStateNames,
         mainTitle,
-        legendTitle
+        legendTitle,
+        darkMode
       });
     } else if (mapType === 'state-districts') {
       if (!state) {
@@ -519,7 +528,8 @@ export class EmbedController {
         hideValues,
         hideDistrictNames,
         mainTitle,
-        legendTitle
+        legendTitle,
+        darkMode
       });
     } else {
       const renderer = new DistrictsMapRenderer();
@@ -532,12 +542,13 @@ export class EmbedController {
         hideDistrictNames,
         showStateBoundaries,
         mainTitle,
-        legendTitle
+        legendTitle,
+        darkMode
       });
     }
   }
 
-  private generateEmbedHTML(svgContent: string, title: string): string {
+  private generateEmbedHTML(svgContent: string, title: string, darkMode: boolean = false): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -557,7 +568,7 @@ export class EmbedController {
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #ffffff;
+            background: ${darkMode ? '#000000' : '#ffffff'};
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -595,12 +606,12 @@ export class EmbedController {
             margin-top: 16px;
             padding: 8px 0;
             font-size: 12px;
-            color: #666;
+            color: ${darkMode ? '#999' : '#666'};
             text-align: center;
             flex-shrink: 0;
         }
         .credits a {
-            color: #0066cc;
+            color: ${darkMode ? '#60a5fa' : '#0066cc'};
             text-decoration: none;
         }
         .credits a:hover {

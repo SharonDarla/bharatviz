@@ -18,6 +18,7 @@ interface DiscreteLegendProps {
   editingTitle: boolean;
   setEditingTitle: (editing: boolean) => void;
   setLegendTitle: (title: string) => void;
+  darkMode?: boolean;
 }
 
 export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
@@ -32,7 +33,8 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
   legendTitle,
   editingTitle,
   setEditingTitle,
-  setLegendTitle
+  setLegendTitle,
+  darkMode = false
 }) => {
   if (!colorBarSettings.isDiscrete) {
     return null; // Use standard continuous legend
@@ -84,16 +86,16 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
           x={rectWidth / 2}
           y={-5}
           textAnchor="middle"
-          style={{ 
-            fontFamily: 'Arial, Helvetica, sans-serif', 
-            fontSize: isMobile ? 11 : 13, 
-            fontWeight: 600, 
-            fill: '#374151', 
-            cursor: 'pointer' 
+          style={{
+            fontFamily: 'Arial, Helvetica, sans-serif',
+            fontSize: isMobile ? 11 : 13,
+            fontWeight: 600,
+            fill: darkMode ? '#ffffff' : '#374151',
+            cursor: 'pointer'
           }}
-          onDoubleClick={e => { 
-            e.stopPropagation(); 
-            setEditingTitle(true); 
+          onDoubleClick={e => {
+            e.stopPropagation();
+            setEditingTitle(true);
           }}
         >
           {legendTitle}
@@ -157,7 +159,7 @@ export const DiscreteLegend: React.FC<DiscreteLegendProps> = ({
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontSize: isMobile ? 10 : 12,
                 fontWeight: 500,
-                fill: '#374151'
+                fill: darkMode ? '#ffffff' : '#374151'
               }}
             >
               {rangeText}

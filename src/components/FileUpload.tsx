@@ -25,9 +25,10 @@ interface FileUploadProps {
   googleSheetLink?: string;
   geojsonPath?: string;
   selectedState?: string; // Optional: for state-district tab, filter NAs by this state
+  darkMode?: boolean;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, darkMode = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -272,35 +273,47 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
   };
 
   return (
-    <Card className="p-6 border-dashed border-2 hover:border-primary/50 transition-colors">
+    <Card className={`p-6 border-dashed border-2 hover:border-primary/50 transition-colors ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : ''}`}>
       <div className="text-center">
-        <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <Upload className={`mx-auto h-12 w-12 mb-4 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`} />
+        <h3 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : ''}`}>Upload Your Data</h3>
+        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
           {mode === 'districts'
             ? 'Upload a CSV, TSV, or gzipped (.gz) file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
             : 'Upload a CSV, TSV, or gzipped (.gz) file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
           }
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={handleUploadClick}>
+          <Button
+            onClick={handleUploadClick}
+            className={darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+          >
             Choose File
           </Button>
-          <Button variant="outline" onClick={handleLoadDemo} className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleLoadDemo}
+            className={`flex items-center gap-2 ${darkMode ? 'border-[#444] text-gray-300 hover:bg-[#333] hover:text-white' : ''}`}
+          >
             <Play className="h-4 w-4" />
             Load Demo
           </Button>
         </div>
         <div className="flex justify-center mt-3">
-          <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={downloadCSVTemplate}>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex items-center gap-2 ${darkMode ? 'border-[#444] text-gray-300 hover:bg-[#333] hover:text-white' : ''}`}
+            onClick={downloadCSVTemplate}
+          >
             Download CSV Template
           </Button>
         </div>
         
-        <div className="mt-4 p-4 border-t border-gray-200">
+        <div className={`mt-4 p-4 border-t ${darkMode ? 'border-[#444]' : 'border-gray-200'}`}>
           <div className="text-center mb-3">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Or load from URL</h4>
-            <p className="text-xs text-gray-500">
+            <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-white' : 'text-gray-700'}`}>Or load from URL</h4>
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Paste a Google Sheets link (see{' '}
               <a
                 href={googleSheetLink || (mode === 'districts'
@@ -308,7 +321,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                   : "https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-blue-500 hover:text-blue-700"
+                className={`underline ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-700'}`}
               >
                 template
               </a>
@@ -319,7 +332,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  darkMode
+                    ? 'bg-[#222] border-[#444] text-white placeholder-gray-500'
+                    : 'border-gray-300 bg-white text-gray-900'
+                }`}
                 placeholder="https://docs.google.com/... or https://example.com/data.csv"
                 value={googleSheetUrl}
                 onChange={e => setGoogleSheetUrl(e.target.value)}
@@ -328,7 +345,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               {googleSheetUrl && (
                 <button
                   onClick={() => setGoogleSheetUrl('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                    darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                  }`}
                   disabled={loadingSheet}
                 >
                   ✕
@@ -339,14 +358,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className={`flex items-center gap-2 ${darkMode ? 'border-[#444] text-gray-300 hover:bg-[#333] hover:text-white' : ''}`}
                 onClick={handleLoadGoogleSheet}
                 disabled={loadingSheet || !googleSheetUrl}
               >
                 {loadingSheet ? 'Loading...' : 'Load from URL'}
               </Button>
             </div>
-            {sheetError && <div className="text-xs text-red-500 text-center">{sheetError}</div>}
+            {sheetError && <div className={`text-xs text-center ${darkMode ? 'text-red-400' : 'text-red-500'}`}>{sheetError}</div>}
           </div>
         </div>
 
