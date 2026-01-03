@@ -1276,14 +1276,14 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         
         // Create PDF document
         const pdf = new jsPDF({
-          orientation: 'landscape',
+          orientation: 'portrait',
           unit: 'mm',
           format: 'a4'
         });
-        
+
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
+
         // Get the actual SVG dimensions
         const svgWidth = isMobile ? 350 : 800;
         const svgHeight = isMobile ? 440 : selectedState ? 1100 : 890;
@@ -1297,10 +1297,10 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         svgClone.setAttribute('viewBox', `${isMobile ? '0 0 350 440' : selectedState ? '0 0 800 1100' : '0 0 800 890'}`);
         svgClone.style.width = `${svgWidth}px`;
         svgClone.style.height = `${svgHeight}px`;
-        
+
         // Remove any CSS classes that might interfere with export
         svgClone.removeAttribute('class');
-        
+
         // Force all elements to be visible and properly positioned
         const allElements = svgClone.querySelectorAll('*');
         allElements.forEach(el => {
@@ -1312,12 +1312,12 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
             element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
           }
         });
-        
+
         // Fix the legend gradient to match the selected color scale
         fixDistrictsLegendGradient(svgClone);
-        
+
         // Calculate PDF margins and available space
-        const pdfMargin = 15; // 15mm margin
+        const pdfMargin = 10; // 10mm margin
         const availableWidth = pdfWidth - (2 * pdfMargin);
         const availableHeight = pdfHeight - (2 * pdfMargin);
         

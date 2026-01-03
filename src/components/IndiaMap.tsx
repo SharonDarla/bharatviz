@@ -259,7 +259,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       ]);
 
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
@@ -289,7 +289,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
       fixLegendGradient(svgClone);
 
-      const pdfMargin = 15;
+      const pdfMargin = 10;
       const availableWidth = pdfWidth - (2 * pdfMargin);
       const availableHeight = pdfHeight - (2 * pdfMargin);
 
