@@ -115,28 +115,6 @@ const Index = () => {
   const stateMapRef = useRef<IndiaMapRef>(null);
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
-  const isInitialMount = useRef(true);
-
-  // Sync URL parameters with current state
-  const updateUrlParams = (updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams(location.search);
-
-    Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined && value !== '') {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-    });
-
-    const newSearch = params.toString();
-    const currentPath = location.pathname;
-    const newUrl = newSearch ? `${currentPath}?${newSearch}` : currentPath;
-
-    if (location.pathname + (location.search || '') !== newUrl) {
-      navigate(newUrl, { replace: true });
-    }
-  };
 
   useEffect(() => {
     const tabFromPath = getTabFromPath(location.pathname);
@@ -250,82 +228,6 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
-  // Initialize state from URL parameters on mount
-  useEffect(() => {
-    if (!isInitialMount.current) return;
-
-    const params = new URLSearchParams(location.search);
-
-    // Read state-specific params
-    const colorScale = params.get('colorScale') as ColorScale;
-    const invertColors = params.get('invertColors') === 'true';
-    const hideNames = params.get('hideNames') === 'true';
-    const hideValues = params.get('hideValues') === 'true';
-    const selectedState = params.get('selectedState');
-    const mapType = params.get('mapType');
-
-    if (activeTab === 'states') {
-      if (colorScale) setStateColorScale(colorScale);
-      if (params.has('invertColors')) setStateInvertColors(invertColors);
-      if (params.has('hideNames')) setStateHideNames(hideNames);
-      if (params.has('hideValues')) setStateHideValues(hideValues);
-    } else if (activeTab === 'districts' || activeTab === 'regions') {
-      if (colorScale) setDistrictColorScale(colorScale);
-      if (params.has('invertColors')) setDistrictInvertColors(invertColors);
-      if (params.has('hideNames')) setDistrictHideDistrictNames(hideNames);
-      if (params.has('hideValues')) setDistrictHideValues(hideValues);
-      if (mapType) setSelectedDistrictMapType(mapType);
-    } else if (activeTab === 'state-districts') {
-      if (colorScale) setStateDistrictColorScale(colorScale);
-      if (params.has('invertColors')) setStateDistrictInvertColors(invertColors);
-      if (params.has('hideNames')) setStateDistrictHideDistrictNames(hideNames);
-      if (params.has('hideValues')) setStateDistrictHideValues(hideValues);
-      if (selectedState) setSelectedStateForMap(selectedState);
-      if (mapType) setSelectedStateMapType(mapType);
-    }
-
-    isInitialMount.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Sync states tab settings to URL
-  useEffect(() => {
-    if (isInitialMount.current || activeTab !== 'states') return;
-    updateUrlParams({
-      colorScale: stateColorScale !== 'spectral' ? stateColorScale : undefined,
-      invertColors: stateInvertColors ? 'true' : undefined,
-      hideNames: stateHideNames ? 'true' : undefined,
-      hideValues: stateHideValues ? 'true' : undefined,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateColorScale, stateInvertColors, stateHideNames, stateHideValues]);
-
-  // Sync districts tab settings to URL
-  useEffect(() => {
-    if (isInitialMount.current || (activeTab !== 'districts' && activeTab !== 'regions')) return;
-    updateUrlParams({
-      colorScale: districtColorScale !== 'spectral' ? districtColorScale : undefined,
-      invertColors: districtInvertColors ? 'true' : undefined,
-      hideNames: districtHideDistrictNames ? 'true' : undefined,
-      hideValues: districtHideValues ? 'true' : undefined,
-      mapType: selectedDistrictMapType !== DEFAULT_DISTRICT_MAP_TYPE ? selectedDistrictMapType : undefined,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [districtColorScale, districtInvertColors, districtHideDistrictNames, districtHideValues, selectedDistrictMapType]);
-
-  // Sync state-districts tab settings to URL
-  useEffect(() => {
-    if (isInitialMount.current || activeTab !== 'state-districts') return;
-    updateUrlParams({
-      colorScale: stateDistrictColorScale !== 'spectral' ? stateDistrictColorScale : undefined,
-      invertColors: stateDistrictInvertColors ? 'true' : undefined,
-      hideNames: stateDistrictHideDistrictNames ? 'true' : undefined,
-      hideValues: stateDistrictHideValues ? 'true' : undefined,
-      selectedState: selectedStateForMap || undefined,
-      mapType: selectedStateMapType !== DEFAULT_DISTRICT_MAP_TYPE ? selectedStateMapType : undefined,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stateDistrictColorScale, stateDistrictInvertColors, stateDistrictHideDistrictNames, stateDistrictHideValues, selectedStateForMap, selectedStateMapType]);
 
   useEffect(() => {
     if (activeTab === 'state-districts') {
