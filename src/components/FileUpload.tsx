@@ -286,14 +286,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button
             onClick={handleUploadClick}
-            className={darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+            className={darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''}
           >
             Choose File
           </Button>
           <Button
             variant="outline"
             onClick={handleLoadDemo}
-            className={`flex items-center gap-2 ${darkMode ? 'border-[#444] text-gray-300 hover:bg-[#333] hover:text-white' : ''}`}
+            className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
           >
             <Play className="h-4 w-4" />
             Load Demo
@@ -303,7 +303,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
           <Button
             variant="outline"
             size="sm"
-            className={`flex items-center gap-2 ${darkMode ? 'border-[#444] text-gray-300 hover:bg-[#333] hover:text-white' : ''}`}
+            className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
             onClick={downloadCSVTemplate}
           >
             Download CSV Template
@@ -358,7 +358,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               <Button
                 variant="outline"
                 size="sm"
-                className={`flex items-center gap-2 ${darkMode ? 'border-[#444] text-gray-300 hover:bg-[#333] hover:text-white' : ''}`}
+                className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed' : ''}`}
                 onClick={handleLoadGoogleSheet}
                 disabled={loadingSheet || !googleSheetUrl}
               >

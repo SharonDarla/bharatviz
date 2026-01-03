@@ -694,7 +694,6 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
-                    disabled={stateMapData.length === 0}
                     darkMode={darkMode}
                   />
                 </div>
@@ -755,7 +754,6 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
-                    disabled={districtMapData.length === 0}
                     darkMode={darkMode}
                   />
                 </div>
@@ -840,7 +838,6 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
-                    disabled={districtMapData.length === 0}
                     darkMode={darkMode}
                   />
                 </div>
@@ -915,7 +912,6 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
-                    disabled={stateDistrictMapData.length === 0 || !selectedStateForMap}
                     darkMode={darkMode}
                   />
                 </div>
