@@ -129,6 +129,17 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     googleSheetLink: 'https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing',
     description: 'Local Government Directory (LGD) district boundaries'
   },
+  BHUVAN: {
+    id: 'BHUVAN',
+    name: 'BHUVAN',
+    displayName: 'Bhuvan',
+    geojsonPath: '/India-bhuvan-districts.geojson',
+    states: '/India-bhuvan-states.geojson',
+    templateCsvPath: '/India-bhuvan-districts.csv',
+    demoDataPath: '/districts_demo.csv',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing',
+    description: 'Bhuvan district boundaries from NRSC'
+  },
   NFHS5: {
     id: 'NFHS5',
     name: 'NFHS5',

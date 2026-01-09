@@ -35,6 +35,16 @@ const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
       ]
     },
     {
+      title: 'Bhuvan - NRSC',
+      description: 'National Remote Sensing Centre (NRSC) geoportal providing spatial data and mapping services for India',
+      url: 'https://bhuvan.nrsc.gov.in/ngmaps',
+      usedFor: ['Bhuvan district boundaries'],
+      geojsonFiles: [
+        { name: 'Bhuvan Districts', path: '/India-bhuvan-districts.geojson' },
+        { name: 'Bhuvan States', path: '/India-bhuvan-states.geojson' }
+      ]
+    },
+    {
       title: 'India State Stories',
       description: 'Historical census district data for India across multiple years (1941-2011)',
       url: 'https://www.indiastatestory.in/datadownloads',

@@ -199,7 +199,13 @@ const Index = () => {
     if (invertColors) setDistrictInvertColors(invertColors === 'true');
 
     const mapType = params.get('mapType');
-    if (mapType) setSelectedDistrictMapType(mapType);
+    if (mapType) {
+      // Validate that the mapType exists in the config
+      const config = getDistrictMapConfig(mapType);
+      if (config) {
+        setSelectedDistrictMapType(mapType);
+      }
+    }
 
     hasReadInitialUrl.current.add('districts');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -955,8 +961,8 @@ const Index = () => {
                   dataTitle={districtDataTitle}
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
-                  geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
-                  statesGeojsonPath={getDistrictMapConfig(selectedDistrictMapType).states}
+                  geojsonPath={getDistrictMapConfig(selectedDistrictMapType)?.geojsonPath}
+                  statesGeojsonPath={getDistrictMapConfig(selectedDistrictMapType)?.states}
                   dataType={districtDataType}
                   categoryColors={districtCategoryColors}
                   naInfo={districtNAInfo}

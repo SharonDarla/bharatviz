@@ -198,6 +198,12 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   useEffect(() => {
     const loadGeoData = async () => {
       try {
+        // Validate required paths
+        if (!geojsonPath || !statesGeojsonPath) {
+          console.error('Missing required GeoJSON paths:', { geojsonPath, statesGeojsonPath });
+          return;
+        }
+
         let districtsData;
 
         if (gistUrlProvider && selectedState) {
