@@ -45,10 +45,20 @@ const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
       ]
     },
     {
+      title: 'Survey of India',
+      description: 'Survey of India - National survey and mapping organization providing official administrative boundaries and topographic data',
+      url: 'https://www.surveyofindia.gov.in/',
+      usedFor: ['Survey of India district boundaries'],
+      geojsonFiles: [
+        { name: 'SOI Districts', path: '/India-soi-districts.geojson' },
+        { name: 'SOI States', path: '/India-soi-states.geojson' }
+      ]
+    },
+    {
       title: 'India State Stories',
       description: 'Historical census district data for India across multiple years (1941-2011)',
       url: 'https://www.indiastatestory.in/datadownloads',
-      usedFor: ['Census 1941', 'Census 1951', 'Census 1961', 'Census 1971', 'Census 1981', 'Census 1991', 'Census 2011'],
+      usedFor: ['Census 1941', 'Census 1951', 'Census 1961', 'Census 1971', 'Census 1981', 'Census 1991', 'Census 2001', 'Census 2011'],
       geojsonFiles: [
         { name: '1941 Districts', path: '/India-1941-districts.geojson' },
         { name: '1941 States', path: '/India-1941-states.geojson' },
@@ -62,6 +72,8 @@ const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
         { name: '1981 States', path: '/India-1981-states.geojson' },
         { name: '1991 Districts', path: '/India-1991-districts.geojson' },
         { name: '1991 States', path: '/India-1991-states.geojson' },
+        { name: '2001 Districts', path: '/India-2001-districts.geojson' },
+        { name: '2001 States', path: '/India-2001-states.geojson' },
         { name: '2011 Districts', path: '/India-2011-districts.geojson' },
         { name: '2011 States', path: '/India-2011-states.geojson' }
       ]
@@ -70,11 +82,13 @@ const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
       title: 'Spatial data repository - DHS program',
       description: 'Demographic and Health Surveys spatial data repository with health survey district boundaries',
       url: 'https://spatialdata.dhsprogram.com/home/',
-      usedFor: ['NFHS-4 district boundaries', 'NFHS-5 district boundaries'],
+      usedFor: ['NFHS-4 district boundaries', 'NFHS-5 district boundaries', 'NSSO regions'],
       geojsonFiles: [
         { name: 'NFHS-4 Districts', path: '/India_NFHS4_districts_simplified.geojson' },
         { name: 'NFHS-4 States', path: '/India_NFHS4_states_simplified.geojson' },
-        { name: 'NFHS-5 Districts', path: '/India_NFHS5_districts_simplified.geojson' }
+        { name: 'NFHS-5 Districts', path: '/India_NFHS5_districts_simplified.geojson' },
+        { name: 'NFHS-5 States', path: '/India_NFHS5_states_simplified.geojson' },
+        { name: 'NSSO Regions', path: '/India_NFHS5_NSSO_regions_boundaries.geojson' }
       ]
     }
   ];

@@ -140,6 +140,17 @@ export const DISTRICT_MAP_TYPES: Record<string, DistrictMapConfig> = {
     googleSheetLink: 'https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing',
     description: 'Bhuvan district boundaries from NRSC'
   },
+  SOI: {
+    id: 'SOI',
+    name: 'SOI',
+    displayName: 'Survey of India',
+    geojsonPath: '/India-soi-districts.geojson',
+    states: '/India-soi-states.geojson',
+    templateCsvPath: '/India-soi-districts.csv',
+    demoDataPath: '/districts_demo.csv',
+    googleSheetLink: 'https://docs.google.com/spreadsheets/d/1mxE70Qrf0ij3z--4alVbmKEfAIftH3N1wqMWYPNQk7Q/edit?usp=sharing',
+    description: 'Survey of India official district boundaries'
+  },
   NFHS5: {
     id: 'NFHS5',
     name: 'NFHS5',

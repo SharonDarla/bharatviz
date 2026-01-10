@@ -197,43 +197,46 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   useEffect(() => {
     const loadGeoData = async () => {
+      setRenderingData(true);
+
       try {
-        // Validate required paths
         if (!geojsonPath || !statesGeojsonPath) {
           console.error('Missing required GeoJSON paths:', { geojsonPath, statesGeojsonPath });
+          setRenderingData(false);
           return;
         }
 
-        let districtsData;
+        let districtsDataPromise;
 
         if (gistUrlProvider && selectedState) {
           const gistUrl = gistUrlProvider(selectedState);
           if (gistUrl) {
-            const response = await fetch(gistUrl);
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            districtsData = await response.json();
+            districtsDataPromise = fetch(gistUrl).then(response => {
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+              return response.json();
+            });
           } else {
-            const response = await fetch(geojsonPath);
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            districtsData = await response.json();
+            districtsDataPromise = fetch(geojsonPath).then(response => {
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+              return response.json();
+            });
           }
         } else {
-          const response = await fetch(geojsonPath);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          districtsData = await response.json();
+          districtsDataPromise = fetch(geojsonPath).then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+          });
         }
 
-        const statesResponse = await fetch(statesGeojsonPath);
-        if (!statesResponse.ok) {
-          throw new Error(`HTTP error! status: ${statesResponse.status}`);
-        }
-        const statesDataResponse = await statesResponse.json();
+        const statesDataPromise = fetch(statesGeojsonPath).then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        });
+
+        const [districtsData, statesDataResponse] = await Promise.all([
+          districtsDataPromise,
+          statesDataPromise
+        ]);
 
         let filteredDistrictsData = districtsData;
         if (selectedState) {
@@ -248,8 +251,13 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         setGeojsonData(filteredDistrictsData);
         setStatesData(statesDataResponse);
         calculateBounds(filteredDistrictsData);
+
+        setTimeout(() => {
+          setRenderingData(false);
+        }, 300);
       } catch (error) {
         console.error('Failed to load GeoJSON data:', error);
+        setRenderingData(false);
       }
     };
 
@@ -263,9 +271,10 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   useEffect(() => {
     if (geojsonData && bounds && data.length > 0) {
       setRenderingData(true);
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setRenderingData(false);
-      }, 300);
+      }, 200);
+      return () => clearTimeout(timeoutId);
     }
   }, [data, geojsonData, bounds, colorScale, invertColors, selectedState, colorBarSettings, dataType, darkMode]);
 
@@ -1413,10 +1422,12 @@ Chittoor,50`;
   return (
     <div className="w-full flex justify-center relative" ref={containerRef}>
       {renderingData && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50 rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-lg">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm font-medium text-foreground">Rendering data...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-3 text-sm font-medium text-foreground">
+              {!geojsonData ? 'Loading map data...' : 'Rendering map...'}
+            </p>
           </div>
         </div>
       )}
@@ -1426,7 +1437,11 @@ Chittoor,50`;
               height={isMobile ? "440" : selectedState ? "1100" : "890"}
               viewBox={isMobile ? "0 0 350 440" : selectedState ? "0 0 800 1100" : "0 0 800 890"}
               className="border border-border rounded max-w-full h-auto"
-              style={{ backgroundColor: darkMode ? '#000000' : '#ffffff' }}
+              style={{
+                backgroundColor: darkMode ? '#000000' : '#ffffff',
+                willChange: renderingData ? 'contents' : 'auto',
+                transform: 'translateZ(0)', // Force GPU acceleration
+              }}
             >
               {geojsonData.features.map((feature, index) => {
                 const mapWidth = isMobile ? 320 : 760;
@@ -1474,10 +1489,8 @@ Chittoor,50`;
 
                     const bounds = calculateDistrictBounds(feature);
 
-                    // Extract polygon coordinates in GeoJSON format [lng, lat]
                     let polygonCoords: number[][][] = [];
                     if (feature.geometry.type === 'MultiPolygon') {
-                      // For MultiPolygon, find the largest polygon by area to use with polylabel
                       const allPolygons = feature.geometry.coordinates as number[][][][];
                       let largestPolygon = allPolygons[0];
                       let largestArea = calculateArea(allPolygons[0][0]);
@@ -1495,35 +1508,23 @@ Chittoor,50`;
                       polygonCoords = feature.geometry.coordinates as number[][][];
                     }
 
-                    // Calculate font size first (needed for text fitting validation)
                     const minFontSize = isMobile ? 6 : 7;
                     const maxFontSize = isMobile ? 16 : 18;
 
-                    // Normalize area to 0-1 range
                     const areaRange = maxArea - minArea;
                     const normalizedArea = areaRange > 0 ? (area - minArea) / areaRange : 0.5;
-
-                    // Apply non-linear scaling (square root) to make the progression smoother
-                    // Smaller districts get proportionally smaller fonts
                     const scaledArea = Math.sqrt(normalizedArea);
 
-                    // Map scaled area to font size range, then apply scaling factor
-                    // Use 0.75 for state-district view (larger fonts), 0.65 for full districts view
                     const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
                     const fontSizingFactor = selectedState ? 0.75 : 0.65;
                     const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
                     const optimalPoint = polylabel(polygonCoords, 0.00000001);
-
-                    // Calculate principal axis angle for text rotation
                     const principalAxisAngle = calculatePrincipalAxisAngle(feature);
 
-                    // Validate positions and use fallback chain
-                    // Priority: centroid (most reliable) → polylabel → bounding box center
                     const outerRing = polygonCoords[0];
                     const textRotationAngle = 0;
 
-                    // Calculate fallback positions upfront
                     const centroid = calculateDistrictCentroid(feature);
                     const districtBounds = calculateDistrictBounds(feature);
                     const boundingBoxCenter = {
@@ -1532,12 +1533,9 @@ Chittoor,50`;
                     };
                     const polylabelPoint = { lng: optimalPoint[0], lat: optimalPoint[1] };
 
-                    // Use centroid first (mathematically guaranteed to be inside for simple polygons)
-                    // For complex polygons with islands, we use the largest polygon's centroid
                     let positionCoords = centroid;
                     let positionSource = 'centroid';
 
-                    // Only use polylabel if centroid is not available or validation fails
                     if (!centroid) {
                       if (isValidLabelPosition(polylabelPoint, outerRing)) {
                         positionCoords = polylabelPoint;
@@ -1546,7 +1544,6 @@ Chittoor,50`;
                         positionCoords = boundingBoxCenter;
                         positionSource = 'bounding-box-center';
                       } else {
-                        // Final fallback: use polylabel anyway
                         positionCoords = polylabelPoint;
                         positionSource = 'polylabel-fallback';
                       }
@@ -1556,21 +1553,15 @@ Chittoor,50`;
                     const centroidScreen = centroid ? geoToScreen(centroid.lng, centroid.lat) : null;
                     const boundingBoxCenterScreen = geoToScreen(boundingBoxCenter.lng, boundingBoxCenter.lat);
 
-                    // Calculate left offset for text positioning
-                    // Estimate character width as 0.6 * font size
                     const charWidthPixels = finalFontSize * 0.6;
                     const textWidthPixels = charWidthPixels * districtName.length;
-                    // Offset text to start more left (shift by entire text width)
                     const leftOffsetPixels = textWidthPixels;
 
-                    // Use polylabel center for text positioning, but shifted left along x-axis and down along y-axis
-                    // Use full text width offset for x-axis, but half for y-axis
                     let labelPosition = {
                       x: polylabelScreen.x - leftOffsetPixels,
                       y: polylabelScreen.y + leftOffsetPixels / 2
                     };
 
-                    // Calculate convex hull medoid and polygon boundary medoid
                     let medoidScreen = null;
                     let polygonMedianScreen = null;
 
