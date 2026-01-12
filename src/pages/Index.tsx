@@ -14,6 +14,7 @@ import { DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesLis
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
 import Credits from '@/components/Credits';
+import { DistrictStats } from '@/components/DistrictStats';
 import { Github, Moon, Sun } from 'lucide-react';
 import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
 import { ChatPanel } from '@/components/chat/ChatPanel';
@@ -44,7 +45,7 @@ const Index = () => {
 
   const getTabFromPath = (pathname: string): string => {
     const path = pathname.slice(1);
-    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'help', 'credits'];
+    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'district-stats', 'help', 'credits'];
     return validTabs.includes(path) ? path : 'states';
   };
 
@@ -830,7 +831,7 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 bg-transparent p-0 h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
                 className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
@@ -870,6 +871,16 @@ const Index = () => {
                 }`}
               >
                 State-District
+              </TabsTrigger>
+              <TabsTrigger
+                value="district-stats"
+                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
+                  darkMode
+                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
+                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
+                }`}
+              >
+                District Stats
               </TabsTrigger>
               <TabsTrigger
                 value="help"
@@ -1478,6 +1489,10 @@ bv$show_map(result_nfhs5)`}
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className={`space-y-6 ${activeTab === 'district-stats' ? 'block' : 'hidden'}`}>
+            <DistrictStats darkMode={darkMode} />
           </div>
 
           <div className={`space-y-6 ${activeTab === 'credits' ? 'block' : 'hidden'}`}>

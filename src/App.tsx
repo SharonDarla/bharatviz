@@ -13,6 +13,7 @@ const App = () => (
         <Route path="/districts" element={<Index />} />
         <Route path="/regions" element={<Index />} />
         <Route path="/state-districts" element={<Index />} />
+        <Route path="/district-stats" element={<Index />} />
         <Route path="/help" element={<Index />} />
         <Route path="/credits" element={<Index />} />
         <Route path="/embed-demo" element={<EmbedDemo />} />
