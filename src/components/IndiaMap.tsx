@@ -41,6 +41,7 @@ interface IndiaMapProps {
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
+  darkMode?: boolean;
 }
 
 export interface IndiaMapRef {
@@ -50,9 +51,10 @@ export interface IndiaMapRef {
   downloadCSVTemplate: () => void;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [renderingData, setRenderingData] = useState(false);
 
   const [legendPosition, setLegendPosition] = useState<{ x: number; y: number }>(DEFAULT_LEGEND_POSITION.STATES);
   const [dragging, setDragging] = useState(false);
@@ -160,8 +162,18 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const fixLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
 
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
+        aqi: (t: number) => d3.interpolateBlues(t), // Placeholder, won't be used with AQI
         blues: d3.interpolateBlues,
         greens: d3.interpolateGreens,
         reds: d3.interpolateReds,
@@ -210,7 +222,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
-          const color = colorScaleFunction(value);
+          const color = colorScale === 'aqi' ? getAQIColorAbsolute(value) : colorScaleFunction(value);
 
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
@@ -247,7 +259,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       ]);
 
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
@@ -277,7 +289,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
       fixLegendGradient(svgClone);
 
-      const pdfMargin = 15;
+      const pdfMargin = 10;
       const availableWidth = pdfWidth - (2 * pdfMargin);
       const availableHeight = pdfHeight - (2 * pdfMargin);
 
@@ -585,12 +597,14 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   useEffect(() => {
     if (!mapData || !svgRef.current) return;
-    
+
     // Check if mapData has features property
     if (!mapData.features || !Array.isArray(mapData.features)) {
       // Invalid GeoJSON data - skip rendering
       return;
     }
+
+    setRenderingData(true);
 
     try {
       const svg = d3.select(svgRef.current);
@@ -616,6 +630,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Get the appropriate D3 color interpolator
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
+        aqi: (t: number) => d3.interpolateBlues(t),
         blues: d3.interpolateBlues,
         greens: d3.interpolateGreens,
         reds: d3.interpolateReds,
@@ -672,9 +687,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       .append("path")
       .attr("d", path)
       .attr("fill", (d: GeoJSON.Feature) => {
-        // If no data, show all states as white
+        // If no data, show all states with appropriate background
         if (data.length === 0) {
-          return "#ffffff";
+          return darkMode ? "#1a1a1a" : "#ffffff";
         }
 
         // Try different possible field names for state
@@ -682,7 +697,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         const value = dataMap.get(stateName);
 
         if (value === undefined) {
-          return "#ffffff"; // White for no data
+          return darkMode ? "#1a1a1a" : "#ffffff";
         }
 
         // Handle categorical data
@@ -695,25 +710,25 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         return getColorForValue(value as number, values, colorScale, invertColors, colorBarSettings);
       })
       .attr("stroke", (d: GeoJSON.Feature) => {
-        // If no data, use default gray stroke
+        // If no data, use appropriate stroke color
         if (data.length === 0) {
-          return "#0f172a";
+          return darkMode ? "#ffffff" : "#0f172a";
         }
-        
+
         // Try different possible field names for state
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
-        
+
         if (value === undefined || isNaN(value)) {
-          return "#0f172a"; // Default gray for no data or NaN
+          return darkMode ? "#ffffff" : "#0f172a";
         }
-        
+
         if (colorScaleFunction) {
           const fillColor = colorScaleFunction(value);
           return fillColor === "#ffffff" || !isColorDark(fillColor) ? "#0f172a" : "#ffffff";
         }
-        
-        return "#0f172a";
+
+        return darkMode ? "#ffffff" : "#0f172a";
       })
       .attr("stroke-width", 0.5)
       .style("cursor", "pointer")
@@ -958,9 +973,13 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     // Legend will be handled by separate effect
     } catch (error) {
       // Map rendering failed - component will continue to show current state
+    } finally {
+      setTimeout(() => {
+        setRenderingData(false);
+      }, 300);
     }
 
-  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType, darkMode]);
 
   // Legend values from data (only for numerical data)
   useEffect(() => {
@@ -1009,8 +1028,19 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
+
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const getColorInterpolator = (scale: ColorScale) => {
       const interpolators = {
+        aqi: (t: number) => d3.interpolateBlues(t),
         blues: d3.interpolateBlues,
         greens: d3.interpolateGreens,
         reds: d3.interpolateReds,
@@ -1037,12 +1067,13 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
       const value = minValue + t * (maxValue - minValue);
-      const color = colorScaleFunction(value);
+      // For AQI, use absolute value mapping; otherwise use color scale function
+      const color = colorScale === 'aqi' ? getAQIColorAbsolute(value) : colorScaleFunction(value);
       gradient.append('stop')
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType, mapData]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {
@@ -1168,12 +1199,20 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   return (
     <div className="w-full flex justify-center relative">
+      {renderingData && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-50 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm font-medium text-foreground">Rendering data...</p>
+          </div>
+        </div>
+      )}
       <svg
         ref={svgRef}
         className="max-w-full h-auto border rounded-lg"
         width={isMobile ? 350 : MAP_DIMENSIONS.STATES.width}
         height={isMobile ? 350 : MAP_DIMENSIONS.STATES.height}
-        style={{ userSelect: 'none' }}
+        style={{ userSelect: 'none', backgroundColor: darkMode ? '#000000' : '#ffffff' }}
         viewBox={isMobile ? "0 0 350 350" : `0 0 ${MAP_DIMENSIONS.STATES.width} ${MAP_DIMENSIONS.STATES.height}`}
       >
         {/* Legend overlay (React) */}
@@ -1192,6 +1231,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 editingTitle={editingTitle}
                 setEditingTitle={setEditingTitle}
                 setLegendTitle={setLegendTitle}
+                darkMode={darkMode}
               />
             ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
               /* Discrete Legend */
@@ -1208,6 +1248,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 editingTitle={editingTitle}
                 setEditingTitle={setEditingTitle}
                 setLegendTitle={setLegendTitle}
+                darkMode={darkMode}
               />
             ) : dataType === 'numerical' ? (
               /* Continuous Legend */
@@ -1243,7 +1284,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={0}
                     y={30}
                     textAnchor="start"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
                   >
                     {legendMin}
@@ -1267,7 +1308,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={isMobile ? 75 : 100}
                     y={30}
                     textAnchor="middle"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingMean(true); }}
                   >
                     {legendMean}
@@ -1291,7 +1332,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={isMobile ? 150 : 200}
                     y={30}
                     textAnchor="end"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
                   >
                     {legendMax}
@@ -1315,7 +1356,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                     x={isMobile ? 75 : 100}
                     y={-5}
                     textAnchor="middle"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                    style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                     onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
                   >
                     {legendTitle}
@@ -1362,7 +1403,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontSize: isMobile ? 16 : 20,
                 fontWeight: 700,
-                fill: '#1f2937',
+                fill: darkMode ? '#ffffff' : '#1f2937',
                 cursor: draggingTitle ? 'grabbing' : 'grab',
                 userSelect: 'none'
               }}
@@ -1412,7 +1453,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
               style={{
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 fontSize: isMobile ? 11 : 13,
-                fill: '#374151'
+                fill: darkMode ? '#ffffff' : '#374151'
               }}
             >
               {naInfo.states

@@ -102,6 +102,7 @@ interface IndiaDistrictsMapProps {
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
+  darkMode?: boolean;
 }
 
 export interface IndiaDistrictsMapRef {
@@ -135,6 +136,7 @@ interface Bounds {
 }
 
 const colorScales: Record<ColorScale, (t: number) => string> = {
+  aqi: (t: number) => interpolateBlues(t),
   blues: interpolateBlues,
   greens: interpolateGreens,
   reds: interpolateReds,
@@ -171,11 +173,13 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   enableRotation = false,
   dataType = 'numerical',
   categoryColors = {},
-  naInfo
+  naInfo,
+  darkMode = false
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [bounds, setBounds] = useState<Bounds | null>(null);
+  const [renderingData, setRenderingData] = useState(false);
   const [hoveredDistrict, setHoveredDistrict] = useState<{ district: string; state: string; value?: number | string } | null>(null);
   const [editingMainTitle, setEditingMainTitle] = useState(false);
   const [mainTitle, setMainTitle] = useState('BharatViz (double-click to edit)');
@@ -249,37 +253,46 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   useEffect(() => {
     const loadGeoData = async () => {
+      setRenderingData(true);
+
       try {
-        let districtsData;
+        if (!geojsonPath || !statesGeojsonPath) {
+          console.error('Missing required GeoJSON paths:', { geojsonPath, statesGeojsonPath });
+          setRenderingData(false);
+          return;
+        }
+
+        let districtsDataPromise;
 
         if (gistUrlProvider && selectedState) {
           const gistUrl = gistUrlProvider(selectedState);
           if (gistUrl) {
-            const response = await fetch(gistUrl);
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            districtsData = await response.json();
+            districtsDataPromise = fetch(gistUrl).then(response => {
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+              return response.json();
+            });
           } else {
-            const response = await fetch(geojsonPath);
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            districtsData = await response.json();
+            districtsDataPromise = fetch(geojsonPath).then(response => {
+              if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+              return response.json();
+            });
           }
         } else {
-          const response = await fetch(geojsonPath);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          districtsData = await response.json();
+          districtsDataPromise = fetch(geojsonPath).then(response => {
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response.json();
+          });
         }
 
-        const statesResponse = await fetch(statesGeojsonPath);
-        if (!statesResponse.ok) {
-          throw new Error(`HTTP error! status: ${statesResponse.status}`);
-        }
-        const statesDataResponse = await statesResponse.json();
+        const statesDataPromise = fetch(statesGeojsonPath).then(response => {
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          return response.json();
+        });
+
+        const [districtsData, statesDataResponse] = await Promise.all([
+          districtsDataPromise,
+          statesDataPromise
+        ]);
 
         let filteredDistrictsData = districtsData;
         if (selectedState) {
@@ -294,8 +307,13 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         setGeojsonData(filteredDistrictsData);
         setStatesData(statesDataResponse);
         calculateBounds(filteredDistrictsData);
+
+        setTimeout(() => {
+          setRenderingData(false);
+        }, 300);
       } catch (error) {
         console.error('Failed to load GeoJSON data:', error);
+        setRenderingData(false);
       }
     };
 
@@ -305,6 +323,16 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   useEffect(() => {
     rotationCalculator.current.clearCache();
   }, [geojsonData]);
+
+  useEffect(() => {
+    if (geojsonData && bounds && data.length > 0) {
+      setRenderingData(true);
+      const timeoutId = setTimeout(() => {
+        setRenderingData(false);
+      }, 200);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [data, geojsonData, bounds, colorScale, invertColors, selectedState, colorBarSettings, dataType, darkMode]);
 
   const calculateBounds = (data: { features: GeoJSONFeature[] }) => {
     let minLng = Infinity, maxLng = -Infinity;
@@ -737,8 +765,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY
     ]);
 
-    // Check if point is inside the polygon
-    return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
+return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
 
   };
 
@@ -787,10 +814,19 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       .attr('y1', '0%')
       .attr('y2', '0%');
 
-    // Color scale - continuous mode only for numerical data
     const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
     const minValue = values.length > 0 ? Math.min(...values) : 0;
     const maxValue = values.length > 0 ? Math.max(...values) : 1;
+
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const getColorInterpolator = (scale: ColorScale) => {
       const baseInterpolator = colorScales[scale] || colorScales.spectral;
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
@@ -802,12 +838,12 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
       const value = minValue + t * (maxValue - minValue);
-      const color = colorScaleFunction(value);
+      const color = colorScale === 'aqi' ? getAQIColorAbsolute(value) : colorScaleFunction(value);
       gradient.append('stop')
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings, dataType]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType, geojsonData]);
 
   const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];
@@ -866,16 +902,16 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   };
 
   const getDistrictColorForValue = (value: number | string | undefined, dataExtent: [number, number] | undefined): string => {
-    if (value === undefined) return 'white';
+    if (value === undefined) return darkMode ? '#1a1a1a' : 'white';
 
     if (dataType === 'categorical' && typeof value === 'string') {
-      return getCategoryColor(value, categoryColors, '#e5e7eb');
+      return getCategoryColor(value, categoryColors, darkMode ? '#1a1a1a' : '#e5e7eb');
     }
 
     if (typeof value === 'number') {
-      if (!dataExtent) return 'white';
+      if (!dataExtent) return darkMode ? '#1a1a1a' : 'white';
       if (isNaN(value)) {
-        return 'white';
+        return darkMode ? '#1a1a1a' : 'white';
       }
 
       const [minVal, maxVal] = dataExtent;
@@ -885,7 +921,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     }
 
-    return '#e5e7eb';
+    return darkMode ? '#1a1a1a' : '#e5e7eb';
   };
 
   const handleDistrictHover = (feature: GeoJSONFeature) => {
@@ -1138,8 +1174,18 @@ const handleLabelTouchMove = useCallback(
   const fixDistrictsLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
 
+    const getAQIColorAbsolute = (value: number): string => {
+      if (value <= 50) return '#10b981';
+      if (value <= 100) return '#84cc16';
+      if (value <= 200) return '#eab308';
+      if (value <= 300) return '#f97316';
+      if (value <= 400) return '#ef4444';
+      return '#991b1b';
+    };
+
     const colorScales = {
-      spectral: (t: number) => d3.interpolateSpectral(1 - t), 
+      aqi: (t: number) => d3.interpolateBlues(t), // Placeholder, AQI uses absolute values
+      spectral: (t: number) => d3.interpolateSpectral(1 - t),
       rdylbu: d3.interpolateRdYlBu,
       rdylgn: d3.interpolateRdYlGn,
       brbg: d3.interpolateBrBG,
@@ -1163,7 +1209,6 @@ const handleLabelTouchMove = useCallback(
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
-      // Use the new discrete color utility
       const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
       return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
     };
@@ -1365,14 +1410,14 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
         
         // Create PDF document
         const pdf = new jsPDF({
-          orientation: 'landscape',
+          orientation: 'portrait',
           unit: 'mm',
           format: 'a4'
         });
-        
+
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
+
         // Get the actual SVG dimensions
         const svgWidth = isMobile ? 350 : 800;
         const svgHeight = isMobile ? 440 : selectedState ? 1100 : 890;
@@ -1386,10 +1431,10 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
         svgClone.setAttribute('viewBox', `${isMobile ? '0 0 350 440' : selectedState ? '0 0 800 1100' : '0 0 800 890'}`);
         svgClone.style.width = `${svgWidth}px`;
         svgClone.style.height = `${svgHeight}px`;
-        
+
         // Remove any CSS classes that might interfere with export
         svgClone.removeAttribute('class');
-        
+
         // Force all elements to be visible and properly positioned
         const allElements = svgClone.querySelectorAll('*');
         allElements.forEach(el => {
@@ -1401,12 +1446,12 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
             element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
           }
         });
-        
+
         // Fix the legend gradient to match the selected color scale
         fixDistrictsLegendGradient(svgClone);
-        
+
         // Calculate PDF margins and available space
-        const pdfMargin = 15; // 15mm margin
+        const pdfMargin = 10; // 10mm margin
         const availableWidth = pdfWidth - (2 * pdfMargin);
         const availableHeight = pdfHeight - (2 * pdfMargin);
         
@@ -1503,12 +1548,27 @@ const dataExtent =
 
   return (
     <div className="w-full flex justify-center relative" ref={containerRef}>
+      {renderingData && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50 rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-3 text-sm font-medium text-foreground">
+              {!geojsonData ? 'Loading map data...' : 'Rendering map...'}
+            </p>
+          </div>
+        </div>
+      )}
             <svg
               ref={svgRef}
               width={isMobile ? "350" : "800"}
               height={isMobile ? "440" : selectedState ? "1100" : "890"}
               viewBox={isMobile ? "0 0 350 440" : selectedState ? "0 0 800 1100" : "0 0 800 890"}
-              className="border border-border rounded bg-background max-w-full h-auto"
+              className="border border-border rounded max-w-full h-auto"
+              style={{
+                backgroundColor: darkMode ? '#000000' : '#ffffff',
+                willChange: renderingData ? 'contents' : 'auto',
+                transform: 'translateZ(0)', // Force GPU acceleration
+              }}
             >
               {geojsonData.features.map((feature, index) => {
                 const mapWidth = isMobile ? 320 : 760;
@@ -1530,8 +1590,8 @@ const dataExtent =
                     d={path}
                     fill={fillColor}
                     stroke={
-                      data.length === 0 ? "#0f172a" :
-                      fillColor === 'white' || !isColorDark(fillColor) ? "#0f172a" : "#ffffff"
+                      data.length === 0 ? (darkMode ? "#ffffff" : "#0f172a") :
+                      fillColor === 'white' || fillColor === '#1a1a1a' || !isColorDark(fillColor) ? (darkMode ? "#ffffff" : "#0f172a") : "#ffffff"
                     }
                     strokeWidth={isHovered ? "1.5" : "0.3"}
                     className="cursor-pointer transition-all duration-200"
@@ -1623,7 +1683,6 @@ const dataExtent =
         // ✅ Extra calculations you had (kept exactly)
         let medoidScreen = null;
         let polygonMedianScreen = null;
-
         if (feature.geometry.type === 'Polygon') {
           const outerRing = (feature.geometry.coordinates as number[][][])[0];
           const convexHull = calculateConvexHull(outerRing);
@@ -1726,8 +1785,6 @@ const dataExtent =
     </g>
   )}
 
-
-
               {/* State boundaries overlay */}
               {showStateBoundaries && statesData && statesData.features
                 .filter(stateFeature => {
@@ -1753,7 +1810,7 @@ const dataExtent =
                     key={`state-boundary-${index}`}
                     d={path}
                     fill="none"
-                    stroke="#1f2937"
+                    stroke={darkMode ? "#ffffff" : "#1f2937"}
                     strokeWidth="1.2"
                     pointerEvents="none"
                     className="state-boundary"
@@ -1798,7 +1855,7 @@ const dataExtent =
                       fontFamily: 'Arial, Helvetica, sans-serif',
                       fontSize: isMobile ? 16 : 20,
                       fontWeight: 700,
-                      fill: '#1f2937',
+                      fill: darkMode ? '#ffffff' : '#1f2937',
                       cursor: draggingTitle ? 'grabbing' : 'grab',
                       userSelect: 'none'
                     }}
@@ -1830,6 +1887,7 @@ const dataExtent =
                       editingTitle={editingTitle}
                       setEditingTitle={setEditingTitle}
                       setLegendTitle={setLegendTitle}
+                      darkMode={darkMode}
                     />
                   ) : dataType === 'numerical' && colorBarSettings?.isDiscrete ? (
                     /* Discrete Legend */
@@ -1846,6 +1904,7 @@ const dataExtent =
                       editingTitle={editingTitle}
                       setEditingTitle={setEditingTitle}
                       setLegendTitle={setLegendTitle}
+                      darkMode={darkMode}
                     />
                   ) : dataType === 'numerical' ? (
                     /* Continuous Legend */
@@ -1859,11 +1918,10 @@ const dataExtent =
                         width={isMobile ? 150 : 200}
                         height={15}
                         fill="url(#districts-legend-gradient)"
-                        stroke="#374151"
-                        strokeWidth={0.5}
+                        stroke={darkMode ? 'none' : '#374151'}
+                        strokeWidth={darkMode ? 0 : 0.5}
                         rx={3}
                       />
-                      {/* Min value */}
                       {editingMin ? (
                         <foreignObject x={-10} y={18} width={isMobile ? 30 : 40} height={30}>
                           <input
@@ -1881,13 +1939,12 @@ const dataExtent =
                           x={0}
                           y={30}
                           textAnchor="start"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingMin(true); }}
                         >
                           {legendMin}
                         </text>
                       )}
-                      {/* Mean value */}
                       {editingMean ? (
                         <foreignObject x={isMobile ? 60 : 80} y={18} width={isMobile ? 30 : 40} height={30}>
                           <input
@@ -1905,13 +1962,12 @@ const dataExtent =
                           x={isMobile ? 75 : 100}
                           y={30}
                           textAnchor="middle"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingMean(true); }}
                         >
                           {legendMean}
                         </text>
                       )}
-                      {/* Max value */}
                       {editingMax ? (
                         <foreignObject x={isMobile ? 120 : 170} y={18} width={isMobile ? 30 : 40} height={30}>
                           <input
@@ -1929,13 +1985,12 @@ const dataExtent =
                           x={isMobile ? 150 : 200}
                           y={30}
                           textAnchor="end"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 10 : 12, fontWeight: 500, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingMax(true); }}
                         >
                           {legendMax}
                         </text>
                       )}
-                      {/* Legend Title */}
                       {editingTitle ? (
                         <foreignObject x={isMobile ? 40 : 60} y={-25} width={isMobile ? 70 : 90} height={30}>
                           <input
@@ -1953,7 +2008,7 @@ const dataExtent =
                           x={isMobile ? 75 : 100}
                           y={-5}
                           textAnchor="middle"
-                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: '#374151', cursor: 'pointer' }}
+                          style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontSize: isMobile ? 11 : 13, fontWeight: 600, fill: darkMode ? '#ffffff' : '#374151', cursor: 'pointer' }}
                           onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
                         >
                           {legendTitle}
@@ -1970,7 +2025,6 @@ const dataExtent =
                   className="na-legend"
                   transform={`translate(${isMobile ? 10 : 320}, ${isMobile ? 400 : selectedState ? 1050 : 850})`}
                 >
-                  {/* Background box */}
                   <rect
                     width={isMobile ? 150 : 220}
                     height={isMobile ? 30 : 35}
@@ -1980,7 +2034,6 @@ const dataExtent =
                     rx={4}
                   />
 
-                  {/* NA color box */}
                   <rect
                     x={5}
                     y={isMobile ? 8 : 10}
@@ -1991,14 +2044,13 @@ const dataExtent =
                     strokeWidth={1}
                   />
 
-                  {/* NA label */}
                   <text
                     x={isMobile ? 25 : 30}
                     y={isMobile ? 19 : 22}
                     style={{
                       fontFamily: 'Arial, Helvetica, sans-serif',
                       fontSize: isMobile ? 11 : 13,
-                      fill: '#374151'
+                      fill: darkMode ? '#ffffff' : '#374151'
                     }}
                   >
                     {naInfo.districts
@@ -2007,7 +2059,6 @@ const dataExtent =
                     }
                   </text>
 
-                  {/* Delete button */}
                   <g
                     onClick={() => setShowNALegend(false)}
                     style={{ cursor: 'pointer' }}

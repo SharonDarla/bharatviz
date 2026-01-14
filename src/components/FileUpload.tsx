@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Papa from 'papaparse';
 import pako from 'pako';
-import { search as fastFuzzySearch } from 'fast-fuzzy';
+import { processStateData, processDistrictData } from '@/lib/dataProcessor';
+import { fetchWithCorsFallback, fetchAndDecompressGz } from '@/lib/corsProxy';
 
 interface NAInfo {
   states?: string[];
@@ -24,9 +25,10 @@ interface FileUploadProps {
   googleSheetLink?: string;
   geojsonPath?: string;
   selectedState?: string; // Optional: for state-district tab, filter NAs by this state
+  darkMode?: boolean;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, darkMode = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -51,460 +53,81 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     });
   };
 
-  const normalizeString = (str: string): string => {
-    return str.trim().toLowerCase().replace(/[^\w\s]/g, '');
-  };
 
-  interface MatchResult {
-    inputValue: string;
-    matchedValue: string | null;
-    matchType: 'exact' | 'fuzzy' | 'none';
-  }
-
-  const matchWithFastFuzzy = (
-    input: string,
-    referenceList: string[],
-    threshold: number = 0.6
-  ): MatchResult => {
-    const normalized = normalizeString(input);
-    const normalizedRefs = referenceList.map(ref => ({
-      original: ref,
-      normalized: normalizeString(ref)
-    }));
-
-    const exactMatch = normalizedRefs.find(ref => ref.normalized === normalized);
-    if (exactMatch) {
-      return {
-        inputValue: input,
-        matchedValue: exactMatch.original,
-        matchType: 'exact'
-      };
-    }
-
-    if (normalized.length === 0 || referenceList.length === 0) {
-      return { inputValue: input, matchedValue: null, matchType: 'none' };
-    }
-
-    const results = fastFuzzySearch(normalized, normalizedRefs.map(r => r.normalized), {
-      threshold,
-      ignoreCase: true,
-      returnMatchData: true
-    });
-
-    if (results.length > 0) {
-      const bestMatch = results[0];
-      const matchedRef = normalizedRefs.find(ref => ref.normalized === bestMatch.item);
-
-      if (!matchedRef) {
-        return { inputValue: input, matchedValue: null, matchType: 'none' };
-      }
-
-      const inputFirstChar = normalized.charAt(0);
-      const matchFirstChar = bestMatch.item.charAt(0);
-
-      const firstCharMatches = inputFirstChar === matchFirstChar;
-      const isLenientThreshold = threshold < 0.3;
-
-      if (firstCharMatches || isLenientThreshold) {
-        return {
-          inputValue: input,
-          matchedValue: matchedRef.original,
-          matchType: 'fuzzy'
-        };
-      }
-    }
-
-    return { inputValue: input, matchedValue: null, matchType: 'none' };
-  };
-
-  // Use fast-fuzzy for all fuzzy matching
-  const matchWithFuzzy = (
-    input: string,
-    referenceList: string[],
-    threshold: number = 0.6
-  ): MatchResult => {
-    return matchWithFastFuzzy(input, referenceList, threshold);
-  };
-
-  interface StateDistrictData {
-    state: string;
-    district: string;
-    value: number;
-  }
-
-  interface StateData {
-    state: string;
-    value: number;
-  }
-
-  const matchStatesAndDistricts = (
-    data: StateDistrictData[],
-    validStates: string[],
-    validDistrictsByState: Map<string, string[]>
-  ): StateDistrictData[] => {
-    const exactMatchedStates = new Set<string>();
-    const remainingData: StateDistrictData[] = [];
-    const matchedData: StateDistrictData[] = [];
-
-    data.forEach(row => {
-      const stateMatch = matchWithFuzzy(row.state, validStates, fuzzyThreshold);
-
-      if (stateMatch.matchType === 'exact') {
-        exactMatchedStates.add(stateMatch.matchedValue!);
-      }
-
-      if (stateMatch.matchedValue) {
-        const districtsInState = validDistrictsByState.get(stateMatch.matchedValue) || [];
-        const districtMatch = matchWithFuzzy(row.district, districtsInState, fuzzyThreshold);
-
-        if (districtMatch.matchedValue) {
-          matchedData.push({
-            state: stateMatch.matchedValue,
-            district: districtMatch.matchedValue,
-            value: row.value
-          });
-        } else {
-          remainingData.push(row);
-        }
-      } else {
-        remainingData.push(row);
-      }
-    });
-
-    const unmatchedStates = validStates.filter(s => !exactMatchedStates.has(s));
-
-    remainingData.forEach(row => {
-      const stateMatch = matchWithFuzzy(row.state, unmatchedStates, fuzzyThreshold);
-
-      if (stateMatch.matchedValue) {
-        const districtsInState = validDistrictsByState.get(stateMatch.matchedValue) || [];
-        const districtMatch = matchWithFuzzy(row.district, districtsInState, fuzzyThreshold);
-
-        if (districtMatch.matchedValue) {
-          matchedData.push({
-            state: stateMatch.matchedValue,
-            district: districtMatch.matchedValue,
-            value: row.value
-          });
-        }
-      }
-    });
-
-    const totalEntries = data.length;
-    const matchedEntries = matchedData.length;
-    const unmatchedEntries = totalEntries - matchedEntries;
-    const matchPercentage = totalEntries > 0 ? ((matchedEntries / totalEntries) * 100).toFixed(2) : '0.00';
-
-    console.log('=== District Fuzzy Matching Benchmark (threshold: ' + fuzzyThreshold + ') ===');
-    console.log('Total entries:', totalEntries);
-    console.log('Matched entries:', matchedEntries);
-    console.log('Unmatched entries:', unmatchedEntries);
-    console.log('Match rate:', matchPercentage + '%');
-    console.log('=====================================================');
-
-    return matchedData;
-  };
-
-  const matchStates = (data: StateData[], validStates: string[]): StateData[] => {
-    const matchedData: StateData[] = [];
-    const exactMatchedStates = new Set<string>();
-    const unmatchedData: StateData[] = [];
-
-    data.forEach(row => {
-      const match = matchWithFuzzy(row.state, validStates, fuzzyThreshold);
-
-      if (match.matchType === 'exact' && match.matchedValue) {
-        exactMatchedStates.add(match.matchedValue);
-        matchedData.push({
-          state: match.matchedValue,
-          value: row.value
-        });
-      } else if (match.matchType === 'fuzzy' && match.matchedValue) {
-        matchedData.push({
-          state: match.matchedValue,
-          value: row.value
-        });
-      } else {
-        unmatchedData.push(row);
-      }
-    });
-
-    const unmatchedStates = validStates.filter(s => !exactMatchedStates.has(s));
-
-    unmatchedData.forEach(row => {
-      const match = matchWithFuzzy(row.state, unmatchedStates, fuzzyThreshold);
-      if (match.matchedValue) {
-        matchedData.push({
-          state: match.matchedValue,
-          value: row.value
-        });
-      }
-    });
-
-    const totalEntries = data.length;
-    const matchedEntries = matchedData.length;
-    const unmatchedEntries = totalEntries - matchedEntries;
-    const matchPercentage = totalEntries > 0 ? ((matchedEntries / totalEntries) * 100).toFixed(2) : '0.00';
-
-    console.log('=== State Fuzzy Matching Benchmark (threshold: ' + fuzzyThreshold + ') ===');
-    console.log('Total entries:', totalEntries);
-    console.log('Matched entries:', matchedEntries);
-    console.log('Unmatched entries:', unmatchedEntries);
-    console.log('Match rate:', matchPercentage + '%');
-    console.log('===================================================');
-
-    return matchedData;
-  };
-
-  // Helper function to process uploaded CSV data
   const processUploadedData = async (result: Papa.ParseResult<Record<string, string>>) => {
     try {
       const data = result.data as Array<Record<string, string>>;
       const headers = result.meta.fields || [];
 
-      // Validate column count based on mode
       const requiredColumns = mode === 'districts' ? 3 : 2;
       if (headers.length < requiredColumns) {
         alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
         return;
       }
 
-      // For districts: state, district, value columns (value is always last column)
-      // For states: state, value columns (value is always last column)
       const stateColumn = headers[0];
       const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-      const valueColumn = headers[headers.length - 1]; // Always use the last column
+      const valueColumn = headers[headers.length - 1];
+
+      const parseValue = (val: string): number | string => {
+        const trimmed = val ? val.trim() : '';
+        if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') {
+          return NaN;
+        }
+        const num = Number(trimmed);
+        return isNaN(num) ? trimmed : num;
+      };
 
       const processedData = data
         .filter(row => {
-          const hasLocationData = mode === 'districts'
+          return mode === 'districts'
             ? row[stateColumn] && row[locationColumn]
             : row[locationColumn];
-          return hasLocationData;
         })
         .map(row => {
-          const value = row[valueColumn];
-          const trimmedValue = value ? value.trim() : '';
-
-          let parsedValue: number | string;
-          if (trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a') {
-            parsedValue = NaN;
-          } else {
-            const numericValue = Number(trimmedValue);
-            parsedValue = isNaN(numericValue) ? trimmedValue : numericValue;
-          }
-
           return mode === 'districts'
-            ? {
-                state: row[stateColumn].trim(),
-                district: row[locationColumn].trim(),
-                value: parsedValue
-              }
-            : {
-                state: row[locationColumn].trim(),
-                value: parsedValue
-              };
-        }) as Array<{ state: string; value: number | string; district?: string }>;
+            ? { state: row[stateColumn].trim(), district: row[locationColumn].trim(), value: parseValue(row[valueColumn]) }
+            : { state: row[locationColumn].trim(), value: parseValue(row[valueColumn]) };
+        });
 
-      // Separate NA values from valid data
-      const validData: typeof processedData = [];
-      const naEntries: typeof processedData = [];
-
-      processedData.forEach(row => {
-        const isNA = typeof row.value === 'string' && row.value === '' ||
-                     typeof row.value === 'number' && (isNaN(row.value) || !isFinite(row.value));
-
-        if (isNA) {
-          naEntries.push(row);
-        } else {
-          validData.push(row);
-        }
-      });
-
-      if (validData.length === 0 && naEntries.length === 0) {
-        const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
-        alert(`No valid data found. Please ensure your file has data in the ${columnDesc}.`);
+      if (processedData.length === 0) {
+        alert(`No valid data found. Please ensure your file has data in the correct columns.`);
         return;
       }
 
-      // Filter data based on GeoJSON before passing to parent
-      const filteredData = await filterDataByGeoJSON(validData);
-
-      if (filteredData.length === 0 && naEntries.length === 0) {
-        alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
-        return;
-      }
-
-      // Find missing entries (exist in GeoJSON but not in uploaded data)
-      const missingEntries: typeof processedData = [];
       if (mode === 'districts') {
-        // Build a map of state -> set of districts from GeoJSON
-        const validDistrictsByState = new Map<string, Set<string>>();
-        try {
-          const res = await fetch(geojsonPath);
-          if (res.ok) {
-            const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; district_name?: string } }> };
-            geo.features.forEach(f => {
-              const state = f.properties?.state_name?.trim();
-              const district = f.properties?.district_name?.trim();
-              if (state && district) {
-                if (!validDistrictsByState.has(state)) {
-                  validDistrictsByState.set(state, new Set());
-                }
-                validDistrictsByState.get(state)!.add(district);
-              }
-            });
-          }
-        } catch (e) {
-          console.error('Error loading GeoJSON for missing entries:', e);
-        }
-
-        // Find districts in GeoJSON that are not in filteredData or naEntries
-        const dataMap = new Map<string, boolean>();
-        [...filteredData, ...naEntries].forEach(row => {
-          const key = `${row.state}|${'district' in row ? row.district : ''}`;
-          dataMap.set(key, true);
-        });
-
-        validDistrictsByState.forEach((districts, state) => {
-          // If selectedState is provided, only count missing entries for that state
-          if (selectedState && state !== selectedState) {
-            return;
-          }
-
-          districts.forEach(district => {
-            const key = `${state}|${district}`;
-            if (!dataMap.has(key)) {
-              missingEntries.push({ state, district, value: NaN });
-            }
-          });
-        });
-      } else {
-        // For states mode - get all states from GeoJSON
-        const validStates: string[] = [];
-        try {
-          const res = await fetch(geojsonPath);
-          if (res.ok) {
-            const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }> };
-            geo.features.forEach(f => {
-              const stateName = f.properties?.state_name?.trim() ||
-                                f.properties?.NAME_1?.trim() ||
-                                f.properties?.name?.trim() ||
-                                f.properties?.ST_NM?.trim();
-              if (stateName && !validStates.includes(stateName)) {
-                validStates.push(stateName);
-              }
-            });
-          }
-        } catch (e) {
-          console.error('Error loading GeoJSON for missing entries:', e);
-        }
-
-        const dataMap = new Map<string, boolean>();
-        [...filteredData, ...naEntries].forEach(row => {
-          dataMap.set(row.state, true);
-        });
-
-        validStates.forEach(state => {
-          if (!dataMap.has(state)) {
-            missingEntries.push({ state, value: NaN });
-          }
-        });
-      }
-
-      // Combine explicit NAs and missing entries
-      const allNAEntries = [...naEntries, ...missingEntries];
-
-      // Prepare NA info
-      const naInfo: NAInfo = mode === 'districts'
-        ? {
-            districts: allNAEntries.map(e => ({ state: e.state, district: (e as { district: string }).district })),
-            count: allNAEntries.length
-          }
-        : {
-            states: allNAEntries.map(e => e.state),
-            count: allNAEntries.length
-          };
-
-      // Use second column header as title
-      onDataLoad(filteredData, valueColumn, naInfo);
-    } catch (error) {
-      alert('Error processing file data');
-    }
-  };
-
-  const filterDataByGeoJSON = async (
-    data: Array<{ state: string; value: number } | { state: string; district: string; value: number }>
-  ): Promise<Array<{ state: string; value: number } | { state: string; district: string; value: number }>> => {
-    if (!geojsonPath) {
-      return data;
-    }
-
-    try {
-      const response = await fetch(geojsonPath);
-
-      if (!response.ok) {
-        console.error('GeoJSON fetch failed:', response.status, response.statusText);
-        return data;
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json') && !contentType?.includes('application/geo+json')) {
-        console.warn('Unexpected content type for GeoJSON:', contentType, '- attempting to parse anyway');
-      }
-
-      const geojson = await response.json();
-
-      if (mode === 'districts') {
-        const districtData = data as Array<{ state: string; district: string; value: number }>;
-
-        const validStates = new Set<string>();
-        const validDistrictsByState = new Map<string, string[]>();
-
-        geojson.features.forEach((feature: { properties: { district_name?: string; state_name?: string } }) => {
-          const stateName = feature.properties.state_name?.trim();
-          const districtName = feature.properties.district_name?.trim();
-
-          if (stateName) {
-            validStates.add(stateName);
-            if (districtName) {
-              if (!validDistrictsByState.has(stateName)) {
-                validDistrictsByState.set(stateName, []);
-              }
-              validDistrictsByState.get(stateName)!.push(districtName);
-            }
-          }
-        });
-
-        return matchStatesAndDistricts(
-          districtData,
-          Array.from(validStates),
-          validDistrictsByState
+        const result = await processDistrictData(
+          processedData as Array<{ state: string; district: string; value: number | string }>,
+          geojsonPath || '',
+          fuzzyThreshold,
+          selectedState
         );
+
+        if (result.matched.length === 0) {
+          alert(`No data matched the current map. Please check your state and district names.`);
+          return;
+        }
+
+        onDataLoad(result.matched, valueColumn, result.naInfo);
       } else {
-        const stateData = data as Array<{ state: string; value: number }>;
+        const result = await processStateData(
+          processedData as Array<{ state: string; value: number | string }>,
+          geojsonPath || '',
+          fuzzyThreshold
+        );
 
-        const validStates = new Set<string>();
-        geojson.features.forEach((feature: { properties: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }) => {
-          const stateName = (
-            feature.properties.state_name ||
-            feature.properties.NAME_1 ||
-            feature.properties.name ||
-            feature.properties.ST_NM
-          )?.trim();
+        if (result.matched.length === 0) {
+          alert(`No data matched the current map. Please check your state names.`);
+          return;
+        }
 
-          if (stateName) {
-            validStates.add(stateName);
-          }
-        });
-
-        return matchStates(stateData, Array.from(validStates));
+        onDataLoad(result.matched, valueColumn, result.naInfo);
       }
     } catch (error) {
-      console.error('Error filtering data by GeoJSON:', error);
-      return data;
+      alert(`Error processing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
+
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -554,181 +177,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       Papa.parse(csvText, {
         header: true,
         complete: async (result) => {
-          try {
-            const data = result.data as Array<Record<string, string>>;
-            const headers = result.meta.fields || [];
-            
-            // Validate column count based on mode
-            const requiredColumns = mode === 'districts' ? 3 : 2;
-            if (headers.length < requiredColumns) {
-              alert(`CSV must have at least ${requiredColumns} columns${mode === 'districts' ? ' (state, district, value)' : ' (state, value)'}`);
-              return;
-            }
-            
-            // For districts: state, district, value columns (value is always last column)
-            // For states: state, value columns (value is always last column)
-            const stateColumn = headers[0];
-            const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-            const valueColumn = headers[headers.length - 1]; // Always use the last column
-            
-            const processedData = data
-              .filter(row => {
-                const hasLocationData = mode === 'districts' 
-                  ? row[stateColumn] && row[locationColumn] 
-                  : row[locationColumn];
-                return hasLocationData;
-              })
-              .map(row => {
-                const value = row[valueColumn];
-                const trimmedValue = value ? value.trim() : '';
-
-                let parsedValue: number | string;
-                if (trimmedValue === '' || trimmedValue.toLowerCase() === 'na' || trimmedValue.toLowerCase() === 'n/a') {
-                  parsedValue = NaN;
-                } else {
-                  const numericValue = Number(trimmedValue);
-                  parsedValue = isNaN(numericValue) ? trimmedValue : numericValue;
-                }
-
-                return mode === 'districts'
-                  ? {
-                      state: row[stateColumn].trim(),
-                      district: row[locationColumn].trim(),
-                      value: parsedValue
-                    }
-                  : {
-                      state: row[locationColumn].trim(),
-                      value: parsedValue
-                    };
-              }) as Array<{ state: string; value: number | string; district?: string }>;
-
-            // Separate NA values from valid data
-            const validData: typeof processedData = [];
-            const naEntries: typeof processedData = [];
-
-            processedData.forEach(row => {
-              const isNA = typeof row.value === 'string' && row.value === '' ||
-                           typeof row.value === 'number' && (isNaN(row.value) || !isFinite(row.value));
-
-              if (isNA) {
-                naEntries.push(row);
-              } else {
-                validData.push(row);
-              }
-            });
-
-            if (validData.length === 0 && naEntries.length === 0) {
-              const columnDesc = mode === 'districts' ? 'state, district, and value columns (value is last column)' : 'state and value columns (value is last column)';
-              alert(`No valid data found in demo file. Please ensure it has data in the ${columnDesc}.`);
-              return;
-            }
-
-            // Filter data based on GeoJSON before passing to parent
-            const filteredData = await filterDataByGeoJSON(validData);
-
-            if (filteredData.length === 0 && naEntries.length === 0) {
-              alert(`No data matched the current map. Please check that your ${mode === 'districts' ? 'state and district' : 'state'} names match the map.`);
-              return;
-            }
-
-            // Find missing entries (exist in GeoJSON but not in uploaded data)
-            const missingEntries: typeof processedData = [];
-            if (mode === 'districts') {
-              // Build a map of state -> set of districts from GeoJSON
-              const validDistrictsByState = new Map<string, Set<string>>();
-              try {
-                const res = await fetch(geojsonPath);
-                if (res.ok) {
-                  const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; district_name?: string } }> };
-                  geo.features.forEach(f => {
-                    const state = f.properties?.state_name?.trim();
-                    const district = f.properties?.district_name?.trim();
-                    if (state && district) {
-                      if (!validDistrictsByState.has(state)) {
-                        validDistrictsByState.set(state, new Set());
-                      }
-                      validDistrictsByState.get(state)!.add(district);
-                    }
-                  });
-                }
-              } catch (e) {
-                console.error('Error loading GeoJSON for missing entries:', e);
-              }
-
-              // Find districts in GeoJSON that are not in filteredData or naEntries
-              const dataMap = new Map<string, boolean>();
-              [...filteredData, ...naEntries].forEach(row => {
-                const key = `${row.state}|${'district' in row ? row.district : ''}`;
-                dataMap.set(key, true);
-              });
-
-              validDistrictsByState.forEach((districts, state) => {
-                // If selectedState is provided, only count missing entries for that state
-                if (selectedState && state !== selectedState) {
-                  return;
-                }
-
-                districts.forEach(district => {
-                  const key = `${state}|${district}`;
-                  if (!dataMap.has(key)) {
-                    missingEntries.push({ state, district, value: NaN });
-                  }
-                });
-              });
-            } else {
-              // For states mode - get all states from GeoJSON
-              const validStates: string[] = [];
-              try {
-                const res = await fetch(geojsonPath);
-                if (res.ok) {
-                  const geo = await res.json() as { features: Array<{ properties?: { state_name?: string; NAME_1?: string; name?: string; ST_NM?: string } }> };
-                  geo.features.forEach(f => {
-                    const stateName = f.properties?.state_name?.trim() ||
-                                      f.properties?.NAME_1?.trim() ||
-                                      f.properties?.name?.trim() ||
-                                      f.properties?.ST_NM?.trim();
-                    if (stateName && !validStates.includes(stateName)) {
-                      validStates.push(stateName);
-                    }
-                  });
-                }
-              } catch (e) {
-                console.error('Error loading GeoJSON for missing entries:', e);
-              }
-
-              const dataMap = new Map<string, boolean>();
-              [...filteredData, ...naEntries].forEach(row => {
-                dataMap.set(row.state, true);
-              });
-
-              validStates.forEach(state => {
-                if (!dataMap.has(state)) {
-                  missingEntries.push({ state, value: NaN });
-                }
-              });
-            }
-
-            // Combine explicit NAs and missing entries
-            const allNAEntries = [...naEntries, ...missingEntries];
-
-            // Prepare NA info
-            const naInfo: NAInfo = mode === 'districts'
-              ? {
-                  districts: allNAEntries.map(e => ({ state: e.state, district: (e as { district: string }).district })),
-                  count: allNAEntries.length
-                }
-              : {
-                  states: allNAEntries.map(e => e.state),
-                  count: allNAEntries.length
-                };
-
-            // Use second column header as title
-            onDataLoad(filteredData, valueColumn, naInfo);
-          } catch (error) {
-            alert('Error processing demo data');
-          }
+          await processUploadedData(result);
         },
-        error: (error) => {
+        error: () => {
           alert('Error parsing demo file');
         }
       });
@@ -760,155 +211,20 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     }
   };
 
-  // Helper to detect URL type
   function detectUrlType(url: string): 'google-sheets' | 'csv' | 'tsv' | 'csv-gz' | 'tsv-gz' | 'unknown' {
-    if (url.includes('docs.google.com/spreadsheets')) {
-      return 'google-sheets';
-    }
-    if (url.endsWith('.csv.gz')) {
-      return 'csv-gz';
-    }
-    if (url.endsWith('.tsv.gz')) {
-      return 'tsv-gz';
-    }
-    if (url.endsWith('.csv')) {
-      return 'csv';
-    }
-    if (url.endsWith('.tsv')) {
-      return 'tsv';
-    }
+    if (url.includes('docs.google.com/spreadsheets')) return 'google-sheets';
+    if (url.endsWith('.csv.gz')) return 'csv-gz';
+    if (url.endsWith('.tsv.gz')) return 'tsv-gz';
+    if (url.endsWith('.csv')) return 'csv';
+    if (url.endsWith('.tsv')) return 'tsv';
     return 'unknown';
   }
 
-  // Helper to extract Google Sheet ID and GID from URL
   function extractSheetInfo(url: string) {
-    // Typical format: https://docs.google.com/spreadsheets/d/{sheetId}/edit#gid={gid}
     const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)(?:\/.*?gid=(\d+))?/);
     if (!match) return null;
     return { sheetId: match[1], gid: match[2] || '0' };
   }
-
-  // Helper to create timeout signal (compatible with older browsers)
-  const createTimeoutSignal = (timeoutMs: number): AbortSignal => {
-    const controller = new AbortController();
-    setTimeout(() => controller.abort(), timeoutMs);
-    return controller.signal;
-  };
-
-  // Helper to try multiple CORS proxy services as fallbacks
-  const tryProxyServices = async (url: string): Promise<Response> => {
-    const proxyServices = [
-      { name: 'allorigins.win', url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
-      { name: 'corsproxy.io', url: `https://corsproxy.io/?${encodeURIComponent(url)}` },
-      { name: 'codetabs.com', url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}` },
-    ];
-
-    const errors: string[] = [];
-    
-    for (const proxy of proxyServices) {
-      try {
-        const response = await fetch(proxy.url, {
-          // Add timeout to prevent hanging
-          signal: createTimeoutSignal(30000), // 30 second timeout
-        });
-        if (response.ok) {
-          return response;
-        }
-        errors.push(`${proxy.name}: ${response.status} ${response.statusText}`);
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        errors.push(`${proxy.name}: ${errorMsg}`);
-        // Continue to next proxy service
-        continue;
-      }
-    }
-    
-    throw new Error(`All proxy services failed. Errors: ${errors.join('; ')}`);
-  };
-
-  // Helper to fetch with CORS proxy fallback
-  const fetchWithCorsFallback = async (url: string, options: RequestInit = {}): Promise<Response> => {
-    try {
-      // Try direct fetch first
-      const response = await fetch(url, {
-        ...options,
-        signal: createTimeoutSignal(10000), // 10 second timeout for direct fetch
-      });
-      // If response is ok, return it
-      if (response.ok) {
-        return response;
-      }
-      // If response exists but not ok, it's not a CORS issue - throw the error
-      throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-    } catch (error) {
-      // CORS errors typically result in TypeError with "Failed to fetch" or network errors
-      // Also catch timeout errors
-      const isCorsOrNetworkError = 
-        error instanceof TypeError || 
-        (error instanceof Error && (
-          error.message.includes('Failed to fetch') ||
-          error.message.includes('NetworkError') ||
-          error.message.includes('timeout') ||
-          error.name === 'AbortError'
-        ));
-      
-      if (isCorsOrNetworkError) {
-        // Try proxy services as fallback
-        try {
-          return await tryProxyServices(url);
-        } catch (proxyError) {
-          throw new Error(`Failed to fetch URL. Direct fetch failed (CORS/network error) and all proxy services failed: ${proxyError instanceof Error ? proxyError.message : 'Unknown error'}`);
-        }
-      }
-      // Re-throw other errors
-      throw error;
-    }
-  };
-
-  // Helper to fetch and decompress gzipped URL with CORS fallback
-  const fetchAndDecompressGzUrl = async (url: string): Promise<string> => {
-    let response: Response;
-    
-    try {
-      // Try direct fetch first
-      response = await fetch(url, {
-        signal: createTimeoutSignal(10000), // 10 second timeout
-      });
-      if (response.ok) {
-        // Success, use direct response
-      } else {
-        // HTTP error (4xx, 5xx) - not a CORS issue, throw error
-        throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
-      }
-    } catch (error) {
-      // CORS or network error - try proxy services
-      const isCorsOrNetworkError = 
-        error instanceof TypeError || 
-        (error instanceof Error && (
-          error.message.includes('Failed to fetch') ||
-          error.message.includes('NetworkError') ||
-          error.message.includes('timeout') ||
-          error.name === 'AbortError'
-        ));
-      
-      if (isCorsOrNetworkError) {
-        // Try proxy services as fallback
-        try {
-          response = await tryProxyServices(url);
-        } catch (proxyError) {
-          throw new Error(`Failed to fetch gzipped URL. Direct fetch failed (CORS/network error) and all proxy services failed: ${proxyError instanceof Error ? proxyError.message : 'Unknown error'}`);
-        }
-      } else {
-        // Re-throw other errors
-        throw error;
-      }
-    }
-    
-    const arrayBuffer = await response.arrayBuffer();
-    const compressed = new Uint8Array(arrayBuffer);
-    const decompressed = pako.inflate(compressed, { to: 'string' });
-    return decompressed;
-  };
 
   const handleLoadGoogleSheet = async () => {
     setSheetError(null);
@@ -919,7 +235,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
 
     try {
       if (urlType === 'google-sheets') {
-        // Handle Google Sheets URL
         const info = extractSheetInfo(googleSheetUrl);
         if (!info) {
           setSheetError('Invalid Google Sheet link.');
@@ -928,31 +243,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         }
         const csvUrl = `https://docs.google.com/spreadsheets/d/${info.sheetId}/gviz/tq?tqx=out:csv&gid=${info.gid}`;
         const response = await fetchWithCorsFallback(csvUrl);
-        if (!response.ok) throw new Error('Failed to fetch Google Sheet.');
         csvText = await response.text();
       } else if (urlType === 'csv-gz' || urlType === 'tsv-gz') {
-        // Handle gzipped CSV/TSV URL
-        csvText = await fetchAndDecompressGzUrl(googleSheetUrl);
+        csvText = await fetchAndDecompressGz(googleSheetUrl);
       } else if (urlType === 'csv' || urlType === 'tsv') {
-        // Handle direct CSV/TSV URL with CORS fallback
         const response = await fetchWithCorsFallback(googleSheetUrl);
-        if (!response.ok) throw new Error(`Failed to fetch URL: ${response.statusText}`);
         csvText = await response.text();
       } else {
         setSheetError('Invalid URL. Please provide a Google Sheets link or a direct link to a CSV, TSV, or gzipped file.');
         setLoadingSheet(false);
         return;
       }
+
       Papa.parse(csvText, {
         header: true,
         complete: async (result) => {
-          try {
-            await processUploadedData(result);
-            setLoadingSheet(false);
-          } catch (error) {
-            setSheetError('Error processing data from URL.');
-            setLoadingSheet(false);
-          }
+          await processUploadedData(result);
+          setLoadingSheet(false);
         },
         error: () => {
           setSheetError('Error parsing CSV/TSV data from URL.');
@@ -960,42 +267,53 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         }
       });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch or parse data from URL.';
-      setSheetError(errorMessage);
+      setSheetError(err instanceof Error ? err.message : 'Failed to fetch or parse data from URL.');
       setLoadingSheet(false);
     }
   };
 
   return (
-    <Card className="p-6 border-dashed border-2 hover:border-primary/50 transition-colors">
+    <Card className={`p-6 border-dashed border-2 hover:border-primary/50 transition-colors ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : ''}`}>
       <div className="text-center">
-        <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-medium mb-2">Upload Your Data</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <Upload className={`mx-auto h-12 w-12 mb-4 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`} />
+        <h3 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : ''}`}>Upload Your Data</h3>
+        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
           {mode === 'districts'
             ? 'Upload a CSV, TSV, or gzipped (.gz) file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
             : 'Upload a CSV, TSV, or gzipped (.gz) file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
           }
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={handleUploadClick}>
+          <Button
+            onClick={handleUploadClick}
+            className={darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''}
+          >
             Choose File
           </Button>
-          <Button variant="outline" onClick={handleLoadDemo} className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleLoadDemo}
+            className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
+          >
             <Play className="h-4 w-4" />
             Load Demo
           </Button>
         </div>
         <div className="flex justify-center mt-3">
-          <Button variant="outline" size="sm" className="flex items-center gap-2" onClick={downloadCSVTemplate}>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
+            onClick={downloadCSVTemplate}
+          >
             Download CSV Template
           </Button>
         </div>
         
-        <div className="mt-4 p-4 border-t border-gray-200">
+        <div className={`mt-4 p-4 border-t ${darkMode ? 'border-[#444]' : 'border-gray-200'}`}>
           <div className="text-center mb-3">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">Or load from URL</h4>
-            <p className="text-xs text-gray-500">
+            <h4 className={`text-sm font-medium mb-1 ${darkMode ? 'text-white' : 'text-gray-700'}`}>Or load from URL</h4>
+            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Paste a Google Sheets link (see{' '}
               <a
                 href={googleSheetLink || (mode === 'districts'
@@ -1003,7 +321,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
                   : "https://docs.google.com/spreadsheets/d/1BtZOnh15b4ZG_I0pFLdMIK7nNqplikn5_ui59SFbxaI/edit?usp=sharing")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline text-blue-500 hover:text-blue-700"
+                className={`underline ${darkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-500 hover:text-blue-700'}`}
               >
                 template
               </a>
@@ -1014,7 +332,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  darkMode
+                    ? 'bg-[#222] border-[#444] text-white placeholder-gray-500'
+                    : 'border-gray-300 bg-white text-gray-900'
+                }`}
                 placeholder="https://docs.google.com/... or https://example.com/data.csv"
                 value={googleSheetUrl}
                 onChange={e => setGoogleSheetUrl(e.target.value)}
@@ -1023,7 +345,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               {googleSheetUrl && (
                 <button
                   onClick={() => setGoogleSheetUrl('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 ${
+                    darkMode ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                  }`}
                   disabled={loadingSheet}
                 >
                   ✕
@@ -1034,14 +358,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
               <Button
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed' : ''}`}
                 onClick={handleLoadGoogleSheet}
                 disabled={loadingSheet || !googleSheetUrl}
               >
                 {loadingSheet ? 'Loading...' : 'Load from URL'}
               </Button>
             </div>
-            {sheetError && <div className="text-xs text-red-500 text-center">{sheetError}</div>}
+            {sheetError && <div className={`text-xs text-center ${darkMode ? 'text-red-400' : 'text-red-500'}`}>{sheetError}</div>}
           </div>
         </div>
 

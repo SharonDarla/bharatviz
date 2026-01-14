@@ -117,12 +117,17 @@ export function getDiscreteColorInfo(
 
   const binCount = boundaries.length - 1;
 
-  let t = (binIndex + 0.5) / binCount;
-  if (invertColors) {
-    t = 1 - t;
+  let color: string;
+  if (colorScale === 'aqi') {
+    const binMidpoint = (boundaries[binIndex] + boundaries[binIndex + 1]) / 2;
+    color = invertColors ? getD3ColorInterpolator(colorScale)(1 - (binMidpoint / 500)) : getAQIColor(binMidpoint);
+  } else {
+    let t = (binIndex + 0.5) / binCount;
+    if (invertColors) {
+      t = 1 - t;
+    }
+    color = getD3ColorInterpolator(colorScale)(t);
   }
-
-  const color = getD3ColorInterpolator(colorScale)(t);
 
   const minValue = boundaries[binIndex];
   const maxValue = boundaries[binIndex + 1];
@@ -164,14 +169,18 @@ export function getColorForValue(
   if (isNaN(value)) {
     return '#d1d5db';
   }
-  
+
   if (values.length === 0) {
     return 'white';
   }
-  
+
+  if (colorScale === 'aqi') {
+    return invertColors ? getD3ColorInterpolator(colorScale)(1 - (value / 500)) : getAQIColor(value);
+  }
+
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
-  
+
   if (minValue === maxValue) {
     return getD3ColorInterpolator(colorScale)(0.5);
   }
@@ -190,8 +199,18 @@ export function getColorForValue(
   return getD3ColorInterpolator(colorScale)(normalizedValue);
 }
 
+export function getAQIColor(value: number): string {
+  if (value <= 50) return '#10b981';
+  if (value <= 100) return '#84cc16';
+  if (value <= 200) return '#eab308';
+  if (value <= 300) return '#f97316';
+  if (value <= 400) return '#ef4444';
+  return '#991b1b';
+}
+
 export function getD3ColorInterpolator(scale: ColorScale) {
   const interpolators = {
+    aqi: (t: number) => d3.interpolateBlues(t),
     blues: d3.interpolateBlues,
     greens: d3.interpolateGreens,
     reds: d3.interpolateReds,
@@ -228,8 +247,13 @@ export function getDiscreteLegendStops(
     for (let i = 0; i <= numStops; i++) {
       const t = i / numStops;
       const value = minValue + t * (maxValue - minValue);
-      const colorT = invertColors ? 1 - t : t;
-      const color = getD3ColorInterpolator(colorScale)(colorT);
+      let color: string;
+      if (colorScale === 'aqi') {
+        color = invertColors ? getD3ColorInterpolator(colorScale)(1 - (value / 500)) : getAQIColor(value);
+      } else {
+        const colorT = invertColors ? 1 - t : t;
+        color = getD3ColorInterpolator(colorScale)(colorT);
+      }
       stops.push({
         offset: `${t * 100}%`,
         color,
@@ -244,12 +268,17 @@ export function getDiscreteLegendStops(
   const stops = [];
 
   for (let i = 0; i < binCount; i++) {
-    let t = (i + 0.5) / binCount;
-    if (invertColors) {
-      t = 1 - t;
+    const binMidpoint = (boundaries[i] + boundaries[i + 1]) / 2;
+    let color: string;
+    if (colorScale === 'aqi') {
+      color = invertColors ? getD3ColorInterpolator(colorScale)(1 - (binMidpoint / 500)) : getAQIColor(binMidpoint);
+    } else {
+      let t = (i + 0.5) / binCount;
+      if (invertColors) {
+        t = 1 - t;
+      }
+      color = getD3ColorInterpolator(colorScale)(t);
     }
-
-    const color = getD3ColorInterpolator(colorScale)(t);
     const startOffset = (i / binCount) * 100;
     const endOffset = ((i + 1) / binCount) * 100;
 

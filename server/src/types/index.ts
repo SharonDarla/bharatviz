@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Color scales matching the frontend
 export const ColorScales = [
-  'spectral', 'rdylbu', 'rdylgn', 'brbg', 'piyg', 'puor',
+  'aqi', 'spectral', 'rdylbu', 'rdylgn', 'brbg', 'piyg', 'puor',
   'blues', 'greens', 'reds', 'oranges', 'purples', 'pinks',
   'viridis', 'plasma', 'inferno', 'magma'
 ] as const;
@@ -27,6 +27,8 @@ export const StatesMapRequestSchema = z.object({
   mainTitle: z.string().optional().default('BharatViz'),
 
   legendTitle: z.string().optional().default('Values'),
+
+  darkMode: z.boolean().optional().default(false),
 
   colorBarSettings: z.object({
     mode: z.enum(['continuous', 'discrete']).default('continuous'),
@@ -69,6 +71,8 @@ export const DistrictsMapRequestSchema = z.object({
   // State name for single-state rendering (filters and zooms to that state)
   state: z.string().optional(),
 
+  darkMode: z.boolean().optional().default(false),
+
   colorBarSettings: z.object({
     mode: z.enum(['continuous', 'discrete']).default('continuous'),
     binCount: z.number().min(2).max(20).optional().default(5),
@@ -103,6 +107,8 @@ export const StateDistrictMapRequestSchema = z.object({
   mainTitle: z.string().optional().default('BharatViz'),
 
   legendTitle: z.string().optional().default('Values'),
+
+  darkMode: z.boolean().optional().default(false),
 
   colorBarSettings: z.object({
     mode: z.enum(['continuous', 'discrete']).default('continuous'),

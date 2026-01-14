@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { type DataType, type CategoryColorMapping } from '@/lib/categoricalUtils';
 import { CategoryColorPicker } from './CategoryColorPicker';
 
-export type ColorScale = 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
+export type ColorScale = 'aqi' | 'blues' | 'greens' | 'reds' | 'oranges' | 'purples' | 'pinks' | 'viridis' | 'plasma' | 'inferno' | 'magma' | 'rdylbu' | 'rdylgn' | 'spectral' | 'brbg' | 'piyg' | 'puor';
 
 export interface ColorBarSettings {
   isDiscrete: boolean;
@@ -38,10 +38,12 @@ interface ColorMapChooserProps {
   categories?: string[];
   categoryColors?: CategoryColorMapping;
   onCategoryColorChange?: (category: string, color: string) => void;
+  darkMode?: boolean;
 }
 
 const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverging' } } = {
   // Sequential scales
+  aqi: { name: 'AQI (Air Quality Index)', type: 'sequential' },
   blues: { name: 'Blues', type: 'sequential' },
   greens: { name: 'Greens', type: 'sequential' },
   reds: { name: 'Reds', type: 'sequential' },
@@ -52,7 +54,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   plasma: { name: 'Plasma', type: 'sequential' },
   inferno: { name: 'Inferno', type: 'sequential' },
   magma: { name: 'Magma', type: 'sequential' },
-  
+
   // Diverging scales
   rdylbu: { name: 'Red-Yellow-Blue', type: 'diverging' },
   rdylgn: { name: 'Red-Yellow-Green', type: 'diverging' },
@@ -62,7 +64,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange, dataType = 'numerical', categories = [], categoryColors = {}, onCategoryColorChange }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange, dataType = 'numerical', categories = [], categoryColors = {}, onCategoryColorChange, darkMode = false }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -117,41 +119,41 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
   };
 
   return (
-    <Card>
+    <Card className={darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}>
       <CardContent className="space-y-4 pt-6">
         {dataType === 'categorical' ? (
           <div className="text-center py-2">
-            <Label className="text-sm font-medium text-blue-600">
+            <Label className={`text-sm font-medium ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
               Categorical data detected
             </Label>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               Use category colors below to customize
             </p>
           </div>
         ) : (
           <>
             <div>
-              <Label htmlFor="colorScale" className="text-sm font-medium">
+              <Label htmlFor="colorScale" className={`text-sm font-medium ${darkMode ? 'text-white' : ''}`}>
                 Choose Color Scale
               </Label>
               <Select value={selectedScale} onValueChange={onScaleChange}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className={`w-full ${darkMode ? 'bg-[#222] border-[#444] text-white' : ''}`}>
                   <SelectValue placeholder="Select a color scale" />
                 </SelectTrigger>
-                <SelectContent>
-                  <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase">
+                <SelectContent className={darkMode ? 'bg-[#222] border-[#444]' : ''}>
+                  <div className={`px-2 py-1 text-xs font-semibold uppercase ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Sequential
                   </div>
                   {sequentialScales.map(([key, scale]) => (
-                    <SelectItem key={key} value={key}>
+                    <SelectItem key={key} value={key} className={darkMode ? 'text-white focus:bg-[#333] focus:text-white' : ''}>
                       {scale.name}
                     </SelectItem>
                   ))}
-                  <div className="px-2 py-1 text-xs font-semibold text-gray-500 uppercase mt-2">
+                  <div className={`px-2 py-1 text-xs font-semibold uppercase mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Diverging
                   </div>
                   {divergingScales.map(([key, scale]) => (
-                    <SelectItem key={key} value={key}>
+                    <SelectItem key={key} value={key} className={darkMode ? 'text-white focus:bg-[#333] focus:text-white' : ''}>
                       {scale.name}
                     </SelectItem>
                   ))}
@@ -160,7 +162,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
             </div>
 
             <div className="mt-4">
-              <Label className="text-sm font-medium">Preview</Label>
+              <Label className={`text-sm font-medium ${darkMode ? 'text-white' : ''}`}>Preview</Label>
               <div className="mt-2 h-4 rounded flex overflow-hidden">
                 {getPreviewColors(selectedScale, invertColors, colorBarSettings).map((color, i) => (
                   <div
@@ -179,11 +181,11 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
         {/* Discrete/Continuous Toggle - only show for numerical data */}
         {dataType === 'numerical' && colorBarSettings && onColorBarSettingsChange && (
           <>
-            <Separator />
+            <Separator className={darkMode ? 'bg-[#444]' : ''} />
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Color Bar Type</Label>
+              <Label className={`text-sm font-medium ${darkMode ? 'text-white' : ''}`}>Color Bar Type</Label>
               <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className={`flex items-center gap-2 text-sm cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
                   <input
                     type="radio"
                     name="colorBarType"
@@ -193,7 +195,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                   />
                   Continuous
                 </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className={`flex items-center gap-2 text-sm cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
                   <input
                     type="radio"
                     name="colorBarType"
@@ -204,12 +206,12 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                   Discrete
                 </label>
               </div>
-              
+
               {/* Discrete Options */}
               {colorBarSettings.isDiscrete && (
-                <div className="space-y-3 pl-4 border-l-2 border-muted">
+                <div className={`space-y-3 pl-4 border-l-2 ${darkMode ? 'border-[#444]' : 'border-muted'}`}>
                   <div>
-                    <Label htmlFor="binCount" className="text-xs font-medium text-muted-foreground">
+                    <Label htmlFor="binCount" className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`}>
                       Number of Bins
                     </Label>
                     <Input
@@ -222,22 +224,22 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                         const count = parseInt(e.target.value) || 5;
                         onColorBarSettingsChange({ ...colorBarSettings, binCount: Math.max(2, Math.min(20, count)) });
                       }}
-                      className="w-20 h-8 text-xs"
+                      className={`w-20 h-8 text-xs ${darkMode ? 'bg-[#222] border-[#444] text-white' : ''}`}
                       disabled={colorBarSettings.useCustomBoundaries}
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <label className={`flex items-center gap-2 text-xs cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
                       <input
                         type="checkbox"
                         checked={colorBarSettings.useCustomBoundaries}
                         onChange={(e) => {
-                          onColorBarSettingsChange({ 
-                            ...colorBarSettings, 
+                          onColorBarSettingsChange({
+                            ...colorBarSettings,
                             useCustomBoundaries: e.target.checked,
-                            customBoundaries: e.target.checked && colorBarSettings.customBoundaries.length === 0 
-                              ? [0, 25, 50, 75, 100] 
+                            customBoundaries: e.target.checked && colorBarSettings.customBoundaries.length === 0
+                              ? [0, 25, 50, 75, 100]
                               : colorBarSettings.customBoundaries
                           });
                         }}
@@ -245,7 +247,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                       />
                       Custom boundaries
                     </label>
-                    
+
                     {colorBarSettings.useCustomBoundaries && (
                       <div className="mt-2 space-y-1">
                         <Input
@@ -254,14 +256,14 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                           onChange={(e) => setBoundariesInput(e.target.value)}
                           onBlur={() => applyCustomBoundaries(boundariesInput)}
                           onKeyDown={handleBoundariesKeyDown}
-                          className={`text-xs h-8 ${boundariesError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                          className={`text-xs h-8 ${boundariesError ? 'border-red-500 focus-visible:ring-red-500' : ''} ${darkMode ? 'bg-[#222] border-[#444] text-white placeholder-gray-500' : ''}`}
                         />
                         {boundariesError ? (
-                          <p className="text-xs text-red-500">
+                          <p className={`text-xs ${darkMode ? 'text-red-400' : 'text-red-500'}`}>
                             {boundariesError}
                           </p>
                         ) : (
-                          <div className="text-xs text-muted-foreground space-y-0.5">
+                          <div className={`text-xs space-y-0.5 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`}>
                             <p className="font-medium">📍 Enter breakpoints (not ranges)</p>
                             <p>• Type values separated by commas</p>
                             <p>• Press Enter or click outside to apply</p>
@@ -275,12 +277,12 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
                 </div>
               )}
             </div>
-            <Separator />
+            <Separator className={darkMode ? 'bg-[#444]' : ''} />
           </>
         )}
       </CardContent>
       <div className="flex flex-col gap-2 px-6 pb-4">
-        <label className="flex items-center gap-2 text-sm">
+        <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
           <input
             type="checkbox"
             checked={invertColors}
@@ -289,7 +291,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           Invert colors
         </label>
         {hideStateNames !== undefined && onHideStateNamesChange && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
             <input
               type="checkbox"
               checked={hideStateNames}
@@ -299,7 +301,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           </label>
         )}
         {hideValues !== undefined && onHideValuesChange && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
             <input
               type="checkbox"
               checked={hideValues}
@@ -309,7 +311,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           </label>
         )}
         {showStateBoundaries !== undefined && onShowStateBoundariesChange && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
             <input
               type="checkbox"
               checked={showStateBoundaries}
@@ -319,7 +321,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           </label>
         )}
         {hideDistrictNames !== undefined && onHideDistrictNamesChange && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
             <input
               type="checkbox"
               checked={hideDistrictNames}
@@ -329,7 +331,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
           </label>
         )}
         {hideDistrictValues !== undefined && onHideDistrictValuesChange && (
-          <label className="flex items-center gap-2 text-sm">
+          <label className={`flex items-center gap-2 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
             <input
               type="checkbox"
               checked={hideDistrictValues}
@@ -352,10 +354,24 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
   );
 };
 
-// Helper function to get preview colors
+function getAQIColor(value: number): string {
+  if (value <= 50) return '#10b981';
+  if (value <= 100) return '#84cc16';
+  if (value <= 200) return '#eab308';
+  if (value <= 300) return '#f97316';
+  if (value <= 400) return '#ef4444';
+  return '#991b1b';
+}
+
 function getPreviewColor(scale: ColorScale, t: number): string {
+  if (scale === 'aqi') {
+    const value = t * 500;
+    return getAQIColor(value);
+  }
+
   // This is a simplified preview - in practice, you'd use the actual D3 color scales
   const colors: { [key in ColorScale]: string[] } = {
+    aqi: ['#10b981', '#10b981', '#84cc16', '#84cc16', '#eab308', '#eab308', '#f97316', '#ef4444', '#991b1b'],
     blues: ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', '#4292c6', '#2171b5', '#08519c', '#08306b'],
     greens: ['#f7fcf5', '#e5f5e0', '#c7e9c0', '#a1d99b', '#74c476', '#41ab5d', '#238b45', '#006d2c', '#00441b'],
     reds: ['#fff5f0', '#fee0d2', '#fcbba1', '#fc9272', '#fb6a4a', '#ef3b2c', '#cb181d', '#a50f15', '#67000d'],

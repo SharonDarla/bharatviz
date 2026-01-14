@@ -4,10 +4,8 @@
 
 ## Quick links
 
-- **Web application**: [bharatviz.saketlab.in](https://bharatviz.saketlab.in/)
-- **REST api**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.in/api/)
-- **API documentation**: [server/README.md](server/README.md)
-- **Embed in websites**: [EMBED.md](EMBED.md) - Embed maps directly in any website
+- **Web application**: [bharatviz.saketlab.in](https://bharatviz.saketlab.org/)
+- **REST api**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.org/api/)
 
 ## Supported maps
 
@@ -167,8 +165,3 @@ Found a bug or have a feature request? Please use [GitHub Issues](https://github
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
-
-- GeoJSON data from Government of India's LGD (Local Government Directory)
-- Built with [React](https://react.dev/), [D3.js](https://d3js.org/), and [Vite](https://vite.dev/)
-- Claude [Anthropic](https://www.anthropic.com/)

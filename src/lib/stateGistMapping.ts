@@ -15,11 +15,20 @@ export interface StateGistMapping {
  */
 export async function loadStateGistMapping(): Promise<StateGistMapping | null> {
   try {
-    // This would typically load from a GitHub gist or other remote mapping
-    // For now, return null to use fallback (static GeoJSON)
-    return null;
+    // URL to the gist mapping JSON file
+    // You can host this on GitHub Pages, a CDN, or any static file host
+    const GIST_MAPPING_URL = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/state-gist-mapping.json';
+
+    const response = await fetch(GIST_MAPPING_URL);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch gist mapping: ${response.statusText}`);
+    }
+
+    const mapping: StateGistMapping = await response.json();
+    return mapping;
   } catch (error) {
     console.error('Failed to load state gist mapping:', error);
+    // Return null to trigger fallback mode (load full GeoJSON)
     return null;
   }
 }

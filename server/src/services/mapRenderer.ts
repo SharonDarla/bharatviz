@@ -59,7 +59,6 @@ export class StatesMapRenderer {
       this.geojsonData = JSON.parse(geojsonContent);
     } catch (error) {
       // If local file doesn't exist, fetch from the live BharatViz site
-      console.log('Local GeoJSON not found, fetching from bharatviz.web.app...');
       const response = await fetch('https://bharatviz.web.app/India_LGD_states.geojson');
       if (!response.ok) {
         throw new Error(`Failed to fetch GeoJSON: ${response.status} ${response.statusText}`);
@@ -81,7 +80,8 @@ export class StatesMapRenderer {
       hideStateNames = false,
       hideValues = false,
       mainTitle = 'BharatViz',
-      legendTitle = 'Values'
+      legendTitle = 'Values',
+      darkMode = false
     } = request;
 
     // Calculate statistics
@@ -105,13 +105,16 @@ export class StatesMapRenderer {
       .attr('width', width)
       .attr('height', height)
       .attr('viewBox', `0 0 ${width} ${height}`)
-      .style('font-family', 'Arial, Helvetica, sans-serif');
+      .style('font-family', 'Arial, Helvetica, sans-serif')
+      .style('background-color', darkMode ? '#000000' : '#ffffff');
 
-    // Add white background rectangle
+    // Add background rectangle as fallback
     svg.append('rect')
+      .attr('x', 0)
+      .attr('y', 0)
       .attr('width', width)
       .attr('height', height)
-      .attr('fill', 'white');
+      .attr('fill', darkMode ? '#000000' : 'white');
 
     // Create projection using fitSize (CRITICAL - this is what frontend uses!)
     const projection = d3.geoMercator()
@@ -135,16 +138,32 @@ export class StatesMapRenderer {
       .attr('fill', (d: StateFeature) => {
         const stateName = this.getStateName(d.properties);
         const value = dataMap.get(stateName);
+        if (value === undefined) return darkMode ? '#1a1a1a' : 'white';
         return getColorForValue(value, values, colorScale, invertColors);
       })
       .attr('stroke', (d: StateFeature) => {
         const stateName = this.getStateName(d.properties);
         const value = dataMap.get(stateName);
-        if (value === undefined) return '#0f172a';
+        if (value === undefined) return darkMode ? '#ffffff' : '#0f172a';
         const fillColor = getColorForValue(value, values, colorScale, invertColors);
         return isColorDark(fillColor) ? '#ffffff' : '#0f172a';
       })
-      .attr('stroke-width', 0.5);
+      .attr('stroke-width', 0.5)
+      .each((d: StateFeature, i: number, nodes: HTMLElement[]) => {
+        // Add title element for hover tooltips
+        const pathElement = d3.select(nodes[i]);
+        const stateName = this.getStateName(d.properties);
+        const displayName = this.getDisplayName(stateName);
+        const value = dataMap.get(stateName);
+
+        if (value !== undefined) {
+          pathElement.append('title')
+            .text(`${displayName}: ${roundToSignificantDigits(value)}`);
+        } else {
+          pathElement.append('title')
+            .text(displayName);
+        }
+      });
 
     // Add state labels and values
     if (!hideStateNames || !hideValues) {
@@ -221,7 +240,8 @@ export class StatesMapRenderer {
       meanValue,
       colorScale,
       invertColors,
-      legendTitle
+      legendTitle,
+      darkMode
     });
 
     // Add main title
@@ -231,7 +251,7 @@ export class StatesMapRenderer {
       .attr('text-anchor', 'middle')
       .attr('font-size', '24px')
       .attr('font-weight', 'bold')
-      .attr('fill', '#000000')
+      .attr('fill', darkMode ? '#ffffff' : '#000000')
       .text(mainTitle);
 
     // Return the SVG as string
@@ -250,6 +270,7 @@ export class StatesMapRenderer {
       colorScale: string;
       invertColors: boolean;
       legendTitle: string;
+      darkMode?: boolean;
     }
   ): void {
     const legendPosition = DEFAULT_LEGEND_POSITION.STATES;
@@ -266,7 +287,7 @@ export class StatesMapRenderer {
       .attr('y', -35)
       .attr('width', legendWidth + 20)
       .attr('height', 90)
-      .attr('fill', 'white')
+      .attr('fill', options.darkMode ? '#1a1a1a' : 'white')
       .attr('stroke', 'none')
       .attr('rx', 5);
 
@@ -277,6 +298,7 @@ export class StatesMapRenderer {
       .attr('text-anchor', 'middle')
       .attr('font-size', '12px')
       .attr('font-weight', 'bold')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(options.legendTitle);
 
     // Create horizontal gradient
@@ -292,13 +314,22 @@ export class StatesMapRenderer {
 
     // Create gradient stops
     for (let i = 0; i <= 10; i++) {
-      let t = i / 10;
-      if (options.invertColors) {
-        t = 1 - t;
+      const t = i / 10;
+      let color: string;
+
+      if (options.colorScale === 'aqi') {
+        // For AQI, use absolute value mapping
+        const value = options.minValue + t * (options.maxValue - options.minValue);
+        color = getColorForValue(value, [options.minValue, options.maxValue], 'aqi', options.invertColors);
+      } else {
+        // For other scales, use normalized interpolation
+        const normalizedT = options.invertColors ? (1 - t) : t;
+        color = interpolator(normalizedT);
       }
+
       gradient.append('stop')
         .attr('offset', `${i * 10}%`)
-        .attr('stop-color', interpolator(t));
+        .attr('stop-color', color);
     }
 
     // Add gradient rectangle (horizontal) - NO BORDER
@@ -316,6 +347,7 @@ export class StatesMapRenderer {
       .attr('y', legendHeight + 18)
       .attr('text-anchor', 'start')
       .attr('font-size', '11px')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(roundToSignificantDigits(options.minValue));
 
     legendGroup.append('text')
@@ -323,6 +355,7 @@ export class StatesMapRenderer {
       .attr('y', legendHeight + 18)
       .attr('text-anchor', 'middle')
       .attr('font-size', '11px')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(roundToSignificantDigits(options.meanValue));
 
     legendGroup.append('text')
@@ -330,6 +363,7 @@ export class StatesMapRenderer {
       .attr('y', legendHeight + 18)
       .attr('text-anchor', 'end')
       .attr('font-size', '11px')
+      .attr('fill', options.darkMode ? '#ffffff' : '#374151')
       .text(roundToSignificantDigits(options.maxValue));
   }
 

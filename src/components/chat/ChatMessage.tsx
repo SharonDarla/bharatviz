@@ -149,17 +149,14 @@ function formatInlineMarkdown(text: string): (string | JSX.Element)[] {
   let lastIndex = 0;
 
   current.replace(boldRegex, (match, content, index) => {
-    // Add text before match
     if (index > lastIndex) {
       parts.push(current.substring(lastIndex, index));
     }
-    // Add bold text
     parts.push(<strong key={key++}>{content}</strong>);
     lastIndex = index + match.length;
     return match;
   });
 
-  // Add remaining text
   if (lastIndex < current.length) {
     parts.push(current.substring(lastIndex));
   }

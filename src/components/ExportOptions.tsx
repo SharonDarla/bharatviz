@@ -8,18 +8,20 @@ interface ExportOptionsProps {
   onExportSVG: () => void;
   onExportPDF: () => void;
   disabled?: boolean;
+  darkMode?: boolean;
 }
 
-export const ExportOptions: React.FC<ExportOptionsProps> = ({ 
-  onExportPNG, 
-  onExportSVG, 
+export const ExportOptions: React.FC<ExportOptionsProps> = ({
+  onExportPNG,
+  onExportSVG,
   onExportPDF,
-  disabled = false 
+  disabled = false,
+  darkMode = false
 }) => {
   return (
-    <Card className="p-4">
-      <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-        <Download className="h-4 w-4" />
+    <Card className={`p-4 ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
+      <h3 className={`text-sm font-medium mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : ''}`}>
+        <Download className={`h-4 w-4 ${darkMode ? 'text-gray-400' : ''}`} />
         Export
       </h3>
       <div className="flex gap-2">
