@@ -6,14 +6,48 @@ import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCo
 import { extent } from 'd3-array';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
-import polylabel from 'polylabel';
 import { type ColorScale, ColorBarSettings } from './ColorMapChooser';
 import { isColorDark, roundToSignificantDigits } from '@/lib/colorUtils';
 import { getColorForValue, getDiscreteLegendStops } from '@/lib/discreteColorUtils';
 import { DiscreteLegend } from '@/lib/discreteLegend';
 import { CategoricalLegend } from '@/lib/categoricalLegend';
-import { createRotationCalculator, isPointInPolygon } from '@/lib/rotationUtils';
+import { createRotationCalculator } from '@/lib/rotationUtils';
 import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
+
+import polylabel from "@mapbox/polylabel";
+
+function getPolygonCenter(geometry: { type: string; coordinates: number[][][] | number[][][][] }): [number, number] {
+  try {
+    let coords: number[][][];
+
+    if (geometry.type === 'MultiPolygon') {
+      const polygons = geometry.coordinates as number[][][][];
+      let largestIdx = 0;
+      let largestArea = 0;
+
+      for (let i = 0; i < polygons.length; i++) {
+        const ring = polygons[i][0];
+        let area = 0;
+        for (let j = 0; j < ring.length - 1; j++) {
+          area += ring[j][0] * ring[j + 1][1] - ring[j + 1][0] * ring[j][1];
+        }
+        area = Math.abs(area);
+        if (area > largestArea) {
+          largestArea = area;
+          largestIdx = i;
+        }
+      }
+      coords = polygons[largestIdx];
+    } else {
+      coords = geometry.coordinates;
+    }
+
+    return polylabel(coords, 1.0) as [number, number];
+  } catch (e) {
+    console.warn('Polylabel failed:', e);
+  }
+  return d3.geoCentroid(geometry) as [number, number];
+}
 
 interface DistrictMapData {
   state: string;
@@ -311,84 +345,23 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     setBounds({ minLng, maxLng, minLat, maxLat });
   };
 
-  const isPointInPolygon = (point: { lng: number; lat: number }, polygon: number[][]): boolean => {
-    const [lng, lat] = [point.lng, point.lat];
-    let inside = false;
-    const epsilon = 1e-10;
+  const isPointInPolygonScreen = (point: [number, number], polygon: number[][]): boolean => {
+  const [x, y] = point;
+  let inside = false;
 
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const [xi, yi] = polygon[i];
-      const [xj, yj] = polygon[j];
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
 
-      const onEdge = Math.abs(yi - yj) < epsilon ?
-        Math.abs(lat - yi) < epsilon && Math.min(xi, xj) <= lng && lng <= Math.max(xi, xj) :
-        false;
+    const intersect =
+      (yi > y) !== (yj > y) &&
+      x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
 
-      if (onEdge) return true;
+    if (intersect) inside = !inside;
+  }
 
-      const intersect = ((yi > lat) !== (yj > lat))
-          && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-
-    return inside;
-  };
-
-  const isValidLabelPosition = (
-    position: { lng: number; lat: number },
-    polygon: number[][]
-  ): boolean => {
-    return isPointInPolygon(position, polygon);
-  };
-
-  const isPointInFeature = (point: { lng: number; lat: number }, feature: GeoJSONFeature): boolean => {
-    if (feature.geometry.type === 'MultiPolygon') {
-      return feature.geometry.coordinates.some(polygon => 
-        isPointInPolygon(point, polygon[0] as number[][])
-      );
-    } else if (feature.geometry.type === 'Polygon') {
-      return isPointInPolygon(point, feature.geometry.coordinates[0] as number[][]);
-    }
-    return false;
-  };
-
-  const calculateDistrictBounds = (feature: GeoJSONFeature): {
-    minLng: number; maxLng: number; minLat: number; maxLat: number;
-    width: number; height: number;
-  } => {
-    let minLng = Infinity, maxLng = -Infinity;
-    let minLat = Infinity, maxLat = -Infinity;
-
-    const processCoordinates = (coords: number[] | number[][]) => {
-      if (Array.isArray(coords[0])) {
-        (coords as number[][]).forEach(processCoordinates);
-      } else {
-        const [lng, lat] = coords as number[];
-        minLng = Math.min(minLng, lng);
-        maxLng = Math.max(maxLng, lng);
-        minLat = Math.min(minLat, lat);
-        maxLat = Math.max(maxLat, lat);
-      }
-    };
-
-    if (feature.geometry.type === 'MultiPolygon') {
-      feature.geometry.coordinates.forEach(polygon => {
-        (polygon as number[][][]).forEach(ring => {
-          processCoordinates(ring);
-        });
-      });
-    } else if (feature.geometry.type === 'Polygon') {
-      (feature.geometry.coordinates as number[][][]).forEach(ring => {
-        processCoordinates(ring);
-      });
-    }
-
-    return {
-      minLng, maxLng, minLat, maxLat,
-      width: maxLng - minLng,
-      height: maxLat - minLat
-    };
-  };
+  return inside;
+};
 
   const calculateDistrictArea = (feature: GeoJSONFeature): number => {
     let area = 0;
@@ -414,212 +387,17 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return area;
   };
 
-  const calculateArea = (ring: number[][]): number => {
-    let s = 0.0;
-    for (let i = 0; i < ring.length - 1; i++) {
-      s += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
-    }
-    return 0.5 * s;
-  };
-
-  const calculateSinglePolygonCentroid = (ring: number[][]): [number, number] => {
-    const c: [number, number] = [0, 0];
-    for (let i = 0; i < ring.length - 1; i++) {
-      const cross = ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
-      c[0] += (ring[i][0] + ring[i + 1][0]) * cross;
-      c[1] += (ring[i][1] + ring[i + 1][1]) * cross;
-    }
-    const a = calculateArea(ring);
-    c[0] /= a * 6;
-    c[1] /= a * 6;
-    return c;
-  };
-
-  const calculateDistrictCentroid = (feature: GeoJSONFeature): { lng: number; lat: number } | null => {
-    const geometry = feature.geometry;
-
-    if (geometry.type === 'Polygon') {
-      const ring = (geometry.coordinates as number[][][])[0];
-      const [lng, lat] = calculateSinglePolygonCentroid(ring);
-      return { lng, lat };
-    } else if (geometry.type === 'MultiPolygon') {
-      const coordinates = geometry.coordinates as number[][][][];
-      let largestPolygon = coordinates[0];
-      let largestArea = calculateArea(coordinates[0][0]);
-
-      for (let i = 1; i < coordinates.length; i++) {
-        const polygonArea = calculateArea(coordinates[i][0]);
-        if (polygonArea > largestArea) {
-          largestArea = polygonArea;
-          largestPolygon = coordinates[i];
-        }
-      }
-
-      const ring = largestPolygon[0];
-      const [lng, lat] = calculateSinglePolygonCentroid(ring);
-      return { lng, lat };
-    }
-
-    return null;
-  };
-
-  // Calculate convex hull using Graham scan algorithm
-  const calculateConvexHull = (points: number[][]): number[][] => {
-    if (points.length <= 3) return points;
-
-    // Sort points lexicographically (first by x, then by y)
-    const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-
-    // Cross product of vectors OA and OB
-    const cross = (o: number[], a: number[], b: number[]): number => {
-      return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-    };
-
-    // Build lower hull
-    const lower: number[][] = [];
-    for (let i = 0; i < sorted.length; i++) {
-      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], sorted[i]) <= 0) {
-        lower.pop();
-      }
-      lower.push(sorted[i]);
-    }
-
-    // Build upper hull
-    const upper: number[][] = [];
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], sorted[i]) <= 0) {
-        upper.pop();
-      }
-      upper.push(sorted[i]);
-    }
-
-    // Remove last point of each half because it's repeated
-    lower.pop();
-    upper.pop();
-
-    return lower.concat(upper);
-  };
-
-  // Calculate medoid of a set of points (point that minimizes sum of distances to all other points)
-  const calculateMedoid = (points: number[][]): number[] => {
-    if (points.length === 0) return [0, 0];
-    if (points.length === 1) return points[0];
-
-    let minTotalDistance = Infinity;
-    let medoid = points[0];
-
-    for (let i = 0; i < points.length; i++) {
-      let totalDistance = 0;
-      for (let j = 0; j < points.length; j++) {
-        const dx = points[i][0] - points[j][0];
-        const dy = points[i][1] - points[j][1];
-        totalDistance += Math.sqrt(dx * dx + dy * dy);
-      }
-
-      if (totalDistance < minTotalDistance) {
-        minTotalDistance = totalDistance;
-        medoid = points[i];
-      }
-    }
-
-    return medoid;
-  };
-
-  // Calculate principal axis angle using covariance matrix
-  const calculatePrincipalAxisAngle = (feature: GeoJSONFeature): number => {
-    const geometry = feature.geometry;
-    let coordinates: number[][] = [];
-    let centroidX = 0, centroidY = 0;
-
-    if (geometry.type === 'Polygon') {
-      coordinates = (geometry.coordinates as number[][][])[0];
-      const [lng, lat] = calculateSinglePolygonCentroid(coordinates);
-      centroidX = lng;
-      centroidY = lat;
-    } else if (geometry.type === 'MultiPolygon') {
-      // For MultiPolygon, use the largest polygon
-      let largestPolygon = (geometry.coordinates[0] as number[][][])[0];
-      let maxArea = 0;
-
-      (geometry.coordinates as number[][][][]).forEach(polygon => {
-        const ring = (polygon as number[][][])[0];
-        const a = Math.abs(calculateArea(ring));
-
-        if (a > maxArea) {
-          maxArea = a;
-          largestPolygon = ring;
-        }
-      });
-
-      coordinates = largestPolygon;
-      const [lng, lat] = calculateSinglePolygonCentroid(coordinates);
-      centroidX = lng;
-      centroidY = lat;
-    }
-
-    if (coordinates.length < 2) return 0;
-
-    // Calculate covariance matrix elements
-    let cov_xx = 0, cov_yy = 0, cov_xy = 0;
-    coordinates.forEach(([x, y]) => {
-      const dx = x - centroidX;
-      const dy = y - centroidY;
-      cov_xx += dx * dx;
-      cov_yy += dy * dy;
-      cov_xy += dx * dy;
-    });
-
-    // Normalize
-    const n = coordinates.length;
-    cov_xx /= n;
-    cov_yy /= n;
-    cov_xy /= n;
-
-    // Calculate eigenvalues and eigenvectors
-    // For 2x2 matrix, the eigenvector of the largest eigenvalue is the principal axis
-    const trace = cov_xx + cov_yy;
-    const det = cov_xx * cov_yy - cov_xy * cov_xy;
-    const discriminant = Math.sqrt(trace * trace / 4 - det);
-    const lambda1 = trace / 2 + discriminant; // Largest eigenvalue
-
-    // Eigenvector corresponding to lambda1
-    let vx, vy;
-    if (Math.abs(cov_xy) > 1e-10) {
-      vx = lambda1 - cov_yy;
-      vy = cov_xy;
-    } else if (Math.abs(cov_xx - cov_yy) > 1e-10) {
-      vx = cov_xy;
-      vy = lambda1 - cov_xx;
-    } else {
-      vx = 1;
-      vy = 0;
-    }
-
-    // Normalize eigenvector
-    const len = Math.sqrt(vx * vx + vy * vy);
-    if (len > 1e-10) {
-      vx /= len;
-      vy /= len;
-    }
-
-    // Calculate angle in degrees
-    const angle = Math.atan2(vy, vx) * (180 / Math.PI);
-    return angle;
-  };
-
-  // same projection logic as projectCoordinate()
   const geoToScreen = (lng: number, lat: number): { x: number; y: number } => {
     const mapWidth = isMobile ? 320 : 760;
     const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
-    const offsetXParam = isMobile ? 55 : 45;
-    const offsetYParam = isMobile ? 15 : 20;
+    const xOffset = isMobile ? 15 : 20;
+    const yOffset = isMobile ? 55 : 45;
 
     if (!bounds) return { x: 0, y: 0 };
 
     const geoWidth = bounds.maxLng - bounds.minLng;
     const geoHeight = bounds.maxLat - bounds.minLat;
     const geoAspectRatio = geoWidth / geoHeight;
-
     const canvasAspectRatio = mapWidth / mapHeight;
 
     let projectionWidth = mapWidth;
@@ -635,11 +413,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       offsetX = (mapWidth - projectionWidth) / 2;
     }
 
-    offsetX += offsetXParam;
-    offsetY += offsetYParam;
-
-    const x = ((lng - bounds.minLng) / geoWidth) * projectionWidth + offsetX;
-    const y = ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY;
+    const x = ((lng - bounds.minLng) / geoWidth) * projectionWidth + offsetX + xOffset;
+    const y = ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY + yOffset;
 
     return { x, y };
   };
@@ -690,7 +465,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY
     ]);
 
-    return isPointInPolygon([screenPoint.x, screenPoint.y], screenPolygon);
+return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
+
   };
 
   const wouldLabelsOverlap = (
@@ -990,22 +766,41 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     }
   };
 
-  const handleLabelMouseMove = useCallback((e: MouseEvent) => {
+  const handleLabelMouseMove = useCallback(
+  (e: MouseEvent) => {
     if (!draggingLabel || !svgRef.current) return;
+
     const svgRect = svgRef.current.getBoundingClientRect();
+
     const newPosition = {
       x: e.clientX - svgRect.left - draggingLabel.offset.x,
       y: e.clientY - svgRect.top - draggingLabel.offset.y
     };
 
+    // ✅ Find the district feature for this label
+    const [stateName, districtName] = draggingLabel.districtKey.split("|");
+
+    const feature = geojsonData?.features.find((f) => {
+      const dn = f.properties.district_name || f.properties.nss_region || "";
+      const sn = f.properties.state_name || "";
+      return dn === districtName && sn === stateName;
+    });
+
+    // ✅ Only update if label is inside district
+    if (feature) {
+      const inside = isPointInsideDistrict(newPosition, feature);
+      if (!inside) return; // ❌ stop if outside
+    }
+
     const newPositions = new Map(labelPositions);
     newPositions.set(draggingLabel.districtKey, newPosition);
     setLabelPositions(newPositions);
-  }, [draggingLabel, labelPositions]);
-
-  const handleLabelMouseUp = () => {
-    setDraggingLabel(null);
-  };
+  },
+  [draggingLabel, labelPositions, geojsonData, bounds, isMobile, selectedState]
+);
+const handleLabelMouseUp = () => {
+  setDraggingLabel(null);
+};
 
   const handleLabelTouchStart = (e: React.TouchEvent, districtKey: string, currentX: number, currentY: number) => {
     e.stopPropagation();
@@ -1022,19 +817,40 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     }
   };
 
-  const handleLabelTouchMove = useCallback((e: TouchEvent) => {
+const handleLabelTouchMove = useCallback(
+  (e: TouchEvent) => {
     if (!draggingLabel || !svgRef.current || e.touches.length === 0) return;
+
     const touch = e.touches[0];
     const svgRect = svgRef.current.getBoundingClientRect();
+
     const newPosition = {
       x: touch.clientX - svgRect.left - draggingLabel.offset.x,
       y: touch.clientY - svgRect.top - draggingLabel.offset.y
     };
 
+    // ✅ Find the district feature for this label
+    const [stateName, districtName] = draggingLabel.districtKey.split("|");
+
+    const feature = geojsonData?.features.find((f) => {
+      const dn = f.properties.district_name || f.properties.nss_region || "";
+      const sn = f.properties.state_name || "";
+      return dn === districtName && sn === stateName;
+    });
+
+    // ✅ Only update if label is inside district
+    if (feature) {
+      const inside = isPointInsideDistrict(newPosition, feature);
+      if (!inside) return;
+    }
+
     const newPositions = new Map(labelPositions);
     newPositions.set(draggingLabel.districtKey, newPosition);
     setLabelPositions(newPositions);
-  }, [draggingLabel, labelPositions]);
+  },
+  [draggingLabel, labelPositions, geojsonData, bounds, isMobile, selectedState]
+);
+
 
   const handleLabelTouchEnd = () => {
     setDraggingLabel(null);
@@ -1098,9 +914,13 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     };
 
     // Calculate color scale values
-    const values = data.map(d => d.value).filter(v => !isNaN(v));
-    const minValue = values.length > 0 ? Math.min(...values) : 0;
-    const maxValue = values.length > 0 ? Math.max(...values) : 1;
+   const numericValues = data
+  .map(d => d.value)
+  .filter((v): v is number => typeof v === "number" && !isNaN(v));
+
+const minValue = numericValues.length > 0 ? Math.min(...numericValues) : 0;
+const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
+
     
     // Find the legend rectangle that uses the gradient
     const legendRect = svgClone.querySelector('rect[fill*="districts-legend-gradient"]');
@@ -1127,9 +947,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
-          const values = data.map(d => d.value).filter(v => !isNaN(v));
-          const color = getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
-          
+         const color = getColorForValue(value, numericValues, colorScale, invertColors, colorBarSettings);
+
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
           rect.setAttribute('y', y.toString());
@@ -1390,7 +1209,7 @@ Chittoor,50`;
     if (!geojsonData) return { districtLabelData: [], maxArea: 0, minArea: 0, districtDataMap: new Map() };
 
     // Create a map for O(1) district data lookup instead of O(n) array search
-    const map = new Map<string, number | undefined>();
+    const map = new Map<string, number | string | undefined>();
     data.forEach(d => {
       const key = `${d.state.toLowerCase().trim()}|${d.district.toLowerCase().trim()}`;
       map.set(key, d.value);
@@ -1417,7 +1236,15 @@ Chittoor,50`;
     );
   }
 
-  const dataExtent = data.length > 0 ? extent(data, d => d.value) as [number, number] : undefined;
+  const numericValues = data
+  .map(d => d.value)
+  .filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+
+const dataExtent =
+  numericValues.length > 0
+    ? ([Math.min(...numericValues), Math.max(...numericValues)] as [number, number])
+    : undefined;
+
 
   return (
     <div className="w-full flex justify-center relative" ref={containerRef}>
@@ -1480,184 +1307,108 @@ Chittoor,50`;
               })}
               
               {/* District Name Labels - OPTIMIZED with dragging and values */}
-              {((!hideDistrictNames && !hideDistrictValues) || (!hideDistrictNames) || (!hideDistrictValues)) && districtLabelData.length > 0 && (
-                <g className="district-labels">
-                  {districtLabelData.map(({ feature, area }, index) => {
-                    const districtName = feature.properties.district_name || feature.properties.nss_region || '';
-                    const stateName = feature.properties.state_name || '';
-                    if (!districtName) return null;
+{((!hideDistrictNames && !hideDistrictValues) || (!hideDistrictNames) || (!hideDistrictValues)) &&
+  districtLabelData.length > 0 && (
+    <g className="district-labels">
+      {districtLabelData.map(({ feature, area }, index) => {
+        const districtName = feature.properties.district_name || feature.properties.nss_region || '';
+        const stateName = feature.properties.state_name || '';
+        if (!districtName) return null;
 
-                    const bounds = calculateDistrictBounds(feature);
+        // Get label center using polylabel (guaranteed inside polygon)
+        const [lng, lat] = getPolygonCenter(feature.geometry);
+        const screenPos = geoToScreen(lng, lat);
+        let labelPosition = { x: screenPos.x, y: screenPos.y };
 
-                    let polygonCoords: number[][][] = [];
-                    if (feature.geometry.type === 'MultiPolygon') {
-                      const allPolygons = feature.geometry.coordinates as number[][][][];
-                      let largestPolygon = allPolygons[0];
-                      let largestArea = calculateArea(allPolygons[0][0]);
+        // Font size based on area
+        const minFontSize = isMobile ? 6 : 7;
+        const maxFontSize = isMobile ? 16 : 18;
+        const areaRange = maxArea - minArea;
+        const normalizedArea = areaRange > 0 ? (area - minArea) / areaRange : 0.5;
+        const scaledArea = Math.sqrt(normalizedArea);
+        const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
+        const fontSizingFactor = selectedState ? 0.75 : 0.65;
+        const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
-                      for (let i = 1; i < allPolygons.length; i++) {
-                        const polygonArea = calculateArea(allPolygons[i][0]);
-                        if (polygonArea > largestArea) {
-                          largestArea = polygonArea;
-                          largestPolygon = allPolygons[i];
-                        }
-                      }
+        // Apply custom position if dragged
+        const districtKey = `${stateName}|${districtName}`;
+        const customPosition = labelPositions.get(districtKey);
+        if (customPosition) {
+          labelPosition = customPosition;
+        }
 
-                      polygonCoords = largestPolygon;
-                    } else if (feature.geometry.type === 'Polygon') {
-                      polygonCoords = feature.geometry.coordinates as number[][][];
-                    }
+        // ✅ O(1) district value lookup
+        const lookupKey = `${stateName.toLowerCase().trim()}|${districtName.toLowerCase().trim()}`;
+        const districtValue = districtDataMap.get(lookupKey);
 
-                    const minFontSize = isMobile ? 6 : 7;
-                    const maxFontSize = isMobile ? 16 : 18;
+        const fillColor = getDistrictColorForValue(districtValue, dataExtent);
 
-                    const areaRange = maxArea - minArea;
-                    const normalizedArea = areaRange > 0 ? (area - minArea) / areaRange : 0.5;
-                    const scaledArea = Math.sqrt(normalizedArea);
+        // ✅ Text color based on fill color
+        const textColor =
+          fillColor === 'white' || !isColorDark(fillColor) ? '#0f172a' : '#ffffff';
 
-                    const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
-                    const fontSizingFactor = selectedState ? 0.75 : 0.65;
-                    const finalFontSize = baseFinalFontSize * fontSizingFactor;
+        // ✅ Respect hideDistrictNames flag
+        if (hideDistrictNames) return null;
 
-                    const optimalPoint = polylabel(polygonCoords, 0.00000001);
-                    const principalAxisAngle = calculatePrincipalAxisAngle(feature);
+        // ✅ Rotation OFF (kept same)
+        const rotationAngle = 0;
+        const transform = `translate(${labelPosition.x}, ${labelPosition.y}) rotate(${rotationAngle})`;
 
-                    const outerRing = polygonCoords[0];
-                    const textRotationAngle = 0;
+        return (
+          <g key={`label-group-${index}`} transform={transform}>
+            {/* District name */}
+            <text
+              x={0}
+              y={-finalFontSize / 2}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              style={{
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontSize: `${finalFontSize}px`,
+                fontWeight: '600',
+                fill: textColor,
+                pointerEvents: 'auto',
+                userSelect: 'none',
+                cursor: draggingLabel?.districtKey === districtKey ? 'grabbing' : 'grab',
+                opacity: 1
+              }}
+              onMouseDown={(e) =>
+                handleLabelMouseDown(e, districtKey, labelPosition.x, labelPosition.y)
+              }
+              onTouchStart={(e) =>
+                handleLabelTouchStart(e, districtKey, labelPosition.x, labelPosition.y)
+              }
+            >
+              {districtName}
+            </text>
 
-                    const centroid = calculateDistrictCentroid(feature);
-                    const districtBounds = calculateDistrictBounds(feature);
-                    const boundingBoxCenter = {
-                      lng: (districtBounds.minLng + districtBounds.maxLng) / 2,
-                      lat: (districtBounds.minLat + districtBounds.maxLat) / 2
-                    };
-                    const polylabelPoint = { lng: optimalPoint[0], lat: optimalPoint[1] };
-
-                    let positionCoords = centroid;
-                    let positionSource = 'centroid';
-
-                    if (!centroid) {
-                      if (isValidLabelPosition(polylabelPoint, outerRing)) {
-                        positionCoords = polylabelPoint;
-                        positionSource = 'polylabel';
-                      } else if (isValidLabelPosition(boundingBoxCenter, outerRing)) {
-                        positionCoords = boundingBoxCenter;
-                        positionSource = 'bounding-box-center';
-                      } else {
-                        positionCoords = polylabelPoint;
-                        positionSource = 'polylabel-fallback';
-                      }
-                    }
-
-                    const polylabelScreen = geoToScreen(positionCoords.lng, positionCoords.lat);
-                    const centroidScreen = centroid ? geoToScreen(centroid.lng, centroid.lat) : null;
-                    const boundingBoxCenterScreen = geoToScreen(boundingBoxCenter.lng, boundingBoxCenter.lat);
-
-                    const charWidthPixels = finalFontSize * 0.6;
-                    const textWidthPixels = charWidthPixels * districtName.length;
-                    const leftOffsetPixels = textWidthPixels;
-
-                    let labelPosition = {
-                      x: polylabelScreen.x - leftOffsetPixels,
-                      y: polylabelScreen.y + leftOffsetPixels / 2
-                    };
-
-                    let medoidScreen = null;
-                    let polygonMedianScreen = null;
-
-                    if (feature.geometry.type === 'Polygon') {
-                      const outerRing = (feature.geometry.coordinates as number[][][])[0];
-                      const convexHull = calculateConvexHull(outerRing);
-                      const medoid = calculateMedoid(convexHull);
-                      medoidScreen = geoToScreen(medoid[0], medoid[1]);
-
-                      // Also calculate medoid of the polygon boundary itself (concave)
-                      const polygonMedian = calculateMedoid(outerRing);
-                      polygonMedianScreen = geoToScreen(polygonMedian[0], polygonMedian[1]);
-                    } else if (feature.geometry.type === 'MultiPolygon') {
-                      const allCoordinates: number[][] = [];
-                      (feature.geometry.coordinates as number[][][][]).forEach(polygon => {
-                        const ring = polygon[0];
-                        allCoordinates.push(...ring);
-                      });
-                      const convexHull = calculateConvexHull(allCoordinates);
-                      const medoid = calculateMedoid(convexHull);
-                      medoidScreen = geoToScreen(medoid[0], medoid[1]);
-
-                      // Also calculate medoid of all polygon boundaries
-                      const polygonMedian = calculateMedoid(allCoordinates);
-                      polygonMedianScreen = geoToScreen(polygonMedian[0], polygonMedian[1]);
-                    }
-
-                    // Apply custom position if user has dragged the label
-                    const districtKey = `${stateName}|${districtName}`;
-                    const customPosition = labelPositions.get(districtKey);
-                    if (customPosition) {
-                      labelPosition = customPosition;
-                    }
-
-                    // Fast O(1) lookup using memoized map instead of array search
-                    const lookupKey = `${stateName.toLowerCase().trim()}|${districtName.toLowerCase().trim()}`;
-                    const districtValue = districtDataMap.get(lookupKey);
-                    const fillColor = getDistrictColorForValue(districtValue, dataExtent);
-
-                    // Text color based on fill color (same logic as State tab)
-                    const textColor = (fillColor === 'white' || !isColorDark(fillColor)) ? "#0f172a" : "#ffffff";
-
-                    // For Individual State tab, always show district names
-                    if (hideDistrictNames) return null;
-
-                    // Calculate principal axis but no rotation for now (0 degrees)
-                    // Use polylabel's visual center as the label position
-                    const rotationAngle = 0;
-                    const transform = `translate(${labelPosition.x}, ${labelPosition.y}) rotate(${rotationAngle})`;
-
-                    return (
-                      <g key={`label-group-${index}`} transform={transform}>
-                        <text
-                          x={0}
-                          y={-finalFontSize / 2}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          style={{
-                            fontFamily: 'Arial, Helvetica, sans-serif',
-                            fontSize: `${finalFontSize}px`,
-                            fontWeight: '600',
-                            fill: textColor,
-                            pointerEvents: 'auto',
-                            userSelect: 'none',
-                            cursor: draggingLabel?.districtKey === districtKey ? 'grabbing' : 'grab',
-                            opacity: 1
-                          }}
-                          onMouseDown={(e) => handleLabelMouseDown(e, districtKey, labelPosition.x, labelPosition.y)}
-                          onTouchStart={(e) => handleLabelTouchStart(e, districtKey, labelPosition.x, labelPosition.y)}
-                        >
-                          {districtName}
-                        </text>
-                        {districtValue !== undefined && (
-                          <text
-                            x={0}
-                            y={finalFontSize / 2}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            style={{
-                              fontFamily: 'Arial, Helvetica, sans-serif',
-                              fontSize: `${finalFontSize * 0.7}px`,
-                              fontWeight: '400',
-                              fill: textColor,
-                              pointerEvents: 'none',
-                              userSelect: 'none',
-                              opacity: 0.8
-                            }}
-                          >
-                            {typeof districtValue === 'number' ? roundToSignificantDigits(districtValue) : String(districtValue)}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
-              )}
+            {/* District value */}
+            {districtValue !== undefined && (
+              <text
+                x={0}
+                y={finalFontSize / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{
+                  fontFamily: 'Arial, Helvetica, sans-serif',
+                  fontSize: `${finalFontSize * 0.7}px`,
+                  fontWeight: '400',
+                  fill: textColor,
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  opacity: 0.8
+                }}
+              >
+                {typeof districtValue === 'number'
+                  ? roundToSignificantDigits(districtValue)
+                  : String(districtValue)}
+              </text>
+            )}
+          </g>
+        );
+      })}
+    </g>
+  )}
 
               {/* State boundaries overlay */}
               {showStateBoundaries && statesData && statesData.features
