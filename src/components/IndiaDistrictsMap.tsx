@@ -15,60 +15,38 @@ import { createRotationCalculator } from '@/lib/rotationUtils';
 import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
 
 import polylabel from "@mapbox/polylabel";
-import * as turf from "@turf/turf";
 
-function getRingsFromGeometry(geometry: any): number[][][] {
-  // Returns rings in format polylabel expects: [ [ [x,y], [x,y], ... ] ]
-  if (!geometry) return [];
-
-  if (geometry.type === "Polygon") {
-    return geometry.coordinates as number[][][];
-  }
-
-  if (geometry.type === "MultiPolygon") {
-    // pick the largest polygon by outer-ring length
-    const polys = geometry.coordinates as number[][][][];
-    if (!polys.length) return [];
-    polys.sort((a, b) => (b?.[0]?.length ?? 0) - (a?.[0]?.length ?? 0));
-    return polys[0] as number[][][];
-  }
-
-  return [];
-}
-
-export function getBestLabelPoint(feature: any): [number, number] | null {
+function getPolygonCenter(geometry: { type: string; coordinates: number[][][] | number[][][][] }): [number, number] {
   try {
-    const geometry = feature?.geometry;
-    const rings = getRingsFromGeometry(geometry);
+    let coords: number[][][];
 
-    // polylabel works only if we have at least an outer ring
-    if (rings.length > 0 && rings[0].length >= 3) {
-      const [x, y] = polylabel(rings, 1.0); // precision=1.0 is fast + stable
-      if (Number.isFinite(x) && Number.isFinite(y)) return [x, y];
+    if (geometry.type === 'MultiPolygon') {
+      const polygons = geometry.coordinates as number[][][][];
+      let largestIdx = 0;
+      let largestArea = 0;
+
+      for (let i = 0; i < polygons.length; i++) {
+        const ring = polygons[i][0];
+        let area = 0;
+        for (let j = 0; j < ring.length - 1; j++) {
+          area += ring[j][0] * ring[j + 1][1] - ring[j + 1][0] * ring[j][1];
+        }
+        area = Math.abs(area);
+        if (area > largestArea) {
+          largestArea = area;
+          largestIdx = i;
+        }
+      }
+      coords = polygons[largestIdx];
+    } else {
+      coords = geometry.coordinates;
     }
-  } catch (e) {
-    // ignore polylabel failures
-  }
 
-  // Fallback 1: pointOnFeature (always inside)
-  try {
-    const pt = turf.pointOnFeature(feature);
-    const coords = pt?.geometry?.coordinates;
-    if (coords && coords.length === 2) return [coords[0], coords[1]];
+    return polylabel(coords, 1.0) as [number, number];
   } catch (e) {
-    // ignore
+    console.warn('Polylabel failed:', e);
   }
-
-  // Fallback 2: centroid (not always inside, but always exists)
-  try {
-    const c = turf.centroid(feature);
-    const coords = c?.geometry?.coordinates;
-    if (coords && coords.length === 2) return [coords[0], coords[1]];
-  } catch (e) {
-    // ignore
-  }
-
-  return null;
+  return d3.geoCentroid(geometry) as [number, number];
 }
 
 interface DistrictMapData {
@@ -367,47 +345,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     setBounds({ minLng, maxLng, minLat, maxLat });
   };
 
-  const isPointInPolygon = (point: { lng: number; lat: number }, polygon: number[][]): boolean => {
-    const [lng, lat] = [point.lng, point.lat];
-    let inside = false;
-    const epsilon = 1e-10;
-
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const [xi, yi] = polygon[i];
-      const [xj, yj] = polygon[j];
-
-      const onEdge = Math.abs(yi - yj) < epsilon ?
-        Math.abs(lat - yi) < epsilon && Math.min(xi, xj) <= lng && lng <= Math.max(xi, xj) :
-        false;
-
-      if (onEdge) return true;
-
-      const intersect = ((yi > lat) !== (yj > lat))
-          && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-
-    return inside;
-  };
-
-  const isValidLabelPosition = (
-    position: { lng: number; lat: number },
-    polygon: number[][]
-  ): boolean => {
-    return isPointInPolygon(position, polygon);
-  };
-
-  const isPointInFeature = (point: { lng: number; lat: number }, feature: GeoJSONFeature): boolean => {
-    if (feature.geometry.type === 'MultiPolygon') {
-      return feature.geometry.coordinates.some(polygon => 
-        isPointInPolygon(point, polygon[0] as number[][])
-      );
-    } else if (feature.geometry.type === 'Polygon') {
-      return isPointInPolygon(point, feature.geometry.coordinates[0] as number[][]);
-    }
-    return false;
-  };
-
   const isPointInPolygonScreen = (point: [number, number], polygon: number[][]): boolean => {
   const [x, y] = point;
   let inside = false;
@@ -425,45 +362,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   return inside;
 };
-
-
-  const calculateDistrictBounds = (feature: GeoJSONFeature): {
-    minLng: number; maxLng: number; minLat: number; maxLat: number;
-    width: number; height: number;
-  } => {
-    let minLng = Infinity, maxLng = -Infinity;
-    let minLat = Infinity, maxLat = -Infinity;
-
-    const processCoordinates = (coords: number[] | number[][]) => {
-      if (Array.isArray(coords[0])) {
-        (coords as number[][]).forEach(processCoordinates);
-      } else {
-        const [lng, lat] = coords as number[];
-        minLng = Math.min(minLng, lng);
-        maxLng = Math.max(maxLng, lng);
-        minLat = Math.min(minLat, lat);
-        maxLat = Math.max(maxLat, lat);
-      }
-    };
-
-    if (feature.geometry.type === 'MultiPolygon') {
-      feature.geometry.coordinates.forEach(polygon => {
-        (polygon as number[][][]).forEach(ring => {
-          processCoordinates(ring);
-        });
-      });
-    } else if (feature.geometry.type === 'Polygon') {
-      (feature.geometry.coordinates as number[][][]).forEach(ring => {
-        processCoordinates(ring);
-      });
-    }
-
-    return {
-      minLng, maxLng, minLat, maxLat,
-      width: maxLng - minLng,
-      height: maxLat - minLat
-    };
-  };
 
   const calculateDistrictArea = (feature: GeoJSONFeature): number => {
     let area = 0;
@@ -489,212 +387,17 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return area;
   };
 
-  const calculateArea = (ring: number[][]): number => {
-    let s = 0.0;
-    for (let i = 0; i < ring.length - 1; i++) {
-      s += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
-    }
-    return 0.5 * s;
-  };
-
-  const calculateSinglePolygonCentroid = (ring: number[][]): [number, number] => {
-    const c: [number, number] = [0, 0];
-    for (let i = 0; i < ring.length - 1; i++) {
-      const cross = ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
-      c[0] += (ring[i][0] + ring[i + 1][0]) * cross;
-      c[1] += (ring[i][1] + ring[i + 1][1]) * cross;
-    }
-    const a = calculateArea(ring);
-    c[0] /= a * 6;
-    c[1] /= a * 6;
-    return c;
-  };
-
-  const calculateDistrictCentroid = (feature: GeoJSONFeature): { lng: number; lat: number } | null => {
-    const geometry = feature.geometry;
-
-    if (geometry.type === 'Polygon') {
-      const ring = (geometry.coordinates as number[][][])[0];
-      const [lng, lat] = calculateSinglePolygonCentroid(ring);
-      return { lng, lat };
-    } else if (geometry.type === 'MultiPolygon') {
-      const coordinates = geometry.coordinates as number[][][][];
-      let largestPolygon = coordinates[0];
-      let largestArea = calculateArea(coordinates[0][0]);
-
-      for (let i = 1; i < coordinates.length; i++) {
-        const polygonArea = calculateArea(coordinates[i][0]);
-        if (polygonArea > largestArea) {
-          largestArea = polygonArea;
-          largestPolygon = coordinates[i];
-        }
-      }
-
-      const ring = largestPolygon[0];
-      const [lng, lat] = calculateSinglePolygonCentroid(ring);
-      return { lng, lat };
-    }
-
-    return null;
-  };
-
-  // Calculate convex hull using Graham scan algorithm
-  const calculateConvexHull = (points: number[][]): number[][] => {
-    if (points.length <= 3) return points;
-
-    // Sort points lexicographically (first by x, then by y)
-    const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-
-    // Cross product of vectors OA and OB
-    const cross = (o: number[], a: number[], b: number[]): number => {
-      return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-    };
-
-    // Build lower hull
-    const lower: number[][] = [];
-    for (let i = 0; i < sorted.length; i++) {
-      while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], sorted[i]) <= 0) {
-        lower.pop();
-      }
-      lower.push(sorted[i]);
-    }
-
-    // Build upper hull
-    const upper: number[][] = [];
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], sorted[i]) <= 0) {
-        upper.pop();
-      }
-      upper.push(sorted[i]);
-    }
-
-    // Remove last point of each half because it's repeated
-    lower.pop();
-    upper.pop();
-
-    return lower.concat(upper);
-  };
-
-  // Calculate medoid of a set of points (point that minimizes sum of distances to all other points)
-  const calculateMedoid = (points: number[][]): number[] => {
-    if (points.length === 0) return [0, 0];
-    if (points.length === 1) return points[0];
-
-    let minTotalDistance = Infinity;
-    let medoid = points[0];
-
-    for (let i = 0; i < points.length; i++) {
-      let totalDistance = 0;
-      for (let j = 0; j < points.length; j++) {
-        const dx = points[i][0] - points[j][0];
-        const dy = points[i][1] - points[j][1];
-        totalDistance += Math.sqrt(dx * dx + dy * dy);
-      }
-
-      if (totalDistance < minTotalDistance) {
-        minTotalDistance = totalDistance;
-        medoid = points[i];
-      }
-    }
-
-    return medoid;
-  };
-
-  // Calculate principal axis angle using covariance matrix
-  const calculatePrincipalAxisAngle = (feature: GeoJSONFeature): number => {
-    const geometry = feature.geometry;
-    let coordinates: number[][] = [];
-    let centroidX = 0, centroidY = 0;
-
-    if (geometry.type === 'Polygon') {
-      coordinates = (geometry.coordinates as number[][][])[0];
-      const [lng, lat] = calculateSinglePolygonCentroid(coordinates);
-      centroidX = lng;
-      centroidY = lat;
-    } else if (geometry.type === 'MultiPolygon') {
-      // For MultiPolygon, use the largest polygon
-      let largestPolygon = (geometry.coordinates[0] as number[][][])[0];
-      let maxArea = 0;
-
-      (geometry.coordinates as number[][][][]).forEach(polygon => {
-        const ring = (polygon as number[][][])[0];
-        const a = Math.abs(calculateArea(ring));
-
-        if (a > maxArea) {
-          maxArea = a;
-          largestPolygon = ring;
-        }
-      });
-
-      coordinates = largestPolygon;
-      const [lng, lat] = calculateSinglePolygonCentroid(coordinates);
-      centroidX = lng;
-      centroidY = lat;
-    }
-
-    if (coordinates.length < 2) return 0;
-
-    // Calculate covariance matrix elements
-    let cov_xx = 0, cov_yy = 0, cov_xy = 0;
-    coordinates.forEach(([x, y]) => {
-      const dx = x - centroidX;
-      const dy = y - centroidY;
-      cov_xx += dx * dx;
-      cov_yy += dy * dy;
-      cov_xy += dx * dy;
-    });
-
-    // Normalize
-    const n = coordinates.length;
-    cov_xx /= n;
-    cov_yy /= n;
-    cov_xy /= n;
-
-    // Calculate eigenvalues and eigenvectors
-    // For 2x2 matrix, the eigenvector of the largest eigenvalue is the principal axis
-    const trace = cov_xx + cov_yy;
-    const det = cov_xx * cov_yy - cov_xy * cov_xy;
-    const discriminant = Math.sqrt(trace * trace / 4 - det);
-    const lambda1 = trace / 2 + discriminant; // Largest eigenvalue
-
-    // Eigenvector corresponding to lambda1
-    let vx, vy;
-    if (Math.abs(cov_xy) > 1e-10) {
-      vx = lambda1 - cov_yy;
-      vy = cov_xy;
-    } else if (Math.abs(cov_xx - cov_yy) > 1e-10) {
-      vx = cov_xy;
-      vy = lambda1 - cov_xx;
-    } else {
-      vx = 1;
-      vy = 0;
-    }
-
-    // Normalize eigenvector
-    const len = Math.sqrt(vx * vx + vy * vy);
-    if (len > 1e-10) {
-      vx /= len;
-      vy /= len;
-    }
-
-    // Calculate angle in degrees
-    const angle = Math.atan2(vy, vx) * (180 / Math.PI);
-    return angle;
-  };
-
-  // same projection logic as projectCoordinate()
   const geoToScreen = (lng: number, lat: number): { x: number; y: number } => {
     const mapWidth = isMobile ? 320 : 760;
     const mapHeight = isMobile ? 400 : selectedState ? 1050 : 850;
-    const offsetXParam = isMobile ? 55 : 45;
-    const offsetYParam = isMobile ? 15 : 20;
+    const xOffset = isMobile ? 15 : 20;
+    const yOffset = isMobile ? 55 : 45;
 
     if (!bounds) return { x: 0, y: 0 };
 
     const geoWidth = bounds.maxLng - bounds.minLng;
     const geoHeight = bounds.maxLat - bounds.minLat;
     const geoAspectRatio = geoWidth / geoHeight;
-
     const canvasAspectRatio = mapWidth / mapHeight;
 
     let projectionWidth = mapWidth;
@@ -710,11 +413,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       offsetX = (mapWidth - projectionWidth) / 2;
     }
 
-    offsetX += offsetXParam;
-    offsetY += offsetYParam;
-
-    const x = ((lng - bounds.minLng) / geoWidth) * projectionWidth + offsetX;
-    const y = ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY;
+    const x = ((lng - bounds.minLng) / geoWidth) * projectionWidth + offsetX + xOffset;
+    const y = ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY + yOffset;
 
     return { x, y };
   };
@@ -1615,97 +1315,22 @@ const dataExtent =
         const stateName = feature.properties.state_name || '';
         if (!districtName) return null;
 
-        // ✅ Extract polygon coordinates (GeoJSON)
-        let polygonCoords: number[][][] = [];
-        if (feature.geometry.type === 'MultiPolygon') {
-          const allPolygons = feature.geometry.coordinates as number[][][][];
-          let largestPolygon = allPolygons[0];
-          let largestArea = calculateArea(allPolygons[0][0]);
+        // Get label center using polylabel (guaranteed inside polygon)
+        const [lng, lat] = getPolygonCenter(feature.geometry);
+        const screenPos = geoToScreen(lng, lat);
+        let labelPosition = { x: screenPos.x, y: screenPos.y };
 
-          for (let i = 1; i < allPolygons.length; i++) {
-            const polygonArea = calculateArea(allPolygons[i][0]);
-            if (polygonArea > largestArea) {
-              largestArea = polygonArea;
-              largestPolygon = allPolygons[i];
-            }
-          }
-
-          polygonCoords = largestPolygon;
-        } else if (feature.geometry.type === 'Polygon') {
-          polygonCoords = feature.geometry.coordinates as number[][][];
-        }
-
-        // ✅ 1) Best visual center using polylabel
-        const optimalPoint = polylabel(polygonCoords, 1.0);
-        const polylabelPoint = { lng: optimalPoint[0], lat: optimalPoint[1] };
-
-        // ✅ 2) Fallback points
-        const centroid = calculateDistrictCentroid(feature);
-        const districtBounds = calculateDistrictBounds(feature);
-
-        const boundingBoxCenter = {
-          lng: (districtBounds.minLng + districtBounds.maxLng) / 2,
-          lat: (districtBounds.minLat + districtBounds.maxLat) / 2
-        };
-
-        // ✅ 3) Prefer polylabel first, fallback if needed
-        let positionCoords = polylabelPoint;
-
-        if (!isPointInFeature(positionCoords, feature)) {
-          if (centroid && isPointInFeature(centroid, feature)) {
-            positionCoords = centroid;
-          } else if (isPointInFeature(boundingBoxCenter, feature)) {
-            positionCoords = boundingBoxCenter;
-          }
-        }
-
-        // ✅ 4) Convert geo -> screen position
-        const screenPos = geoToScreen(positionCoords.lng, positionCoords.lat);
-
-        // ✅ 5) Default label position
-        let labelPosition = {
-          x: screenPos.x,
-          y: screenPos.y
-        };
-
-        // ✅ Font size based on area
+        // Font size based on area
         const minFontSize = isMobile ? 6 : 7;
         const maxFontSize = isMobile ? 16 : 18;
-
         const areaRange = maxArea - minArea;
         const normalizedArea = areaRange > 0 ? (area - minArea) / areaRange : 0.5;
         const scaledArea = Math.sqrt(normalizedArea);
-
         const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
         const fontSizingFactor = selectedState ? 0.75 : 0.65;
         const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
-        // ✅ Extra calculations you had (kept exactly)
-        let medoidScreen = null;
-        let polygonMedianScreen = null;
-        if (feature.geometry.type === 'Polygon') {
-          const outerRing = (feature.geometry.coordinates as number[][][])[0];
-          const convexHull = calculateConvexHull(outerRing);
-          const medoid = calculateMedoid(convexHull);
-          medoidScreen = geoToScreen(medoid[0], medoid[1]);
-
-          const polygonMedian = calculateMedoid(outerRing);
-          polygonMedianScreen = geoToScreen(polygonMedian[0], polygonMedian[1]);
-        } else if (feature.geometry.type === 'MultiPolygon') {
-          const allCoordinates: number[][] = [];
-          (feature.geometry.coordinates as number[][][][]).forEach((polygon) => {
-            const ring = polygon[0];
-            allCoordinates.push(...ring);
-          });
-          const convexHull = calculateConvexHull(allCoordinates);
-          const medoid = calculateMedoid(convexHull);
-          medoidScreen = geoToScreen(medoid[0], medoid[1]);
-
-          const polygonMedian = calculateMedoid(allCoordinates);
-          polygonMedianScreen = geoToScreen(polygonMedian[0], polygonMedian[1]);
-        }
-
-        // ✅ Apply custom position if dragged
+        // Apply custom position if dragged
         const districtKey = `${stateName}|${districtName}`;
         const customPosition = labelPositions.get(districtKey);
         if (customPosition) {
