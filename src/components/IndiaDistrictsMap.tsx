@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle, us
 import { useIsMobile } from '@/hooks/use-mobile';
 import * as d3 from 'd3';
 import { scaleSequential } from 'd3-scale';
-import { interpolateSpectral, interpolateViridis, interpolateWarm, interpolateCool, interpolatePlasma, interpolateInferno, interpolateMagma, interpolateTurbo, interpolateRdYlBu, interpolateRdYlGn, interpolateBrBG, interpolatePRGn, interpolatePiYG, interpolateRdBu, interpolateRdGy, interpolatePuOr, interpolateBlues, interpolateGreens, interpolateReds, interpolateOranges, interpolatePurples, interpolatePuRd, interpolateSpectral as interpolateSpectralReversed } from 'd3-scale-chromatic';
-import { extent } from 'd3-array';
+import { interpolateSpectral, interpolateViridis, interpolatePlasma, interpolateInferno, interpolateMagma, interpolateRdYlBu, interpolateRdYlGn, interpolateBrBG, interpolatePiYG, interpolatePuOr, interpolateBlues, interpolateGreens, interpolateReds, interpolateOranges, interpolatePurples, interpolatePuRd } from 'd3-scale-chromatic';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import { type ColorScale, ColorBarSettings } from './ColorMapChooser';
@@ -176,7 +175,6 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   const [labelPositions, setLabelPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
   const [draggingLabel, setDraggingLabel] = useState<{ districtKey: string; offset: { x: number; y: number } } | null>(null);
-  const [labelDragOffset, setLabelDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const [titlePosition, setTitlePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [draggingTitle, setDraggingTitle] = useState(false);
@@ -419,7 +417,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return { x, y };
   };
 
-  const isPointInsideDistrict = (
+  const isPointInsideDistrict = useCallback((
     screenPoint: { x: number; y: number },
     feature: GeoJSONFeature
   ): boolean => {
@@ -465,36 +463,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       ((bounds.maxLat - lat) / geoHeight) * projectionHeight + offsetY
     ]);
 
-return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
-
-  };
-
-  const wouldLabelsOverlap = (
-    pos1: { x: number; y: number }, text1: string, fontSize1: number,
-    pos2: { x: number; y: number }, text2: string, fontSize2: number
-  ): boolean => {
-    const textWidth1 = text1.length * fontSize1 * 0.6;
-    const textWidth2 = text2.length * fontSize2 * 0.6;
-    const textHeight1 = fontSize1 * 1.2;
-    const textHeight2 = fontSize2 * 1.2;
-
-    const rect1 = {
-      left: pos1.x - textWidth1 / 2,
-      right: pos1.x + textWidth1 / 2,
-      top: pos1.y - textHeight1 / 2,
-      bottom: pos1.y + textHeight1 / 2
-    };
-
-    const rect2 = {
-      left: pos2.x - textWidth2 / 2,
-      right: pos2.x + textWidth2 / 2,
-      top: pos2.y - textHeight2 / 2,
-      bottom: pos2.y + textHeight2 / 2
-    };
-
-    return !(rect1.right < rect2.left || rect1.left > rect2.right ||
-             rect1.bottom < rect2.top || rect1.top > rect2.bottom);
-  };
+    return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
+  }, [bounds, isMobile, selectedState]);
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -771,33 +741,27 @@ return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
     if (!draggingLabel || !svgRef.current) return;
 
     const svgRect = svgRef.current.getBoundingClientRect();
-
     const newPosition = {
       x: e.clientX - svgRect.left - draggingLabel.offset.x,
       y: e.clientY - svgRect.top - draggingLabel.offset.y
     };
 
-    // ✅ Find the district feature for this label
     const [stateName, districtName] = draggingLabel.districtKey.split("|");
-
     const feature = geojsonData?.features.find((f) => {
       const dn = f.properties.district_name || f.properties.nss_region || "";
       const sn = f.properties.state_name || "";
       return dn === districtName && sn === stateName;
     });
 
-    // ✅ Only update if label is inside district
-    if (feature) {
-      const inside = isPointInsideDistrict(newPosition, feature);
-      if (!inside) return; // ❌ stop if outside
-    }
+    if (feature && !isPointInsideDistrict(newPosition, feature)) return;
 
     const newPositions = new Map(labelPositions);
     newPositions.set(draggingLabel.districtKey, newPosition);
     setLabelPositions(newPositions);
   },
-  [draggingLabel, labelPositions, geojsonData, bounds, isMobile, selectedState]
+  [draggingLabel, labelPositions, geojsonData, isPointInsideDistrict]
 );
+
 const handleLabelMouseUp = () => {
   setDraggingLabel(null);
 };
@@ -823,34 +787,26 @@ const handleLabelTouchMove = useCallback(
 
     const touch = e.touches[0];
     const svgRect = svgRef.current.getBoundingClientRect();
-
     const newPosition = {
       x: touch.clientX - svgRect.left - draggingLabel.offset.x,
       y: touch.clientY - svgRect.top - draggingLabel.offset.y
     };
 
-    // ✅ Find the district feature for this label
     const [stateName, districtName] = draggingLabel.districtKey.split("|");
-
     const feature = geojsonData?.features.find((f) => {
       const dn = f.properties.district_name || f.properties.nss_region || "";
       const sn = f.properties.state_name || "";
       return dn === districtName && sn === stateName;
     });
 
-    // ✅ Only update if label is inside district
-    if (feature) {
-      const inside = isPointInsideDistrict(newPosition, feature);
-      if (!inside) return;
-    }
+    if (feature && !isPointInsideDistrict(newPosition, feature)) return;
 
     const newPositions = new Map(labelPositions);
     newPositions.set(draggingLabel.districtKey, newPosition);
     setLabelPositions(newPositions);
   },
-  [draggingLabel, labelPositions, geojsonData, bounds, isMobile, selectedState]
+  [draggingLabel, labelPositions, geojsonData, isPointInsideDistrict]
 );
-
 
   const handleLabelTouchEnd = () => {
     setDraggingLabel(null);
@@ -874,58 +830,15 @@ const handleLabelTouchMove = useCallback(
   const fixDistrictsLegendGradient = (svgClone: SVGSVGElement) => {
     if (data.length === 0) return;
 
-    const getAQIColorAbsolute = (value: number): string => {
-      if (value <= 50) return '#10b981';
-      if (value <= 100) return '#84cc16';
-      if (value <= 200) return '#eab308';
-      if (value <= 300) return '#f97316';
-      if (value <= 400) return '#ef4444';
-      return '#991b1b';
-    };
+    const numericValues = data
+      .map(d => d.value)
+      .filter((v): v is number => typeof v === "number" && !isNaN(v));
 
-    const colorScales = {
-      aqi: (t: number) => d3.interpolateBlues(t), // Placeholder, AQI uses absolute values
-      spectral: (t: number) => d3.interpolateSpectral(1 - t),
-      rdylbu: d3.interpolateRdYlBu,
-      rdylgn: d3.interpolateRdYlGn,
-      brbg: d3.interpolateBrBG,
-      piyg: d3.interpolatePiYG,
-      puor: d3.interpolatePuOr,
-      blues: d3.interpolateBlues,
-      greens: d3.interpolateGreens,
-      reds: d3.interpolateReds,
-      oranges: d3.interpolateOranges,
-      purples: d3.interpolatePurples,
-      pinks: d3.interpolatePuRd,
-      viridis: d3.interpolateViridis,
-      plasma: d3.interpolatePlasma,
-      inferno: d3.interpolateInferno,
-      magma: d3.interpolateMagma
-    };
+    const minValue = numericValues.length > 0 ? Math.min(...numericValues) : 0;
+    const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
 
-    const getLocalColorForValue = (value: number | undefined, dataExtent: [number, number] | undefined): string => {
-      if (value === undefined || !dataExtent || isNaN(value)) return '#d1d5db';
-
-      const [minVal, maxVal] = dataExtent;
-      if (minVal === maxVal) return colorScales[colorScale](0.5);
-
-      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
-      return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
-    };
-
-    // Calculate color scale values
-   const numericValues = data
-  .map(d => d.value)
-  .filter((v): v is number => typeof v === "number" && !isNaN(v));
-
-const minValue = numericValues.length > 0 ? Math.min(...numericValues) : 0;
-const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
-
-    
-    // Find the legend rectangle that uses the gradient
     const legendRect = svgClone.querySelector('rect[fill*="districts-legend-gradient"]');
     if (legendRect) {
-      // Get the rect's position and dimensions
       const x = parseFloat(legendRect.getAttribute('x') || '0');
       const y = parseFloat(legendRect.getAttribute('y') || '0');
       const width = parseFloat(legendRect.getAttribute('width') || '200');
@@ -933,21 +846,18 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
       const stroke = legendRect.getAttribute('stroke');
       const strokeWidth = legendRect.getAttribute('stroke-width');
       const rx = legendRect.getAttribute('rx');
-      
-      // Get parent element
+
       const parent = legendRect.parentElement;
       if (parent) {
-        // Remove the original gradient rect
         legendRect.remove();
-        
-        // Create multiple small rectangles with solid colors
-        const numSegments = 50; // More segments for smoother gradient
+
+        const numSegments = 50;
         const segmentWidth = width / numSegments;
-        
+
         for (let i = 0; i < numSegments; i++) {
           const t = i / (numSegments - 1);
           const value = minValue + t * (maxValue - minValue);
-         const color = getColorForValue(value, numericValues, colorScale, invertColors, colorBarSettings);
+          const color = getColorForValue(value, numericValues, colorScale, invertColors, colorBarSettings);
 
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', (x + i * segmentWidth).toString());
@@ -955,24 +865,21 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
           rect.setAttribute('width', segmentWidth.toString());
           rect.setAttribute('height', height.toString());
           rect.setAttribute('fill', color);
-          
-          // Add stroke only to first and last segment to maintain border
+
           if (i === 0 || i === numSegments - 1) {
             if (stroke) rect.setAttribute('stroke', stroke);
             if (strokeWidth) rect.setAttribute('stroke-width', strokeWidth);
           }
-          
-          // Add border radius to first and last segments
+
           if (rx && (i === 0 || i === numSegments - 1)) {
             rect.setAttribute('rx', rx);
           }
-          
+
           parent.appendChild(rect);
         }
       }
     }
-    
-    // Also remove any gradient definitions that are no longer needed
+
     const gradients = svgClone.querySelectorAll('#districts-legend-gradient');
     gradients.forEach(gradient => gradient.remove());
   };
@@ -985,87 +892,75 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     const img = new Image();
     const dpiScale = 300 / 96;
     const originalWidth = isMobile ? 350 : 800;
     const originalHeight = isMobile ? 440 : selectedState ? 1100 : 890;
-    
+
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
-    
+
     return new Promise<void>((resolve) => {
       img.onload = () => {
         ctx.scale(dpiScale, dpiScale);
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, originalWidth, originalHeight);
         ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-        
+
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('landscape');
-        
-        // Get PDF dimensions
+
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
-        // Calculate margins and available space
-        const pdfMargin = 15; // 15mm margin
+        const pdfMargin = 15;
         const availableWidth = pdfWidth - (2 * pdfMargin);
         const availableHeight = pdfHeight - (2 * pdfMargin);
-        
-        // Calculate aspect ratio preserving dimensions
+
         const canvasAspectRatio = canvas.width / canvas.height;
         let imgWidth = availableWidth;
         let imgHeight = availableWidth / canvasAspectRatio;
-        
-        // If height exceeds available space, scale by height instead
+
         if (imgHeight > availableHeight) {
           imgHeight = availableHeight;
           imgWidth = availableHeight * canvasAspectRatio;
         }
-        
-        // Center the image
+
         const x = (pdfWidth - imgWidth) / 2;
         const y = (pdfHeight - imgHeight) / 2;
-        
+
         pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
         pdf.save(`bharatviz-districts-${Date.now()}.pdf`);
         resolve();
       };
-      
+
       img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
     });
   };
 
   const exportPNG = () => {
     if (!svgRef.current) return;
-    
+
     const svg = svgRef.current;
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
-    
-    // High DPI settings for 300 DPI output
-    const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
+
+    const dpiScale = 300 / 96;
     const originalWidth = isMobile ? 350 : 800;
     const originalHeight = isMobile ? 440 : selectedState ? 1100 : 890;
-    
+
     canvas.width = originalWidth * dpiScale;
     canvas.height = originalHeight * dpiScale;
-    
+
     img.onload = () => {
       if (ctx) {
-        // Scale the context to match the DPI
         ctx.scale(dpiScale, dpiScale);
-        
-        // Fill background with white
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, originalWidth, originalHeight);
-        
-        // Draw the image at original size (context scaling handles the DPI)
         ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-        
+
         canvas.toBlob((blob) => {
           if (blob) {
             saveAs(blob, `bharatviz-districts-${Date.now()}.png`);
@@ -1073,7 +968,7 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
         });
       }
     };
-    
+
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
@@ -1081,11 +976,10 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
     exportPNG,
     exportSVG: () => {
       if (!svgRef.current) return;
-      
+
       const svgElement = svgRef.current.cloneNode(true) as SVGElement;
       svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      
-      // Ensure consistent font handling
+
       const allElements = svgElement.querySelectorAll('*');
       allElements.forEach(el => {
         const element = el as SVGElement;
@@ -1093,96 +987,67 @@ const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
           element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
         }
       });
-      
+
       const svgString = new XMLSerializer().serializeToString(svgElement);
       const blob = new Blob([svgString], { type: 'image/svg+xml' });
       saveAs(blob, `bharatviz-districts-${Date.now()}.svg`);
     },
     exportPDF: async () => {
       if (!svgRef.current) return;
-      
+
       try {
-        // Dynamically import PDF libraries
         const [{ default: jsPDF }, { svg2pdf }] = await Promise.all([
           import('jspdf'),
           import('svg2pdf.js')
         ]);
-        
-        // Create PDF document
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
 
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // Get the actual SVG dimensions
         const svgWidth = isMobile ? 350 : 800;
         const svgHeight = isMobile ? 440 : selectedState ? 1100 : 890;
 
-        // Clone the SVG to avoid modifying the original
         const svgClone = svgRef.current.cloneNode(true) as SVGSVGElement;
-
-        // Ensure the cloned SVG has proper attributes for full capture
         svgClone.setAttribute('width', svgWidth.toString());
         svgClone.setAttribute('height', svgHeight.toString());
         svgClone.setAttribute('viewBox', `${isMobile ? '0 0 350 440' : selectedState ? '0 0 800 1100' : '0 0 800 890'}`);
         svgClone.style.width = `${svgWidth}px`;
         svgClone.style.height = `${svgHeight}px`;
-
-        // Remove any CSS classes that might interfere with export
         svgClone.removeAttribute('class');
 
-        // Force all elements to be visible and properly positioned
         const allElements = svgClone.querySelectorAll('*');
         allElements.forEach(el => {
           const element = el as SVGElement;
           element.style.visibility = 'visible';
           element.style.display = 'block';
-          // Ensure text elements are properly rendered with consistent font
           if (element.tagName === 'text') {
             element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
           }
         });
 
-        // Fix the legend gradient to match the selected color scale
         fixDistrictsLegendGradient(svgClone);
 
-        // Calculate PDF margins and available space
-        const pdfMargin = 10; // 10mm margin
+        const pdfMargin = 10;
         const availableWidth = pdfWidth - (2 * pdfMargin);
         const availableHeight = pdfHeight - (2 * pdfMargin);
-        
-        // Convert SVG dimensions to mm (1px = 0.264583mm at 96dpi)
+
         const svgWidthMm = svgWidth * 0.264583;
         const svgHeightMm = svgHeight * 0.264583;
-        
-        // Calculate scale to fit entire SVG in PDF
+
         const scaleX = availableWidth / svgWidthMm;
         const scaleY = availableHeight / svgHeightMm;
         const scale = Math.min(scaleX, scaleY);
-        
-        // Calculate final dimensions and position
+
         const finalWidth = svgWidthMm * scale;
         const finalHeight = svgHeightMm * scale;
         const x = (pdfWidth - finalWidth) / 2;
         const y = (pdfHeight - finalHeight) / 2;
-        
-        // Use svg2pdf.js for true vector conversion
-        await svg2pdf(svgClone, pdf, {
-          x: x,
-          y: y,
-          width: finalWidth,
-          height: finalHeight
-        });
-        
-        // Save the PDF
+
+        await svg2pdf(svgClone, pdf, { x, y, width: finalWidth, height: finalHeight });
         pdf.save(`bharatviz-districts-${Date.now()}.pdf`);
-        
+
       } catch (error) {
-        // Fallback to raster PDF if vector conversion fails
         try {
           await exportDistrictsFallbackPDF();
         } catch (fallbackError) {
@@ -1203,19 +1068,15 @@ Chittoor,50`;
     }
   }));
 
-  // PERFORMANCE OPTIMIZATION: Memoize expensive district label calculations
-  // This prevents recalculating for every render (must be before early return)
   const { districtLabelData, maxArea, minArea, districtDataMap } = useMemo(() => {
     if (!geojsonData) return { districtLabelData: [], maxArea: 0, minArea: 0, districtDataMap: new Map() };
 
-    // Create a map for O(1) district data lookup instead of O(n) array search
     const map = new Map<string, number | string | undefined>();
     data.forEach(d => {
       const key = `${d.state.toLowerCase().trim()}|${d.district.toLowerCase().trim()}`;
       map.set(key, d.value);
     });
 
-    // Calculate min and max area once instead of for every feature
     let max = 0;
     let min = Infinity;
     const labels = geojsonData.features.map(feature => {
@@ -1306,21 +1167,18 @@ const dataExtent =
                 );
               })}
               
-              {/* District Name Labels - OPTIMIZED with dragging and values */}
-{((!hideDistrictNames && !hideDistrictValues) || (!hideDistrictNames) || (!hideDistrictValues)) &&
-  districtLabelData.length > 0 && (
+              {/* District Labels */}
+{!hideDistrictNames && districtLabelData.length > 0 && (
     <g className="district-labels">
       {districtLabelData.map(({ feature, area }, index) => {
         const districtName = feature.properties.district_name || feature.properties.nss_region || '';
         const stateName = feature.properties.state_name || '';
         if (!districtName) return null;
 
-        // Get label center using polylabel (guaranteed inside polygon)
         const [lng, lat] = getPolygonCenter(feature.geometry);
         const screenPos = geoToScreen(lng, lat);
         let labelPosition = { x: screenPos.x, y: screenPos.y };
 
-        // Font size based on area
         const minFontSize = isMobile ? 6 : 7;
         const maxFontSize = isMobile ? 16 : 18;
         const areaRange = maxArea - minArea;
@@ -1330,33 +1188,20 @@ const dataExtent =
         const fontSizingFactor = selectedState ? 0.75 : 0.65;
         const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
-        // Apply custom position if dragged
         const districtKey = `${stateName}|${districtName}`;
         const customPosition = labelPositions.get(districtKey);
         if (customPosition) {
           labelPosition = customPosition;
         }
 
-        // ✅ O(1) district value lookup
         const lookupKey = `${stateName.toLowerCase().trim()}|${districtName.toLowerCase().trim()}`;
         const districtValue = districtDataMap.get(lookupKey);
-
         const fillColor = getDistrictColorForValue(districtValue, dataExtent);
-
-        // ✅ Text color based on fill color
-        const textColor =
-          fillColor === 'white' || !isColorDark(fillColor) ? '#0f172a' : '#ffffff';
-
-        // ✅ Respect hideDistrictNames flag
-        if (hideDistrictNames) return null;
-
-        // ✅ Rotation OFF (kept same)
-        const rotationAngle = 0;
-        const transform = `translate(${labelPosition.x}, ${labelPosition.y}) rotate(${rotationAngle})`;
+        const textColor = fillColor === 'white' || !isColorDark(fillColor) ? '#0f172a' : '#ffffff';
+        const transform = `translate(${labelPosition.x}, ${labelPosition.y})`;
 
         return (
           <g key={`label-group-${index}`} transform={transform}>
-            {/* District name */}
             <text
               x={0}
               y={-finalFontSize / 2}
@@ -1382,7 +1227,6 @@ const dataExtent =
               {districtName}
             </text>
 
-            {/* District value */}
             {districtValue !== undefined && (
               <text
                 x={0}
