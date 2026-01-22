@@ -13,12 +13,26 @@ interface NAInfo {
   count: number;
 }
 
+type StateValueRow = { state: string; value: number | string };
+type DistrictValueRow = { state: string; district: string; value: number | string };
+
+type MultiSeriesPayload =
+  | {
+      kind: 'states';
+      series: Array<{ key: string; title: string; data: StateValueRow[]; naInfo?: NAInfo }>;
+    }
+  | {
+      kind: 'districts';
+      series: Array<{ key: string; title: string; data: DistrictValueRow[]; naInfo?: NAInfo }>;
+    };
+
 interface FileUploadProps {
   onDataLoad: (
-    data: Array<{ state: string; value: number }> | Array<{ state: string; district: string; value: number }>,
+    data: Array<{ state: string; value: number | string }> | Array<{ state: string; district: string; value: number | string }>,
     title?: string,
     naInfo?: NAInfo
   ) => void;
+  onMultiDataLoad?: (payload: MultiSeriesPayload) => void;
   mode?: 'states' | 'districts';
   templateCsvPath?: string;
   demoDataPath?: string;
@@ -28,7 +42,7 @@ interface FileUploadProps {
   darkMode?: boolean;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, darkMode = false }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, darkMode = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -67,7 +81,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
 
       const stateColumn = headers[0];
       const locationColumn = mode === 'districts' ? headers[1] : headers[0];
-      const valueColumn = headers[headers.length - 1];
 
       const parseValue = (val: string): number | string => {
         const trimmed = val ? val.trim() : '';
@@ -77,6 +90,91 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         const num = Number(trimmed);
         return isNaN(num) ? trimmed : num;
       };
+
+      /**
+       * SPECIAL CASE: state, value, year format
+       *
+       * Users often provide data as:
+       *   state, <value column>, year
+       * with multiple rows per state/year. We want:
+       *   - One map per unique year (colored by value)
+       *   - The year shown as the map title/label
+       *
+       * We detect this pattern when:
+       *   - mode === 'states'
+       *   - We have at least 3 columns
+       *   - The last column header contains "year"
+       */
+      if (mode === 'states' && headers.length >= 3 && onMultiDataLoad) {
+        const valueColumnForYearFormat = headers[1]; // middle column in state, value, year
+        const yearColumn = headers[headers.length - 1];
+        const hasYearColumn = yearColumn.toLowerCase().includes('year');
+
+        if (hasYearColumn) {
+          type RowWithYear = { state: string; value: number | string; year: string };
+
+          const rows: RowWithYear[] = data
+            .filter(row => row[stateColumn] && row[valueColumnForYearFormat] && row[yearColumn])
+            .map(row => ({
+              state: row[stateColumn].trim(),
+              value: parseValue(row[valueColumnForYearFormat]),
+              year: String(row[yearColumn]).trim(),
+            }));
+
+          if (rows.length === 0) {
+            alert('No valid data found. Please ensure your file has state, value, and year columns.');
+            return;
+          }
+
+          const byYear = new Map<string, StateValueRow[]>();
+          for (const row of rows) {
+            if (!row.year) continue;
+            if (!byYear.has(row.year)) {
+              byYear.set(row.year, []);
+            }
+            byYear.get(row.year)!.push({ state: row.state, value: row.value });
+          }
+
+          const years = Array.from(byYear.keys())
+            .filter(y => y !== '')
+            .sort((a, b) => {
+              const na = Number(a);
+              const nb = Number(b);
+              if (!isNaN(na) && !isNaN(nb)) return na - nb;
+              return a.localeCompare(b);
+            });
+
+          if (years.length === 0) {
+            alert('No valid year values found in the last column.');
+            return;
+          }
+
+          const allSeries: Array<{ key: string; title: string; data: StateValueRow[]; naInfo?: NAInfo }> = [];
+
+          for (const year of years) {
+            const yearRows = byYear.get(year) || [];
+            const processed = await processStateData(
+              yearRows,
+              geojsonPath || '',
+              fuzzyThreshold
+            );
+
+            allSeries.push({
+              key: year,
+              title: year,
+              data: processed.matched,
+              naInfo: processed.naInfo
+            });
+          }
+
+          onMultiDataLoad?.({ kind: 'states', series: allSeries });
+          return;
+        }
+      }
+
+      // Default behaviour: treat each non-state column as a separate value column
+      const valueColumns = mode === 'districts' ? headers.slice(2) : headers.slice(1);
+      const valueColumn = valueColumns[valueColumns.length - 1];
 
       const processedData = data
         .filter(row => {
@@ -93,6 +191,80 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       if (processedData.length === 0) {
         alert(`No valid data found. Please ensure your file has data in the correct columns.`);
         return;
+      }
+
+      // If multiple value columns are present (e.g., year columns), emit a multi-series payload.
+      // This keeps backward compatibility: if the parent doesn't support multi-series, we fall back
+      // to the last column (current behavior).
+      const canEmitMulti = Boolean(onMultiDataLoad) && valueColumns.length > 1;
+      if (canEmitMulti) {
+        const seriesLimit = 4;
+        const isYearLike = (col: string) => /^\s*\d{4}\s*$/.test(col);
+        const normalizedCols = valueColumns.map(c => c.trim()).filter(Boolean);
+        const yearCols = normalizedCols.filter(isYearLike);
+        const nonYearCols = normalizedCols.filter(c => !isYearLike(c));
+        const orderedCols =
+          yearCols.length > 0
+            ? [...yearCols].sort((a, b) => Number(a) - Number(b))
+            : normalizedCols;
+
+        const colsToUse = orderedCols.slice(-seriesLimit);
+
+        if (mode === 'districts') {
+          const allSeries: Array<{ key: string; title: string; data: DistrictValueRow[]; naInfo?: NAInfo }> = [];
+          for (const col of colsToUse) {
+            const seriesRaw = data
+              .filter(row => row[stateColumn] && row[locationColumn])
+              .map(row => ({
+                state: row[stateColumn].trim(),
+                district: row[locationColumn].trim(),
+                value: parseValue(row[col])
+              }));
+
+            const processed = await processDistrictData(
+              seriesRaw,
+              geojsonPath || '',
+              fuzzyThreshold,
+              selectedState
+            );
+
+            allSeries.push({
+              key: col,
+              title: col,
+              data: processed.matched,
+              naInfo: processed.naInfo
+            });
+          }
+
+          onMultiDataLoad?.({ kind: 'districts', series: allSeries });
+          return;
+        } else {
+          const allSeries: Array<{ key: string; title: string; data: StateValueRow[]; naInfo?: NAInfo }> = [];
+          for (const col of colsToUse) {
+            const seriesRaw = data
+              .filter(row => row[locationColumn])
+              .map(row => ({
+                state: row[locationColumn].trim(),
+                value: parseValue(row[col])
+              }));
+
+            const processed = await processStateData(
+              seriesRaw,
+              geojsonPath || '',
+              fuzzyThreshold
+            );
+
+            allSeries.push({
+              key: col,
+              title: col,
+              data: processed.matched,
+              naInfo: processed.naInfo
+            });
+          }
+
+          onMultiDataLoad?.({ kind: 'states', series: allSeries });
+          return;
+        }
       }
 
       if (mode === 'districts') {
@@ -139,12 +311,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
     if (isGzipped) {
       try {
         const decompressedText = await decompressGzip(file);
-        Papa.parse(decompressedText, {
+        Papa.parse<Record<string, string>>(decompressedText, {
           header: true,
           complete: async (result) => {
             await processUploadedData(result);
           },
-          error: (error) => {
+          error: () => {
             alert('Error parsing decompressed file');
           }
         });
@@ -154,12 +326,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       return;
     }
 
-    Papa.parse(file, {
+    Papa.parse<Record<string, string>>(file, {
       header: true,
       complete: async (result) => {
         await processUploadedData(result);
       },
-      error: (error) => {
+      error: () => {
         alert('Error parsing file');
       }
     });
@@ -174,7 +346,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
       }
       const csvText = await response.text();
 
-      Papa.parse(csvText, {
+      Papa.parse<Record<string, string>>(csvText, {
         header: true,
         complete: async (result) => {
           await processUploadedData(result);
@@ -255,7 +427,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, mode = 'stat
         return;
       }
 
-      Papa.parse(csvText, {
+      Papa.parse<Record<string, string>>(csvText, {
         header: true,
         complete: async (result) => {
           await processUploadedData(result);

@@ -39,6 +39,13 @@ interface NAInfo {
   count: number;
 }
 
+interface MultiYearSeries {
+  key: string;
+  title: string;
+  data: StateMapData[];
+  naInfo?: NAInfo;
+}
+
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -52,6 +59,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<string>(getTabFromPath(location.pathname));
 
   const [stateMapData, setStateMapData] = useState<StateMapData[]>([]);
+  const [stateMultiYearSeries, setStateMultiYearSeries] = useState<MultiYearSeries[]>([]);
   const [stateColorScale, setStateColorScale] = useState<ColorScale>('spectral');
   const [stateInvertColors, setStateInvertColors] = useState(false);
   const [stateHideNames, setStateHideNames] = useState(false);
@@ -114,6 +122,7 @@ const Index = () => {
   } | null>(null);
 
   const stateMapRef = useRef<IndiaMapRef>(null);
+  const stateMultiYearMapRefs = useRef<Map<string, IndiaMapRef>>(new Map());
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
 
@@ -497,11 +506,20 @@ const Index = () => {
         if (activeTab === 'states') {
           geoJsonPath = DATA_FILES.STATES_GEOJSON;
           currentMapType = 'states';
-          metricName = stateDataTitle || undefined;
-          data = stateMapData.map(d => ({
-            name: d.state,
-            value: normalizeValue(d.value),
-          }));
+          // Use multi-year data if available, otherwise single-year
+          if (stateMultiYearSeries.length > 0) {
+            metricName = stateMultiYearSeries[0].title || undefined;
+            data = stateMultiYearSeries[0].data.map(d => ({
+              name: d.state,
+              value: normalizeValue(d.value),
+            }));
+          } else {
+            metricName = stateDataTitle || undefined;
+            data = stateMapData.map(d => ({
+              name: d.state,
+              value: normalizeValue(d.value),
+            }));
+          }
         } else if (activeTab === 'districts') {
           const config = getDistrictMapConfig(selectedDistrictMapType);
           geoJsonPath = config.geojsonPath;
@@ -575,6 +593,7 @@ const Index = () => {
     selectedDistrictMapType,
     selectedStateMapType,
     stateMapData,
+    stateMultiYearSeries,
     districtMapData,
     stateDistrictMapData,
     stateDataTitle,
@@ -583,6 +602,8 @@ const Index = () => {
   ]);
 
   const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
+    // Clear multi-year data when single-year data is loaded
+    setStateMultiYearSeries([]);
     setStateMapData(data);
     setStateDataTitle(title || '');
     setStateNAInfo(naInfo);
@@ -593,6 +614,27 @@ const Index = () => {
 
     if (dataType === 'categorical') {
       const categories = getUniqueCategories(values);
+      const categoryColors = generateDefaultCategoryColors(categories);
+      setStateCategoryColors(categoryColors);
+      setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
+  };
+
+  const handleStateMultiYearDataLoad = (series: MultiYearSeries[]) => {
+    // Clear single-year data when multi-year data is loaded
+    setStateMapData([]);
+    setStateDataTitle('');
+    setStateNAInfo(undefined);
+    
+    setStateMultiYearSeries(series);
+    
+    // Determine data type from all series
+    const allValues = series.flatMap(s => s.data.map(d => d.value));
+    const dataType = detectDataType(allValues);
+    setStateDataType(dataType);
+
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(allValues);
       const categoryColors = generateDefaultCategoryColors(categories);
       setStateCategoryColors(categoryColors);
       setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
@@ -645,7 +687,15 @@ const Index = () => {
 
   const handleExportPNG = () => {
     if (activeTab === 'states') {
-      stateMapRef.current?.exportPNG();
+      if (stateMultiYearSeries.length > 0) {
+        // Export all multi-year maps
+        stateMultiYearSeries.forEach(series => {
+          const ref = stateMultiYearMapRefs.current.get(series.key);
+          ref?.exportPNG();
+        });
+      } else {
+        stateMapRef.current?.exportPNG();
+      }
     } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPNG();
     } else {
@@ -655,7 +705,15 @@ const Index = () => {
 
   const handleExportSVG = () => {
     if (activeTab === 'states') {
-      stateMapRef.current?.exportSVG();
+      if (stateMultiYearSeries.length > 0) {
+        // Export all multi-year maps
+        stateMultiYearSeries.forEach(series => {
+          const ref = stateMultiYearMapRefs.current.get(series.key);
+          ref?.exportSVG();
+        });
+      } else {
+        stateMapRef.current?.exportSVG();
+      }
     } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportSVG();
     } else {
@@ -665,7 +723,15 @@ const Index = () => {
 
   const handleExportPDF = () => {
     if (activeTab === 'states') {
-      stateMapRef.current?.exportPDF();
+      if (stateMultiYearSeries.length > 0) {
+        // Export all multi-year maps
+        stateMultiYearSeries.forEach(series => {
+          const ref = stateMultiYearMapRefs.current.get(series.key);
+          ref?.exportPDF();
+        });
+      } else {
+        stateMapRef.current?.exportPDF();
+      }
     } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPDF();
     } else {
@@ -822,11 +888,10 @@ const Index = () => {
       </button>
 
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-4 sm:mb-8">
-          <h1 className={`text-lg sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3 ${darkMode ? 'text-white' : ''}`}>
-            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-6 sm:h-12 w-auto" />
-            <span className="hidden sm:inline">BharatViz - Fast choropleths for India</span>
-            <span className="sm:hidden">BharatViz</span>
+        <div className="text-center mb-6 sm:mb-8">
+          <h1 className={`text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3 ${darkMode ? 'text-white' : ''}`}>
+            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-8 sm:h-12 w-auto" />
+            <span>BharatViz - Fast choropleths for India</span>
           </h1>
         </div>
 
@@ -909,17 +974,120 @@ const Index = () => {
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 order-2 lg:order-2">
-                <IndiaMap ref={stateMapRef} data={stateMapData} colorScale={stateColorScale}
-                  invertColors={stateInvertColors}
-                  hideStateNames={stateHideNames}
-                  hideValues={stateHideValues}
-                  dataTitle={stateDataTitle}
-                  colorBarSettings={stateColorBarSettings}
-                  dataType={stateDataType}
-                  categoryColors={stateCategoryColors}
-                  naInfo={stateNAInfo}
-                  darkMode={darkMode}
-                />
+                {stateMultiYearSeries.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Multi-year grid layout */}
+                    {stateMultiYearSeries.length === 2 ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {stateMultiYearSeries.map((series) => (
+                          <div key={series.key} className="flex flex-col items-center">
+                            <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
+                            <div className="w-full overflow-hidden" style={{ height: '85%' }}>
+                              <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center', width: '117.65%' }}>
+                                <IndiaMap
+                                  ref={(el) => {
+                                    if (el) {
+                                      stateMultiYearMapRefs.current.set(series.key, el);
+                                    } else {
+                                      stateMultiYearMapRefs.current.delete(series.key);
+                                    }
+                                  }}
+                                  data={series.data}
+                                  colorScale={stateColorScale}
+                                  invertColors={stateInvertColors}
+                                  hideStateNames={stateHideNames}
+                                  hideValues={stateHideValues}
+                                  dataTitle={series.title}
+                                  colorBarSettings={stateColorBarSettings}
+                                  dataType={stateDataType}
+                                  categoryColors={stateCategoryColors}
+                                  naInfo={series.naInfo}
+                                  darkMode={darkMode}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : stateMultiYearSeries.length === 3 ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {stateMultiYearSeries.map((series, idx) => (
+                          <div key={series.key} className={`flex flex-col items-center ${idx === 2 ? 'col-span-2' : ''}`}>
+                            <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
+                            <div className="w-full overflow-hidden" style={{ height: idx === 2 ? '70%' : '85%' }}>
+                              <div style={{ transform: idx === 2 ? 'scale(0.7)' : 'scale(0.85)', transformOrigin: 'top center', width: idx === 2 ? '142.86%' : '117.65%' }}>
+                                <IndiaMap
+                                  ref={(el) => {
+                                    if (el) {
+                                      stateMultiYearMapRefs.current.set(series.key, el);
+                                    } else {
+                                      stateMultiYearMapRefs.current.delete(series.key);
+                                    }
+                                  }}
+                                  data={series.data}
+                                  colorScale={stateColorScale}
+                                  invertColors={stateInvertColors}
+                                  hideStateNames={stateHideNames}
+                                  hideValues={stateHideValues}
+                                  dataTitle={series.title}
+                                  colorBarSettings={stateColorBarSettings}
+                                  dataType={stateDataType}
+                                  categoryColors={stateCategoryColors}
+                                  naInfo={series.naInfo}
+                                  darkMode={darkMode}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : stateMultiYearSeries.length >= 4 ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        {stateMultiYearSeries.slice(0, 4).map((series) => (
+                          <div key={series.key} className="flex flex-col items-center">
+                            <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
+                            <div className="w-full overflow-hidden" style={{ height: '70%' }}>
+                              <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center', width: '142.86%' }}>
+                                <IndiaMap
+                                  ref={(el) => {
+                                    if (el) {
+                                      stateMultiYearMapRefs.current.set(series.key, el);
+                                    } else {
+                                      stateMultiYearMapRefs.current.delete(series.key);
+                                    }
+                                  }}
+                                  data={series.data}
+                                  colorScale={stateColorScale}
+                                  invertColors={stateInvertColors}
+                                  hideStateNames={stateHideNames}
+                                  hideValues={stateHideValues}
+                                  dataTitle={series.title}
+                                  colorBarSettings={stateColorBarSettings}
+                                  dataType={stateDataType}
+                                  categoryColors={stateCategoryColors}
+                                  naInfo={series.naInfo}
+                                  darkMode={darkMode}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <IndiaMap ref={stateMapRef} data={stateMapData} colorScale={stateColorScale}
+                    invertColors={stateInvertColors}
+                    hideStateNames={stateHideNames}
+                    hideValues={stateHideValues}
+                    dataTitle={stateDataTitle}
+                    colorBarSettings={stateColorBarSettings}
+                    dataType={stateDataType}
+                    categoryColors={stateCategoryColors}
+                    naInfo={stateNAInfo}
+                    darkMode={darkMode}
+                  />
+                )}
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
                     onExportPNG={handleExportPNG}
@@ -933,6 +1101,11 @@ const Index = () => {
               <div className="lg:col-span-1 order-1 lg:order-1">
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
+                  onMultiDataLoad={(payload) => {
+                    if (payload.kind === 'states') {
+                      handleStateMultiYearDataLoad(payload.series);
+                    }
+                  }}
                   mode="states"
                   geojsonPath="/India_LGD_states.geojson"
                   darkMode={darkMode}
@@ -1529,3 +1702,4 @@ bv$show_map(result_nfhs5)`}
 };
 
 export default Index;
+                
