@@ -114,14 +114,10 @@ All colors MUST be HSL.
 
 /* Mobile-specific optimizations */
 @media (max-width: 767px) {
-  /* Larger touch targets */
+  /* Larger touch targets for buttons only */
   button,
-  [role="button"],
-  select,
-  input[type="checkbox"],
-  input[type="radio"] {
+  [role="button"] {
     min-height: 44px;
-    min-width: 44px;
   }
 
   /* Better tap highlighting */
