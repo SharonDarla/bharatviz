@@ -1179,13 +1179,13 @@ const dataExtent =
         const screenPos = geoToScreen(lng, lat);
         let labelPosition = { x: screenPos.x, y: screenPos.y };
 
-        const minFontSize = isMobile ? 6 : 7;
-        const maxFontSize = isMobile ? 16 : 18;
+        const minFontSize = isMobile ? 4 : 7;
+        const maxFontSize = isMobile ? 9 : 18;
         const areaRange = maxArea - minArea;
         const normalizedArea = areaRange > 0 ? (area - minArea) / areaRange : 0.5;
         const scaledArea = Math.sqrt(normalizedArea);
         const baseFinalFontSize = minFontSize + scaledArea * (maxFontSize - minFontSize);
-        const fontSizingFactor = selectedState ? 0.75 : 0.65;
+        const fontSizingFactor = isMobile ? (selectedState ? 0.7 : 0.55) : (selectedState ? 0.75 : 0.65);
         const finalFontSize = baseFinalFontSize * fontSizingFactor;
 
         const districtKey = `${stateName}|${districtName}`;
