@@ -822,10 +822,11 @@ const Index = () => {
       </button>
 
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className={`text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3 ${darkMode ? 'text-white' : ''}`}>
-            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-8 sm:h-12 w-auto" />
-            <span>BharatViz - Fast choropleths for India</span>
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className={`text-lg sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3 ${darkMode ? 'text-white' : ''}`}>
+            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-6 sm:h-12 w-auto" />
+            <span className="hidden sm:inline">BharatViz - Fast choropleths for India</span>
+            <span className="sm:hidden">BharatViz</span>
           </h1>
         </div>
 

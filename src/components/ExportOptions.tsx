@@ -24,36 +24,36 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
         <Download className={`h-4 w-4 ${darkMode ? 'text-gray-400' : ''}`} />
         Export
       </h3>
-      <div className="flex gap-2">
-        <Button 
-          onClick={onExportPNG} 
+      <div className="flex flex-wrap gap-2">
+        <Button
+          onClick={onExportPNG}
           disabled={disabled}
           variant="outline"
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
         >
           <FileImage className="h-4 w-4" />
-          Export as PNG
+          <span className="hidden sm:inline">Export as </span>PNG
         </Button>
-        <Button 
-          onClick={onExportSVG} 
+        <Button
+          onClick={onExportSVG}
           disabled={disabled}
           variant="outline"
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
         >
           <FileText className="h-4 w-4" />
-          Export as SVG
+          <span className="hidden sm:inline">Export as </span>SVG
         </Button>
-        <Button 
-          onClick={onExportPDF} 
+        <Button
+          onClick={onExportPDF}
           disabled={disabled}
           variant="outline"
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
         >
           <FileSpreadsheet className="h-4 w-4" />
-          Export as PDF
+          <span className="hidden sm:inline">Export as </span>PDF
         </Button>
       </div>
     </Card>

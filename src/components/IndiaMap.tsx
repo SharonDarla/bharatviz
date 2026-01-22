@@ -81,7 +81,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: -10, y: 160 } : DEFAULT_LEGEND_POSITION.STATES);
+    setLegendPosition(isMobile ? { x: 190, y: 60 } : DEFAULT_LEGEND_POSITION.STATES);
   }, [isMobile]);
 
   useEffect(() => {
@@ -873,18 +873,16 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         
         // Only show labels if we have data
         if (data.length > 0 && value !== undefined && originalName) {
-          // Calculate appropriate font size based on path bounds
           const bounds = path.bounds(d);
           const width = bounds[1][0] - bounds[0][0];
           const height = bounds[1][1] - bounds[0][1];
           const area = width * height;
-          let fontSize = Math.sqrt(area) / (isMobile ? 16 : 12);
-          fontSize = Math.max(isMobile ? 5 : 7, Math.min(isMobile ? 10 : 14, fontSize));
+          let fontSize = Math.sqrt(area) / (isMobile ? 20 : 12);
+          fontSize = Math.max(isMobile ? 4 : 7, Math.min(isMobile ? 7 : 14, fontSize));
           
-          // Special handling for smaller states - reduce text size
           const smallerStates = ['delhi', 'chandigarh', 'sikkim', 'tripura', 'manipur', 'mizoram', 'nagaland', 'meghalaya', 'puducherry', 'lakshadweep'];
           if (smallerStates.includes(stateName)) {
-            fontSize = Math.max(isMobile ? 4 : 6, fontSize * 0.7);
+            fontSize = Math.max(isMobile ? 3 : 6, fontSize * (isMobile ? 0.5 : 0.7));
           }
           
           // States that need forced black text (small states with external labels)
@@ -893,44 +891,39 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           const abbreviatedStates = ABBREVIATED_STATES;
           let textColor, valueColor;
           if (blackTextStates.includes(stateName)) {
-            // Special font sizes for specific states
             if (stateName === 'delhi') {
-              fontSize = isMobile ? 4 : 6; // Even smaller size for Delhi
+              fontSize = isMobile ? 3 : 6;
             } else if (stateName === 'chandigarh') {
-              fontSize = isMobile ? 3 : 5; // Even smaller size for Chandigarh
+              fontSize = isMobile ? 2.5 : 5;
             } else if (stateName === 'himachal pradesh') {
-              fontSize = isMobile ? 4 : 6; // Smaller size for Himachal Pradesh
+              fontSize = isMobile ? 3 : 6;
             } else if (stateName === 'puducherry') {
-              fontSize = isMobile ? 5 : 7; // Increased size for Puducherry
+              fontSize = isMobile ? 3.5 : 7;
             } else if (stateName === 'dnhdd') {
-              fontSize = isMobile ? 5 : 7; // Smaller size for DNHDD
+              fontSize = isMobile ? 3.5 : 7;
             } else if (stateName === 'karnataka') {
-              fontSize = isMobile ? 5 : 8; // Slightly larger size for Karnataka (KA)
+              fontSize = isMobile ? 4 : 8;
             } else if (stateName === 'mizoram' || stateName === 'tripura') {
-              fontSize = isMobile ? 5 : 7; // Smaller size for Mizoram and Tripura
+              fontSize = isMobile ? 3.5 : 7;
             } else if (stateName === 'nagaland' || stateName === 'manipur') {
-              fontSize = isMobile ? 5 : 7; // Smaller size for Nagaland and Manipur
+              fontSize = isMobile ? 3.5 : 7;
             } else {
-              fontSize = isMobile ? 6 : 9; // Standard size for other external labels
+              fontSize = isMobile ? 4 : 9;
             }
-            textColor = "#000000"; // Black text for white background
+            textColor = "#000000";
             valueColor = "#000000";
           } else if (abbreviatedStates.includes(stateName)) {
-            // States with abbreviated names - use smaller font size
             if (stateName === 'karnataka') {
-              fontSize = isMobile ? 5 : 8; // Standard size for Karnataka
+              fontSize = isMobile ? 4 : 8;
             }
-            
-            // States with external positioning but automatic color detection
             const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
             textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
             valueColor = textColor;
           } else {
             if (stateName === 'rajasthan') {
-              fontSize = Math.max(8, fontSize * 0.7);
+              fontSize = Math.max(isMobile ? 5 : 8, fontSize * 0.7);
             } else if (stateName === 'andhra pradesh') {
-              // Andhra Pradesh is abbreviated to "Andhra" - reduce font size to match Telangana
-              fontSize = Math.max(isMobile ? 5 : 7, fontSize * 0.8);
+              fontSize = Math.max(isMobile ? 4 : 7, fontSize * 0.8);
             }
             const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
             textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
