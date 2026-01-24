@@ -218,6 +218,41 @@ BharatViz <- R6::R6Class(
       invisible(filename)
     },
 
+    #' @description Get a raster grob from map result for use with grid/gridExtra
+    #' @param result Result from generate_map() or generate_districts_map()
+    #' @param format Format to use (default: "png")
+    #' @return A rasterGrob object suitable for grid.arrange()
+    get_grob = function(result, format = "png") {
+      # Find the requested format
+      export <- NULL
+      for (exp in result$exports) {
+        if (exp$format == format) {
+          export <- exp
+          break
+        }
+      }
+
+      if (is.null(export)) {
+        stop("Format '", format, "' not found in exports")
+      }
+
+      # Decode base64 image
+      img_data <- base64decode(export$data)
+
+      # Save to temp file and read as raster
+      temp_file <- tempfile(fileext = paste0(".", format))
+      writeBin(img_data, temp_file)
+
+      if (format == "png") {
+        library(png)
+        img <- readPNG(temp_file)
+        grob <- grid::rasterGrob(img, interpolate = TRUE)
+        return(grob)
+      } else {
+        stop("get_grob() only supports PNG format")
+      }
+    },
+
     #' @description Save all available formats
     #' @param result Result from generate_map() or generate_districts_map()
     #' @param basename Base filename (without extension)
