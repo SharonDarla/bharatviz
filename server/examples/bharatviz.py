@@ -285,8 +285,10 @@ class BharatViz:
             "magma",
         ] = "spectral",
         invert_colors: bool = False,
-        hide_values: bool = False,
+        hide_district_names: bool = True,
+        hide_values: bool = True,
         show_state_boundaries: bool = True,
+        state: Optional[str] = None,
         formats: List[Literal["png", "svg", "pdf"]] = ["png"],
         show: bool = False,
         save_path: Optional[str] = None,
@@ -310,10 +312,14 @@ class BharatViz:
             Color scale to use (see COLOR_SCALES)
         invert_colors : bool
             Whether to invert the color scale
+        hide_district_names : bool
+            Hide district name labels (default: True)
         hide_values : bool
-            Hide value labels
+            Hide value labels (default: True)
         show_state_boundaries : bool
             Show state boundary lines over districts
+        state : str, optional
+            State name to filter and zoom to a single state
         formats : list of str
             Export formats to generate
         show : bool
@@ -371,12 +377,16 @@ class BharatViz:
             "mapType": map_type,
             "colorScale": color_scale,
             "invertColors": invert_colors,
+            "hideDistrictNames": hide_district_names,
             "hideValues": hide_values,
             "showStateBoundaries": show_state_boundaries,
             "mainTitle": title,
             "legendTitle": legend_title,
             "formats": formats,
         }
+
+        if state is not None:
+            request_body["state"] = state
 
         try:
             response = requests.post(
@@ -464,7 +474,8 @@ class BharatViz:
             "magma",
         ] = "spectral",
         invert_colors: bool = False,
-        hide_values: bool = False,
+        hide_district_names: bool = True,
+        hide_values: bool = True,
         formats: List[Literal["png", "svg", "pdf"]] = ["png"],
         show: bool = False,
         save_path: Optional[str] = None,
@@ -490,8 +501,10 @@ class BharatViz:
             Color scale to use (see COLOR_SCALES)
         invert_colors : bool
             Whether to invert the color scale
+        hide_district_names : bool
+            Hide district name labels (default: True)
         hide_values : bool
-            Hide value labels
+            Hide value labels (default: True)
         formats : list of str
             Export formats to generate
         show : bool
@@ -550,6 +563,7 @@ class BharatViz:
             "mapType": map_type,
             "colorScale": color_scale,
             "invertColors": invert_colors,
+            "hideDistrictNames": hide_district_names,
             "hideValues": hide_values,
             "mainTitle": title,
             "legendTitle": legend_title,
