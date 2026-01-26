@@ -1391,7 +1391,8 @@ bv$show_map(result_nfhs5)`}
                       <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>R: Side-by-side maps (high resolution)</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`library(R6)
-library(patchwork)
+library(grid)
+library(gridExtra)
 
 source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
 
@@ -1408,16 +1409,18 @@ map2 <- bv$generate_map(data2, title = "Metric B", color_scale = "reds")
 grob1 <- bv$get_grob(map1)
 grob2 <- bv$get_grob(map2)
 
-# Display side by side using patchwork
-wrap_elements(grob1) + wrap_elements(grob2)
+# Display side by side
+grid.arrange(grob1, grob2, ncol = 2)
 
 # Save as high-res PNG (300 DPI)
-ggsave("comparison.png", wrap_elements(grob1) + wrap_elements(grob2),
-       width = 16, height = 8, dpi = 300)
+png("comparison.png", width = 16, height = 8, units = "in", res = 300)
+grid.arrange(grob1, grob2, ncol = 2)
+dev.off()
 
-# Save as PDF (vector quality)
-ggsave("comparison.pdf", wrap_elements(grob1) + wrap_elements(grob2),
-       width = 16, height = 8)`}
+# Save as PDF
+pdf("comparison.pdf", width = 16, height = 8)
+grid.arrange(grob1, grob2, ncol = 2)
+dev.off()`}
                       </pre>
                     </div>
 
