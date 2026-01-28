@@ -932,7 +932,6 @@ const Index = () => {
       const col = i % cols;
       const x = col * singleWidth;
       const y = row * singleHeight;
-      // eslint-disable-next-line no-await-in-loop
       await drawSvgAt(svgElements[i], x, y);
     }
 

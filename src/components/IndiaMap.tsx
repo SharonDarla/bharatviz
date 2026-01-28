@@ -331,38 +331,32 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     }
   };
 
-  // Fallback raster PDF export method
+  // Fallback  PDF export method
   const exportFallbackPDF = async () => {
     if (!svgRef.current) return;
     
     const svg = svgRef.current;
-    
-    // Create a clean SVG clone for raster export
     const svgClone = svg.cloneNode(true) as SVGSVGElement;
     const svgWidth = isMobile ? 350 : 800;
     const svgHeight = isMobile ? 350 : 800;
     
-    // Ensure proper dimensions and viewBox
+    // applying proper dimensions and viewBox
     svgClone.setAttribute('width', svgWidth.toString());
     svgClone.setAttribute('height', svgHeight.toString());
     svgClone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
     svgClone.removeAttribute('class');
     
-    // Force all elements to be visible and properly positioned
     const allElements = svgClone.querySelectorAll('*');
     allElements.forEach(el => {
       const element = el as SVGElement;
       element.style.visibility = 'visible';
       element.style.display = 'block';
-      // Ensure text elements are properly rendered with consistent font
       if (element.tagName === 'text') {
-        // Use both attribute and style to ensure compatibility
         element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
         element.style.fontFamily = 'Arial, Helvetica, sans-serif';
       }
     });
     
-    // Fix the legend gradient to match the selected color scale
     fixLegendGradient(svgClone);
     
     const svgData = new XMLSerializer().serializeToString(svgClone);
@@ -379,7 +373,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           // Dynamically import jsPDF for fallback
           const { default: jsPDF } = await import('jspdf');
           
-          // Use very high resolution for crisp output
+          // Use very high resolution 
           const dpiScale = 8; // 8x resolution for maximum quality
           canvas.width = svgWidth * dpiScale;
           canvas.height = svgHeight * dpiScale;
@@ -443,7 +437,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     });
   };
 
-  // Final fallback using html2canvas for maximum compatibility
   const exportHtml2CanvasPDF = async () => {
     if (!svgRef.current) return;
     
