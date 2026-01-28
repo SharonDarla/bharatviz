@@ -1655,7 +1655,7 @@ const Index = () => {
           <div className={`space-y-6 ${activeTab === 'help' ? 'block' : 'hidden'}`}>
             <div className="max-w-4xl mx-auto p-6 space-y-8">
               <div className="p-4 border-2 border-green-500 rounded-lg bg-green-50 dark:bg-green-950">
-                <h2 className="text-xl font-bold mb-2 text-green-800 dark:text-green-200">Privacy & Data Security</h2>
+                <h2 className="text-xl font-bold mb-2 text-green-800 dark:text-green-200">Privacy & data security</h2>
                 <p className="text-green-700 dark:text-green-300">
                   <strong>Your data is never stored.</strong> All processing happens in your browser or transiently on our servers.
                   We do not collect, store, or share any of your uploaded data.
@@ -1664,13 +1664,13 @@ const Index = () => {
 
               <div className="space-y-6">
                 <div>
-                  <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : ''}`}>Web Interface</h2>
+                  <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : ''}`}>Web interface</h2>
                   <p className={`${darkMode ? 'text-gray-300' : 'text-muted-foreground'} mb-4`}>
                     BharatViz helps you create publication-ready choropleth maps of India at state and district levels with just a few clicks.
                   </p>
                   <div className="space-y-4">
                     <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>1. Upload Your Data</h3>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>1. Upload your data</h3>
                       <p className={`${darkMode ? 'text-gray-300' : 'text-muted-foreground'} mb-2`}>Upload a CSV file with your data. Required columns:</p>
                       <ul className={`list-disc list-inside space-y-1 text-sm ${darkMode ? 'text-gray-300' : ''}`}>
                         <li><strong>States:</strong> <code>state</code> and <code>value</code></li>
@@ -1682,7 +1682,7 @@ const Index = () => {
                     </div>
 
                     <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>2. Customize Your Map</h3>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>2. Customize your map</h3>
                       <ul className={`list-disc list-inside space-y-1 text-sm ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
                         <li><strong>Color Scale:</strong> Choose from sequential (blues, greens, viridis) or diverging (spectral, rdylbu) scales</li>
                         <li><strong>Invert Colors:</strong> Flip the color mapping (useful when lower values are better)</li>
@@ -1693,7 +1693,7 @@ const Index = () => {
                     </div>
 
                     <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>3. Export Your Map</h3>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>3. Export your map</h3>
                       <p className={`${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>Export in multiple formats:</p>
                       <ul className={`list-disc list-inside space-y-1 text-sm ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
                         <li><strong>PNG:</strong> High-resolution raster image (300 DPI)</li>
@@ -1705,13 +1705,13 @@ const Index = () => {
                 </div>
 
                 <div className="pt-6 border-t">
-                  <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : ''}`}>Programmatic Access (API)</h2>
+                  <h2 className={`text-2xl font-bold mb-4 ${darkMode ? 'text-white' : ''}`}>Programmatic access (API)</h2>
                   <p className={`${darkMode ? 'text-gray-300' : 'text-muted-foreground'} mb-4`}>
                     The API supports state and district-level maps (LGD, NFHS-5, NFHS-4), all color scales, and exports to PNG, SVG, and PDF formats from Python or R.
                   </p>
                   <div className="space-y-4">
                     <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
-                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Documentation & Examples</h3>
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Documentation & examples</h3>
                       <ul className="list-disc list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
                         <li>
                           <a
@@ -1789,6 +1789,76 @@ result_nfhs5 <- bv$generate_districts_map(dist_data, map_type = "NFHS5")
 bv$show_map(result_nfhs5)`}
                       </pre>
                     </div>
+
+                    <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>R: Side-by-side maps (high resolution)</h3>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`library(R6)
+library(grid)
+library(gridExtra)
+
+source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
+
+bv <- BharatViz$new()
+
+# Generate two maps
+data1 <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
+data2 <- data.frame(state = c("Maharashtra", "Kerala"), value = c(45.2, 62.1))
+
+map1 <- bv$generate_map(data1, title = "Metric A", color_scale = "blues")
+map2 <- bv$generate_map(data2, title = "Metric B", color_scale = "reds")
+
+# Get raster grobs (preserves resolution)
+grob1 <- bv$get_grob(map1)
+grob2 <- bv$get_grob(map2)
+
+# Display side by side
+grid.arrange(grob1, grob2, ncol = 2)
+
+# Save as high-res PNG (300 DPI)
+png("comparison.png", width = 16, height = 8, units = "in", res = 300)
+grid.arrange(grob1, grob2, ncol = 2)
+dev.off()
+
+# Save as PDF
+pdf("comparison.pdf", width = 16, height = 8)
+grid.arrange(grob1, grob2, ncol = 2)
+dev.off()`}
+                      </pre>
+                    </div>
+
+                    <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
+                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>Direct API reference</h3>
+                      <p className={`text-sm mb-3 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
+                        For custom implementations without the client libraries:
+                      </p>
+                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+{`# States Map Endpoint
+POST /api/v1/states/map
+{
+  "data": [{"state": "Maharashtra", "value": 75.8}],
+  "colorScale": "spectral",    // Optional: spectral, viridis, blues, etc.
+  "invertColors": false,       // Optional: invert color scale
+  "mainTitle": "My Map Title", // Optional: map title (default: "BharatViz")
+  "legendTitle": "Values",     // Optional: legend label
+  "hideStateNames": false,     // Optional: hide state labels
+  "hideValues": false,         // Optional: hide value labels
+  "darkMode": false,           // Optional: dark background
+  "formats": ["png"]           // Optional: png, svg, pdf
+}
+
+# Districts Map Endpoint
+POST /api/v1/districts/map
+{
+  "data": [{"state_name": "Telangana", "district_name": "Adilabad", "value": 45.2}],
+  "mapType": "LGD",            // Required: LGD, NFHS5, NFHS4, SOI2011, SOI2001
+  "colorScale": "spectral",
+  "mainTitle": "District Map",
+  "legendTitle": "Values",
+  "formats": ["png"]
+}`}
+                      </pre>
+                    </div>
                   </div>
                 </div>
 
@@ -1799,7 +1869,7 @@ bv$show_map(result_nfhs5)`}
                   </p>
                   <div className="space-y-4">
                     <div className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50 dark:bg-blue-950">
-                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Live Demo & Interactive Examples</h3>
+                      <h3 className="text-lg font-semibold mb-2 text-blue-800 dark:text-blue-200">Live demo & interactive examples</h3>
                       <p className="text-blue-700 dark:text-blue-300 mb-3">
                         See both embedding methods in action with live, working examples.
                       </p>
@@ -1862,11 +1932,11 @@ bv$show_map(result_nfhs5)`}
                         <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>dataUrl</code> - URL to your CSV file (required)</p>
                         <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>mapType</code> - 'states', 'districts', or 'state-districts' (default: 'states')</p>
                         <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>colorScale</code> - 'viridis', 'spectral', 'blues', 'greens', etc. (default: 'spectral')</p>
-                        <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>title</code> - Map title (default: 'BharatViz')</p>
+                        <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>mainTitle</code> - Map title (default: 'BharatViz')</p>
                         <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>legendTitle</code> - Legend label (default: 'Values')</p>
                         <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>invertColors</code> - true/false to reverse color scale</p>
                         <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>darkMode</code> - true/false for dark background with white boundaries and text</p>
-                        <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>districtBoundary</code> - 'LGD', 'NFHS4', or 'NFHS5' for district maps</p>
+                        <p><code className={`px-1 py-0.5 rounded ${darkMode ? 'bg-[#333] text-gray-200' : 'bg-muted'}`}>districtBoundary</code> - 'LGD', 'NFHS4', 'NFHS5', 'SOI2011', or 'SOI2001' for district maps</p>
                       </div>
                     </div>
                   </div>
@@ -1876,7 +1946,7 @@ bv$show_map(result_nfhs5)`}
                   <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-muted/50'}`}>
                     <h2 className={`text-xl font-bold mb-2 flex items-center gap-2 ${darkMode ? 'text-white' : ''}`}>
                       <Github className="h-5 w-5" />
-                      Open Source
+                      Open source
                     </h2>
                     <p className={`${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
                       BharatViz is open source and available on GitHub. Contributions, issues, and feedback are welcome!

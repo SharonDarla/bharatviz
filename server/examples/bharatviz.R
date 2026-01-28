@@ -99,6 +99,9 @@ BharatViz <- R6::R6Class(
     #' @param color_scale Color scale name
     #' @param show_state_boundaries Show state boundaries overlay
     #' @param invert_colors Invert color scale
+    #' @param hide_district_names Hide district name labels
+    #' @param hide_values Hide value labels
+    #' @param state Optional state name to filter and zoom to a single state
     #' @param formats Export formats (default: "png")
     #' @return List with image data and metadata
     generate_districts_map = function(data,
@@ -108,6 +111,9 @@ BharatViz <- R6::R6Class(
                                      color_scale = "spectral",
                                      show_state_boundaries = TRUE,
                                      invert_colors = FALSE,
+                                     hide_district_names = TRUE,
+                                     hide_values = TRUE,
+                                     state = NULL,
                                      formats = "png") {
 
       # Convert data to required format
@@ -126,8 +132,15 @@ BharatViz <- R6::R6Class(
         colorScale = color_scale,
         showStateBoundaries = show_state_boundaries,
         invertColors = invert_colors,
+        hideDistrictNames = hide_district_names,
+        hideValues = hide_values,
         formats = as.list(formats)
       )
+
+      # Add optional state filter
+      if (!is.null(state)) {
+        body$state <- state
+      }
 
       # Make API request
       response <- POST(
@@ -216,6 +229,41 @@ BharatViz <- R6::R6Class(
       message(sprintf("Saved %s (%.2f KB)", filename, file_size))
 
       invisible(filename)
+    },
+
+    #' @description Get a raster grob from map result for use with grid/gridExtra
+    #' @param result Result from generate_map() or generate_districts_map()
+    #' @param format Format to use (default: "png")
+    #' @return A rasterGrob object suitable for grid.arrange()
+    get_grob = function(result, format = "png") {
+      # Find the requested format
+      export <- NULL
+      for (exp in result$exports) {
+        if (exp$format == format) {
+          export <- exp
+          break
+        }
+      }
+
+      if (is.null(export)) {
+        stop("Format '", format, "' not found in exports")
+      }
+
+      # Decode base64 image
+      img_data <- base64decode(export$data)
+
+      # Save to temp file and read as raster
+      temp_file <- tempfile(fileext = paste0(".", format))
+      writeBin(img_data, temp_file)
+
+      if (format == "png") {
+        library(png)
+        img <- readPNG(temp_file)
+        grob <- grid::rasterGrob(img, interpolate = TRUE)
+        return(grob)
+      } else {
+        stop("get_grob() only supports PNG format")
+      }
     },
 
     #' @description Save all available formats
@@ -547,6 +595,9 @@ quick_map <- function(data,
 #' @param title Map title
 #' @param legend_title Legend label
 #' @param color_scale Color scale
+#' @param hide_district_names Hide district name labels
+#' @param hide_values Hide value labels
+#' @param state Optional state name to filter and zoom to a single state
 #' @param display Display the map (default: TRUE)
 #' @param save_path Optional path to save PNG
 #' @return Result from API
@@ -556,6 +607,9 @@ quick_districts_map <- function(data,
                                title = "BharatViz",
                                legend_title = "Values",
                                color_scale = "spectral",
+                               hide_district_names = TRUE,
+                               hide_values = TRUE,
+                               state = NULL,
                                display = TRUE,
                                save_path = NULL) {
 
@@ -565,7 +619,10 @@ quick_districts_map <- function(data,
     map_type = map_type,
     title = title,
     legend_title = legend_title,
-    color_scale = color_scale
+    color_scale = color_scale,
+    hide_district_names = hide_district_names,
+    hide_values = hide_values,
+    state = state
   )
 
   if (display) {
