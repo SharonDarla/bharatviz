@@ -1,0 +1,64 @@
+# Build and test on Pull Requests
+
+name: Test Build on PR
+on: 
+  pull_request:
+    branches:
+      - main
+      - master
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+jobs:
+  test_frontend_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js 25.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: '25.0'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Build frontend
+        run: npm run build
+        
+      - name: Verify build output
+        run: |
+          ls -la dist/
+          echo "Frontend build successful!"
+  
+  test_server_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js 25.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: '25.0'
+          cache: 'npm'
+      
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm ci
+      
+      - name: Build server
+        run: |
+          cd server
+          npm run build
+          
+      - name: Verify server build
+        run: |
+          cd server
+          ls -la dist/
+          echo "Server build successful!"
