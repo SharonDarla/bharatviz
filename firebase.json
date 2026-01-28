@@ -1,0 +1,37 @@
+{
+  "hosting": {
+    "site": "bharatviz",
+    "public": "dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.geojson",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/geo+json"
+          }
+        ]
+      },
+      {
+        "source": "**/*.csv",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "text/csv"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

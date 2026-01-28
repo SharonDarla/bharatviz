@@ -1,0 +1,50 @@
+# BharatViz Robots Configuration
+# Last updated: 2025-11-12
+
+# Default rules for all bots
+User-agent: *
+Allow: /
+Disallow: /node_modules/
+Disallow: /*.json$
+Disallow: /*.map$
+
+# Google bot specific rules
+User-agent: Googlebot
+Allow: /
+Disallow: /node_modules/
+Crawl-delay: 0
+
+# Bing bot rules
+User-agent: Bingbot
+Allow: /
+Disallow: /node_modules/
+Crawl-delay: 1
+
+# Social media bots - allow full access
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: linkedinbot
+Allow: /
+
+User-agent: slurp
+Allow: /
+
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemaps
+Sitemap: https://bharatviz.saketlab.in/sitemap.xml
+
+# Crawl-delay for default bot
+Crawl-delay: 1

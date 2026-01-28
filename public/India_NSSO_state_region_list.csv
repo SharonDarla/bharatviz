@@ -1,0 +1,673 @@
+state_name,district_name,nss_region,nss_region_code,NSSO,nsso_district_name,state_nsso_region
+Andaman & Nicobar Islands,Nicobars,Andaman & Nicobar Islands,351,TRUE,Nicobars,Andaman & Nicobar Islands - Andaman & Nicobar Islands
+Andaman & Nicobar Islands,North&Middleandaman,Andaman & Nicobar Islands,351,TRUE,North & Middle Andaman,Andaman & Nicobar Islands - Andaman & Nicobar Islands
+Andaman & Nicobar Islands,Southandaman,Andaman & Nicobar Islands,351,TRUE,South Andaman,Andaman & Nicobar Islands - Andaman & Nicobar Islands
+Andhra Pradesh,Anantapur,Inland Southern,283,TRUE,Anantapur,Andhra Pradesh - Inland Southern
+Andhra Pradesh,Chittoor,Inland Southern,283,TRUE,Chittoor,Andhra Pradesh - Inland Southern
+Andhra Pradesh,Eastgodavari,Coastal Northern,281,TRUE,East Godavari,Andhra Pradesh - Coastal Northern
+Andhra Pradesh,Guntur,Coastal Southern,282,TRUE,Guntur,Andhra Pradesh - Coastal Southern
+Andhra Pradesh,Krishna,Coastal Southern,282,TRUE,Krishna,Andhra Pradesh - Coastal Southern
+Andhra Pradesh,Kurnool,Inland Southern,283,TRUE,Kurnool,Andhra Pradesh - Inland Southern
+Andhra Pradesh,Prakasam,Coastal Southern,282,TRUE,Prakasam,Andhra Pradesh - Coastal Southern
+Andhra Pradesh,Sripottisriramulunellore,Coastal Southern,282,TRUE,Sri Potti Sriramulu Nellore,Andhra Pradesh - Coastal Southern
+Andhra Pradesh,Srikakulam,Coastal Northern,281,TRUE,Srikakulam,Andhra Pradesh - Coastal Northern
+Andhra Pradesh,Visakhapatnam,Coastal Northern,281,TRUE,Visakhapatnam,Andhra Pradesh - Coastal Northern
+Andhra Pradesh,Vizianagaram,Coastal Northern,281,TRUE,Vizianagaram,Andhra Pradesh - Coastal Northern
+Andhra Pradesh,Westgodavari,Coastal Northern,281,TRUE,West Godavari,Andhra Pradesh - Coastal Northern
+Andhra Pradesh,Y.s.r.(Cuddapah),Inland Southern,283,TRUE,Y.S.R. (Cuddapah),Andhra Pradesh - Inland Southern
+Arunachal Pradesh,Anjaw,Arunachal Pradesh,121,TRUE,Anjaw,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Changlang,Arunachal Pradesh,121,TRUE,Changlang,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Dibangvalley,Arunachal Pradesh,121,TRUE,Dibang Valley,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Eastkameng,Arunachal Pradesh,121,TRUE,East Kameng,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Eastsiang,Arunachal Pradesh,121,TRUE,East Siang,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Kurungkumey,Arunachal Pradesh,121,TRUE,Kurung Kumey,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Lohit,Arunachal Pradesh,121,TRUE,Lohit,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Lowerdibangvalley,Arunachal Pradesh,121,TRUE,Lower Dibang Valley,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Lowersubansiri,Arunachal Pradesh,121,TRUE,Lower Subansiri,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Papumpare,Arunachal Pradesh,121,TRUE,Papum Pare,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Tawang,Arunachal Pradesh,121,TRUE,Tawang,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Tirap,Arunachal Pradesh,121,TRUE,Tirap,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Uppersiang,Arunachal Pradesh,121,TRUE,Upper Siang,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Uppersubansiri,Arunachal Pradesh,121,TRUE,Upper Subansiri,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Westkameng,Arunachal Pradesh,121,TRUE,West Kameng,Arunachal Pradesh - Arunachal Pradesh
+Arunachal Pradesh,Westsiang,Arunachal Pradesh,121,TRUE,West Siang,Arunachal Pradesh - Arunachal Pradesh
+Assam,Baksa,Plains Western,182,TRUE,Baksa,Assam - Plains Western
+Assam,Barpeta,Plains Western,182,TRUE,Barpeta,Assam - Plains Western
+Assam,Bongaigaon,Plains Western,182,TRUE,Bongaigaon,Assam - Plains Western
+Assam,Cachar,Cachar Plain,183,TRUE,Cachar,Assam - Cachar Plain
+Assam,Chirang,Plains Western,182,TRUE,Chirang,Assam - Plains Western
+Assam,Darrang,Central Brahamputra Plains,184,TRUE,Darrang,Assam - Central Brahamputra Plains
+Assam,Dhemaji,Plains Eastern,181,TRUE,Dhemaji,Assam - Plains Eastern
+Assam,Dhubri,Plains Western,182,TRUE,Dhubri,Assam - Plains Western
+Assam,Dibrugarh,Plains Eastern,181,TRUE,Dibrugarh,Assam - Plains Eastern
+Assam,Dimahasao,Cachar Plain,183,TRUE,Dima Hasao,Assam - Cachar Plain
+Assam,Goalpara,Plains Western,182,TRUE,Goalpara,Assam - Plains Western
+Assam,Golaghat,Plains Eastern,181,TRUE,Golaghat,Assam - Plains Eastern
+Assam,Hailakandi,Cachar Plain,183,TRUE,Hailakandi,Assam - Cachar Plain
+Assam,Jorhat,Plains Eastern,181,TRUE,Jorhat,Assam - Plains Eastern
+Assam,Kamrup,Plains Western,182,TRUE,Kamrup,Assam - Plains Western
+Assam,Kamrupmetropolitan,Plains Western,182,TRUE,Kamrup Metropolitan,Assam - Plains Western
+Assam,Karbianglong,Cachar Plain,183,TRUE,Karbi Anglong,Assam - Cachar Plain
+Assam,Karimganj,Cachar Plain,183,TRUE,Karimganj,Assam - Cachar Plain
+Assam,Kokrajhar,Plains Western,182,TRUE,Kokrajhar,Assam - Plains Western
+Assam,Lakhimpur,Plains Eastern,181,TRUE,Lakhimpur,Assam - Plains Eastern
+Assam,Morigaon,Central Brahamputra Plains,184,TRUE,Morigaon,Assam - Central Brahamputra Plains
+Assam,Nagaon,Central Brahamputra Plains,184,TRUE,Nagaon,Assam - Central Brahamputra Plains
+Assam,Nalbari,Plains Western,182,TRUE,Nalbari,Assam - Plains Western
+Assam,Sivasagar,Plains Eastern,181,TRUE,Sivasagar,Assam - Plains Eastern
+Assam,Sonitpur,Central Brahamputra Plains,184,TRUE,Sonitpur,Assam - Central Brahamputra Plains
+Assam,Tinsukia,Plains Eastern,181,TRUE,Tinsukia,Assam - Plains Eastern
+Assam,Udalguri,Central Brahamputra Plains,184,TRUE,Udalguri,Assam - Central Brahamputra Plains
+Bihar,Araria,Northern,101,TRUE,Araria,Bihar - Northern
+Bihar,Arwal,Central,102,TRUE,Arwal,Bihar - Central
+Bihar,Aurangabad,Central,102,TRUE,Aurangabad,Bihar - Central
+Bihar,Banka,Central,102,TRUE,Banka,Bihar - Central
+Bihar,Begusarai,Northern,101,TRUE,Begusarai,Bihar - Northern
+Bihar,Bhagalpur,Central,102,TRUE,Bhagalpur,Bihar - Central
+Bihar,Bhojpur,Central,102,TRUE,Bhojpur,Bihar - Central
+Bihar,Buxar,Central,102,TRUE,Buxar,Bihar - Central
+Bihar,Darbhanga,Northern,101,TRUE,Darbhanga,Bihar - Northern
+Bihar,Gaya,Central,102,TRUE,Gaya,Bihar - Central
+Bihar,Gopalganj,Northern,101,TRUE,Gopalganj,Bihar - Northern
+Bihar,Jamui,Central,102,TRUE,Jamui,Bihar - Central
+Bihar,Jehanabad,Central,102,TRUE,Jehanabad,Bihar - Central
+Bihar,Kaimur(Bhabua),Central,102,TRUE,Kaimur (Bhabua),Bihar - Central
+Bihar,Katihar,Northern,101,TRUE,Katihar,Bihar - Northern
+Bihar,Khagaria,Northern,101,TRUE,Khagaria,Bihar - Northern
+Bihar,Kishanganj,Northern,101,TRUE,Kishanganj,Bihar - Northern
+Bihar,Lakhisarai,Central,102,TRUE,Lakhisarai,Bihar - Central
+Bihar,Madhepura,Northern,101,TRUE,Madhepura,Bihar - Northern
+Bihar,Madhubani,Northern,101,TRUE,Madhubani,Bihar - Northern
+Bihar,Munger,Central,102,TRUE,Munger,Bihar - Central
+Bihar,Muzaffarpur,Northern,101,TRUE,Muzaffarpur,Bihar - Northern
+Bihar,Nalanda,Central,102,TRUE,Nalanda,Bihar - Central
+Bihar,Nawada,Central,102,TRUE,Nawada,Bihar - Central
+Bihar,Pashchimchamparan,Northern,101,TRUE,Pashchim Champaran,Bihar - Northern
+Bihar,Patna,Central,102,TRUE,Patna,Bihar - Central
+Bihar,Purbachamparan,Northern,101,TRUE,Purba Champaran,Bihar - Northern
+Bihar,Purnia,Northern,101,TRUE,Purnia,Bihar - Northern
+Bihar,Rohtas,Central,102,TRUE,Rohtas,Bihar - Central
+Bihar,Saharsa,Northern,101,TRUE,Saharsa,Bihar - Northern
+Bihar,Samastipur,Northern,101,TRUE,Samastipur,Bihar - Northern
+Bihar,Saran,Northern,101,TRUE,Saran,Bihar - Northern
+Bihar,Sheikhpura,Central,102,TRUE,Sheikhpura,Bihar - Central
+Bihar,Sheohar,Northern,101,TRUE,Sheohar,Bihar - Northern
+Bihar,Sitamarhi,Northern,101,TRUE,Sitamarhi,Bihar - Northern
+Bihar,Siwan,Northern,101,TRUE,Siwan,Bihar - Northern
+Bihar,Supaul,Northern,101,TRUE,Supaul,Bihar - Northern
+Bihar,Vaishali,Northern,101,TRUE,Vaishali,Bihar - Northern
+Chandigarh,Chandigarh,Chandigarh,41,TRUE,Chandigarh,Chandigarh - Chandigarh
+Chhattisgarh,Balod,Mahanadi Basin,222,TRUE,Balod,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Balodabazar,Mahanadi Basin,222,TRUE,Balodabazar,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Balrampur,Northern Chhattisgarh,221,TRUE,Balrampur,Chhattisgarh - Northern Chhattisgarh
+Chhattisgarh,Bastar,Southern Chhattisgarh,223,TRUE,Bastar,Chhattisgarh - Southern Chhattisgarh
+Chhattisgarh,Bemetara,Mahanadi Basin,222,TRUE,Bemetara,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Bijapur,Southern Chhattisgarh,223,TRUE,Bijapur,Chhattisgarh - Southern Chhattisgarh
+Chhattisgarh,Bilaspur,Mahanadi Basin,222,TRUE,Bilaspur,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Dakshinbastardantewada,Southern Chhattisgarh,223,TRUE,Dakshin Bastar Dantewada,Chhattisgarh - Southern Chhattisgarh
+Chhattisgarh,Dhamtari,Mahanadi Basin,222,TRUE,Dhamtari,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Durg,Mahanadi Basin,222,TRUE,Durg,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Gariyaband,Mahanadi Basin,222,TRUE,Gariyaband,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Janjgirchampa,Mahanadi Basin,222,TRUE,JanjgirChampa,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Jashpur,Mahanadi Basin,222,TRUE,Jashpur,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Kabeerdham,Mahanadi Basin,222,TRUE,Kabeerdham,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Kondagaon,Southern Chhattisgarh,223,TRUE,Kondagaon,Chhattisgarh - Southern Chhattisgarh
+Chhattisgarh,Korba,Mahanadi Basin,222,TRUE,Korba,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Koriya,Northern Chhattisgarh,221,TRUE,Koriya,Chhattisgarh - Northern Chhattisgarh
+Chhattisgarh,Mahasamund,Mahanadi Basin,222,TRUE,Mahasamund,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Mungeli,Mahanadi Basin,222,TRUE,Mungeli,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Narayanpur,Southern Chhattisgarh,223,TRUE,Narayanpur,Chhattisgarh - Southern Chhattisgarh
+Chhattisgarh,Raigarh,Mahanadi Basin,222,TRUE,Raigarh,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Raipur,Mahanadi Basin,222,TRUE,Raipur,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Rajnandgaon,Mahanadi Basin,222,TRUE,Rajnandgaon,Chhattisgarh - Mahanadi Basin
+Chhattisgarh,Sukama,Southern Chhattisgarh,223,TRUE,Sukama,Chhattisgarh - Southern Chhattisgarh
+Chhattisgarh,Surajpur,Northern Chhattisgarh,221,TRUE,Surajpur,Chhattisgarh - Northern Chhattisgarh
+Chhattisgarh,Surguja,Northern Chhattisgarh,221,TRUE,Surguja,Chhattisgarh - Northern Chhattisgarh
+Chhattisgarh,Uttarbastarkanker,Southern Chhattisgarh,223,TRUE,Uttar Bastar Kanker,Chhattisgarh - Southern Chhattisgarh
+Dadra & Nagar Haveli & Daman & Diu,Dadra&Nagarhaveli,Dadra & Nagar Haveli,261,TRUE,Dadra  & Nagar Haveli,Dadra & Nagar Haveli & Daman & Diu - Dadra & Nagar Haveli
+Dadra & Nagar Haveli & Daman & Diu,Daman,Daman & Diu,251,TRUE,Daman,Dadra & Nagar Haveli & Daman & Diu - Daman & Diu
+Dadra & Nagar Haveli & Daman & Diu,Diu,Daman & Diu,251,TRUE,Diu,Dadra & Nagar Haveli & Daman & Diu - Daman & Diu
+Goa,Northgoa,Goa,301,TRUE,North Goa,Goa - Goa
+Goa,Southgoa,Goa,301,TRUE,South Goa,Goa - Goa
+Gujarat,Ahmadabad,Plains Northern,242,TRUE,Ahmadabad,Gujarat - Plains Northern
+Gujarat,Amreli,Saurashtra,245,TRUE,Amreli,Gujarat - Saurashtra
+Gujarat,Anand,Plains Northern,242,TRUE,Anand,Gujarat - Plains Northern
+Gujarat,Banaskantha,Dry areas,243,TRUE,Banas Kantha,Gujarat - Dry areas
+Gujarat,Bharuch,South Eastern,241,TRUE,Bharuch,Gujarat - South Eastern
+Gujarat,Bhavnagar,Saurashtra,245,TRUE,Bhavnagar,Gujarat - Saurashtra
+Gujarat,Dohad,South Eastern,241,TRUE,Dohad,Gujarat - South Eastern
+Gujarat,Gandhinagar,Plains Northern,242,TRUE,Gandhinagar,Gujarat - Plains Northern
+Gujarat,Jamnagar,Saurashtra,245,TRUE,Jamnagar,Gujarat - Saurashtra
+Gujarat,Junagadh,Saurashtra,245,TRUE,Junagadh,Gujarat - Saurashtra
+Gujarat,Kachchh,Kachchh,244,TRUE,Kachchh,Gujarat - Kachchh
+Gujarat,Kheda,Plains Northern,242,TRUE,Kheda,Gujarat - Plains Northern
+Gujarat,Mahesana,Plains Northern,242,TRUE,Mahesana,Gujarat - Plains Northern
+Gujarat,Narmada,South Eastern,241,TRUE,Narmada,Gujarat - South Eastern
+Gujarat,Navsari,South Eastern,241,TRUE,Navsari,Gujarat - South Eastern
+Gujarat,Panchmahals,South Eastern,241,TRUE,Panch Mahals,Gujarat - South Eastern
+Gujarat,Patan,Dry areas,243,TRUE,Patan,Gujarat - Dry areas
+Gujarat,Porbandar,Saurashtra,245,TRUE,Porbandar,Gujarat - Saurashtra
+Gujarat,Rajkot,Saurashtra,245,TRUE,Rajkot,Gujarat - Saurashtra
+Gujarat,Sabarkantha,Plains Northern,242,TRUE,Sabar Kantha,Gujarat - Plains Northern
+Gujarat,Surat,South Eastern,241,TRUE,Surat,Gujarat - South Eastern
+Gujarat,Surendranagar,Saurashtra,245,TRUE,Surendranagar,Gujarat - Saurashtra
+Gujarat,Tapi,South Eastern,241,TRUE,Tapi,Gujarat - South Eastern
+Gujarat,Thedangs,South Eastern,241,TRUE,The Dangs,Gujarat - South Eastern
+Gujarat,Vadodara,South Eastern,241,TRUE,Vadodara,Gujarat - South Eastern
+Gujarat,Valsad,South Eastern,241,TRUE,Valsad,Gujarat - South Eastern
+Haryana,Ambala,Eastern,61,TRUE,Ambala,Haryana - Eastern
+Haryana,Bhiwani,Western,62,TRUE,Bhiwani,Haryana - Western
+Haryana,Faridabad,Eastern,61,TRUE,Faridabad,Haryana - Eastern
+Haryana,Fatehabad,Western,62,TRUE,Fatehabad,Haryana - Western
+Haryana,Gurgaon,Eastern,61,TRUE,Gurgaon,Haryana - Eastern
+Haryana,Hisar,Western,62,TRUE,Hisar,Haryana - Western
+Haryana,Jhajjar,Eastern,61,TRUE,Jhajjar,Haryana - Eastern
+Haryana,Jind,Western,62,TRUE,Jind,Haryana - Western
+Haryana,Kaithal,Eastern,61,TRUE,Kaithal,Haryana - Eastern
+Haryana,Karnal,Eastern,61,TRUE,Karnal,Haryana - Eastern
+Haryana,Kurukshetra,Eastern,61,TRUE,Kurukshetra,Haryana - Eastern
+Haryana,Mahendragarh,Western,62,TRUE,Mahendragarh,Haryana - Western
+Haryana,Mewat,Eastern,61,TRUE,Mewat,Haryana - Eastern
+Haryana,Palwal,Eastern,61,TRUE,Palwal,Haryana - Eastern
+Haryana,Panchkula,Eastern,61,TRUE,Panchkula,Haryana - Eastern
+Haryana,Panipat,Eastern,61,TRUE,Panipat,Haryana - Eastern
+Haryana,Rewari,Western,62,TRUE,Rewari,Haryana - Western
+Haryana,Rohtak,Eastern,61,TRUE,Rohtak,Haryana - Eastern
+Haryana,Sirsa,Western,62,TRUE,Sirsa,Haryana - Western
+Haryana,Sonipat,Eastern,61,TRUE,Sonipat,Haryana - Eastern
+Haryana,Yamunanagar,Eastern,61,TRUE,Yamunanagar,Haryana - Eastern
+Himachal Pradesh,Bilaspur,Trans Himalayan & Southern,22,TRUE,Bilaspur,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Chamba,Trans Himalayan & Southern,22,TRUE,Chamba,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Hamirpur,Central,21,TRUE,Hamirpur,Himachal Pradesh - Central
+Himachal Pradesh,Kangra,Central,21,TRUE,Kangra,Himachal Pradesh - Central
+Himachal Pradesh,Kinnaur,Trans Himalayan & Southern,22,TRUE,Kinnaur,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Kullu,Central,21,TRUE,Kullu,Himachal Pradesh - Central
+Himachal Pradesh,Lahul&Spiti,Trans Himalayan & Southern,22,TRUE,Lahul & Spiti,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Mandi,Central,21,TRUE,Mandi,Himachal Pradesh - Central
+Himachal Pradesh,Shimla,Trans Himalayan & Southern,22,TRUE,Shimla,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Sirmaur,Trans Himalayan & Southern,22,TRUE,Sirmaur,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Solan,Trans Himalayan & Southern,22,TRUE,Solan,Himachal Pradesh - Trans Himalayan & Southern
+Himachal Pradesh,Una,Central,21,TRUE,Una,Himachal Pradesh - Central
+Jammu & Kashmir,Anantnag,Jhelam Valley,13,TRUE,Anantnag,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Badgam,Jhelam Valley,13,TRUE,Badgam,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Bandipore,Jhelam Valley,13,TRUE,Bandipore,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Baramula,Jhelam Valley,13,TRUE,Baramula,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Doda,Outer Hills,12,TRUE,Doda,Jammu & Kashmir - Outer Hills
+Jammu & Kashmir,Ganderbal,Jhelam Valley,13,TRUE,Ganderbal,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Jammu,Mountainous,11,TRUE,Jammu,Jammu & Kashmir - Mountainous
+Jammu & Kashmir,Kargil,Ladakh,14,TRUE,Kargil,Jammu & Kashmir - Ladakh
+Jammu & Kashmir,Kathua,Mountainous,11,TRUE,Kathua,Jammu & Kashmir - Mountainous
+Jammu & Kashmir,Kishtwar,Outer Hills,12,TRUE,Kishtwar,Jammu & Kashmir - Outer Hills
+Jammu & Kashmir,Kulgam,Jhelam Valley,13,TRUE,Kulgam,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Kupwara,Jhelam Valley,13,TRUE,Kupwara,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Leh,Ladakh,14,TRUE,Leh,Jammu & Kashmir - Ladakh
+Jammu & Kashmir,Pulwama,Jhelam Valley,13,TRUE,Pulwama,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Punch,Outer Hills,12,TRUE,Punch,Jammu & Kashmir - Outer Hills
+Jammu & Kashmir,Rajouri,Outer Hills,12,TRUE,Rajouri,Jammu & Kashmir - Outer Hills
+Jammu & Kashmir,Ramban,Outer Hills,12,TRUE,Ramban,Jammu & Kashmir - Outer Hills
+Jammu & Kashmir,Reasi,Outer Hills,12,TRUE,Reasi,Jammu & Kashmir - Outer Hills
+Jammu & Kashmir,Samba,Mountainous,11,TRUE,Samba,Jammu & Kashmir - Mountainous
+Jammu & Kashmir,Shupiyan,Jhelam Valley,13,TRUE,Shupiyan,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Srinagar,Jhelam Valley,13,TRUE,Srinagar,Jammu & Kashmir - Jhelam Valley
+Jammu & Kashmir,Udhampur,Outer Hills,12,TRUE,Udhampur,Jammu & Kashmir - Outer Hills
+Jharkhand,Bokaro,Hazaribagh Plateau,202,TRUE,Bokaro,Jharkhand - Hazaribagh Plateau
+Jharkhand,Chatra,Hazaribagh Plateau,202,TRUE,Chatra,Jharkhand - Hazaribagh Plateau
+Jharkhand,Deoghar,Hazaribagh Plateau,202,TRUE,Deoghar,Jharkhand - Hazaribagh Plateau
+Jharkhand,Dhanbad,Hazaribagh Plateau,202,TRUE,Dhanbad,Jharkhand - Hazaribagh Plateau
+Jharkhand,Dumka,Hazaribagh Plateau,202,TRUE,Dumka,Jharkhand - Hazaribagh Plateau
+Jharkhand,Garhwa,Ranchi Plateau,201,TRUE,Garhwa,Jharkhand - Ranchi Plateau
+Jharkhand,Giridih,Hazaribagh Plateau,202,TRUE,Giridih,Jharkhand - Hazaribagh Plateau
+Jharkhand,Godda,Hazaribagh Plateau,202,TRUE,Godda,Jharkhand - Hazaribagh Plateau
+Jharkhand,Gumla,Ranchi Plateau,201,TRUE,Gumla,Jharkhand - Ranchi Plateau
+Jharkhand,Hazaribagh,Hazaribagh Plateau,202,TRUE,Hazaribagh,Jharkhand - Hazaribagh Plateau
+Jharkhand,Jamtara,Hazaribagh Plateau,202,TRUE,Jamtara,Jharkhand - Hazaribagh Plateau
+Jharkhand,Khunti,Ranchi Plateau,201,TRUE,Khunti,Jharkhand - Ranchi Plateau
+Jharkhand,Kodarma,Hazaribagh Plateau,202,TRUE,Kodarma,Jharkhand - Hazaribagh Plateau
+Jharkhand,Latehar,Ranchi Plateau,201,TRUE,Latehar,Jharkhand - Ranchi Plateau
+Jharkhand,Lohardaga,Ranchi Plateau,201,TRUE,Lohardaga,Jharkhand - Ranchi Plateau
+Jharkhand,Pakur,Hazaribagh Plateau,202,TRUE,Pakur,Jharkhand - Hazaribagh Plateau
+Jharkhand,Palamu,Ranchi Plateau,201,TRUE,Palamu,Jharkhand - Ranchi Plateau
+Jharkhand,Pashchimisinghbhum,Ranchi Plateau,201,TRUE,Pashchimi Singhbhum,Jharkhand - Ranchi Plateau
+Jharkhand,Purbisinghbhum,Ranchi Plateau,201,TRUE,Purbi Singhbhum,Jharkhand - Ranchi Plateau
+Jharkhand,Ramgarh,Hazaribagh Plateau,202,TRUE,Ramgarh,Jharkhand - Hazaribagh Plateau
+Jharkhand,Ranchi,Ranchi Plateau,201,TRUE,Ranchi,Jharkhand - Ranchi Plateau
+Jharkhand,Sahibganj,Hazaribagh Plateau,202,TRUE,Sahibganj,Jharkhand - Hazaribagh Plateau
+Jharkhand,Saraikelakharsawan,Ranchi Plateau,201,TRUE,SaraikelaKharsawan,Jharkhand - Ranchi Plateau
+Jharkhand,Simdega,Ranchi Plateau,201,TRUE,Simdega,Jharkhand - Ranchi Plateau
+Karnataka,Bagalkot,Inland Northern,294,TRUE,Bagalkot,Karnataka - Inland Northern
+Karnataka,Bangalore,Inland Southern,293,TRUE,Bangalore,Karnataka - Inland Southern
+Karnataka,Bangalorerural,Inland Southern,293,TRUE,Bangalore Rural,Karnataka - Inland Southern
+Karnataka,Belgaum,Inland Northern,294,TRUE,Belgaum,Karnataka - Inland Northern
+Karnataka,Bellary,Inland Northern,294,TRUE,Bellary,Karnataka - Inland Northern
+Karnataka,Bidar,Inland Northern,294,TRUE,Bidar,Karnataka - Inland Northern
+Karnataka,Bijapur,Inland Northern,294,TRUE,Bijapur,Karnataka - Inland Northern
+Karnataka,Chamarajanagar,Inland Southern,293,TRUE,Chamarajanagar,Karnataka - Inland Southern
+Karnataka,Chikkaballapura,Inland Southern,293,TRUE,Chikkaballapura,Karnataka - Inland Southern
+Karnataka,Chikmagalur,Inland Eastern,292,TRUE,Chikmagalur,Karnataka - Inland Eastern
+Karnataka,Chitradurga,Inland Northern,294,TRUE,Chitradurga,Karnataka - Inland Northern
+Karnataka,Dakshinakannada,Coastal & Ghats,291,TRUE,Dakshina Kannada,Karnataka - Coastal & Ghats
+Karnataka,Davanagere,Inland Northern,294,TRUE,Davanagere,Karnataka - Inland Northern
+Karnataka,Dharwad,Inland Northern,294,TRUE,Dharwad,Karnataka - Inland Northern
+Karnataka,Gadag,Inland Northern,294,TRUE,Gadag,Karnataka - Inland Northern
+Karnataka,Gulbarga,Inland Northern,294,TRUE,Gulbarga,Karnataka - Inland Northern
+Karnataka,Hassan,Inland Eastern,292,TRUE,Hassan,Karnataka - Inland Eastern
+Karnataka,Haveri,Inland Northern,294,TRUE,Haveri,Karnataka - Inland Northern
+Karnataka,Kodagu,Inland Eastern,292,TRUE,Kodagu,Karnataka - Inland Eastern
+Karnataka,Kolar,Inland Southern,293,TRUE,Kolar,Karnataka - Inland Southern
+Karnataka,Koppal,Inland Northern,294,TRUE,Koppal,Karnataka - Inland Northern
+Karnataka,Mandya,Inland Southern,293,TRUE,Mandya,Karnataka - Inland Southern
+Karnataka,Mysore,Inland Southern,293,TRUE,Mysore,Karnataka - Inland Southern
+Karnataka,Raichur,Inland Northern,294,TRUE,Raichur,Karnataka - Inland Northern
+Karnataka,Ramanagara,Inland Southern,293,TRUE,Ramanagara,Karnataka - Inland Southern
+Karnataka,Shimoga,Inland Eastern,292,TRUE,Shimoga,Karnataka - Inland Eastern
+Karnataka,Tumkur,Inland Southern,293,TRUE,Tumkur,Karnataka - Inland Southern
+Karnataka,Udupi,Coastal & Ghats,291,TRUE,Udupi,Karnataka - Coastal & Ghats
+Karnataka,Uttarakannada,Coastal & Ghats,291,TRUE,Uttara Kannada,Karnataka - Coastal & Ghats
+Karnataka,Yadgir,Inland Northern,294,TRUE,Yadgir,Karnataka - Inland Northern
+Kerala,Alappuzha,Southern,322,TRUE,Alappuzha,Kerala - Southern
+Kerala,Ernakulam,Southern,322,TRUE,Ernakulam,Kerala - Southern
+Kerala,Idukki,Southern,322,TRUE,Idukki,Kerala - Southern
+Kerala,Kannur,Northern,321,TRUE,Kannur,Kerala - Northern
+Kerala,Kasaragod,Northern,321,TRUE,Kasaragod,Kerala - Northern
+Kerala,Kollam,Southern,322,TRUE,Kollam,Kerala - Southern
+Kerala,Kottayam,Southern,322,TRUE,Kottayam,Kerala - Southern
+Kerala,Kozhikode,Northern,321,TRUE,Kozhikode,Kerala - Northern
+Kerala,Malappuram,Northern,321,TRUE,Malappuram,Kerala - Northern
+Kerala,Palakkad,Northern,321,TRUE,Palakkad,Kerala - Northern
+Kerala,Pathanamthitta,Southern,322,TRUE,Pathanamthitta,Kerala - Southern
+Kerala,Thiruvananthapuram,Southern,322,TRUE,Thiruvananthapuram,Kerala - Southern
+Kerala,Thrissur,Southern,322,TRUE,Thrissur,Kerala - Southern
+Kerala,Wayanad,Northern,321,TRUE,Wayanad,Kerala - Northern
+Lakshadweep,Lakshadweep,Lakshadweep,311,TRUE,Lakshadweep,Lakshadweep - Lakshadweep
+Madhya Pradesh,Alirajpur,Malwa,233,TRUE,Alirajpur,Madhya Pradesh - Malwa
+Madhya Pradesh,Anuppur,Vindhya,231,TRUE,Anuppur,Madhya Pradesh - Vindhya
+Madhya Pradesh,Ashoknagar,Northern,236,TRUE,Ashoknagar,Madhya Pradesh - Northern
+Madhya Pradesh,Balaghat,South,234,TRUE,Balaghat,Madhya Pradesh - South
+Madhya Pradesh,Barwani,South Western,235,TRUE,Barwani,Madhya Pradesh - South Western
+Madhya Pradesh,Betul,South Western,235,TRUE,Betul,Madhya Pradesh - South Western
+Madhya Pradesh,Bhind,Northern,236,TRUE,Bhind,Madhya Pradesh - Northern
+Madhya Pradesh,Bhopal,Central,232,TRUE,Bhopal,Madhya Pradesh - Central
+Madhya Pradesh,Burhanpur,South Western,235,TRUE,Burhanpur,Madhya Pradesh - South Western
+Madhya Pradesh,Chhatarpur,Vindhya,231,TRUE,Chhatarpur,Madhya Pradesh - Vindhya
+Madhya Pradesh,Chhindwara,South,234,TRUE,Chhindwara,Madhya Pradesh - South
+Madhya Pradesh,Damoh,Central,232,TRUE,Damoh,Madhya Pradesh - Central
+Madhya Pradesh,Datia,Northern,236,TRUE,Datia,Madhya Pradesh - Northern
+Madhya Pradesh,Dewas,Malwa,233,TRUE,Dewas,Madhya Pradesh - Malwa
+Madhya Pradesh,Dhar,Malwa,233,TRUE,Dhar,Madhya Pradesh - Malwa
+Madhya Pradesh,Dindori,South,234,TRUE,Dindori,Madhya Pradesh - South
+Madhya Pradesh,Guna,Northern,236,TRUE,Guna,Madhya Pradesh - Northern
+Madhya Pradesh,Gwalior,Northern,236,TRUE,Gwalior,Madhya Pradesh - Northern
+Madhya Pradesh,Harda,South Western,235,TRUE,Harda,Madhya Pradesh - South Western
+Madhya Pradesh,Hoshangabad,South Western,235,TRUE,Hoshangabad,Madhya Pradesh - South Western
+Madhya Pradesh,Indore,Malwa,233,TRUE,Indore,Madhya Pradesh - Malwa
+Madhya Pradesh,Jabalpur,South,234,TRUE,Jabalpur,Madhya Pradesh - South
+Madhya Pradesh,Jhabua,Malwa,233,TRUE,Jhabua,Madhya Pradesh - Malwa
+Madhya Pradesh,Katni,South,234,TRUE,Katni,Madhya Pradesh - South
+Madhya Pradesh,Khandwa(Eastnimar),South Western,235,TRUE,Khandwa (East Nimar),Madhya Pradesh - South Western
+Madhya Pradesh,Khargone(Westnimar),South Western,235,TRUE,Khargone (West Nimar),Madhya Pradesh - South Western
+Madhya Pradesh,Mandla,South,234,TRUE,Mandla,Madhya Pradesh - South
+Madhya Pradesh,Mandsaur,Malwa,233,TRUE,Mandsaur,Madhya Pradesh - Malwa
+Madhya Pradesh,Morena,Northern,236,TRUE,Morena,Madhya Pradesh - Northern
+Madhya Pradesh,Narsimhapur,South,234,TRUE,Narsimhapur,Madhya Pradesh - South
+Madhya Pradesh,Neemuch,Malwa,233,TRUE,Neemuch,Madhya Pradesh - Malwa
+Madhya Pradesh,Panna,Vindhya,231,TRUE,Panna,Madhya Pradesh - Vindhya
+Madhya Pradesh,Raisen,Central,232,TRUE,Raisen,Madhya Pradesh - Central
+Madhya Pradesh,Rajgarh,Malwa,233,TRUE,Rajgarh,Madhya Pradesh - Malwa
+Madhya Pradesh,Ratlam,Malwa,233,TRUE,Ratlam,Madhya Pradesh - Malwa
+Madhya Pradesh,Rewa,Vindhya,231,TRUE,Rewa,Madhya Pradesh - Vindhya
+Madhya Pradesh,Sagar,Central,232,TRUE,Sagar,Madhya Pradesh - Central
+Madhya Pradesh,Satna,Vindhya,231,TRUE,Satna,Madhya Pradesh - Vindhya
+Madhya Pradesh,Sehore,Central,232,TRUE,Sehore,Madhya Pradesh - Central
+Madhya Pradesh,Seoni,South,234,TRUE,Seoni,Madhya Pradesh - South
+Madhya Pradesh,Shahdol,Vindhya,231,TRUE,Shahdol,Madhya Pradesh - Vindhya
+Madhya Pradesh,Shajapur,Malwa,233,TRUE,Shajapur,Madhya Pradesh - Malwa
+Madhya Pradesh,Sheopur,Northern,236,TRUE,Sheopur,Madhya Pradesh - Northern
+Madhya Pradesh,Shivpuri,Northern,236,TRUE,Shivpuri,Madhya Pradesh - Northern
+Madhya Pradesh,Sidhi,Vindhya,231,TRUE,Sidhi,Madhya Pradesh - Vindhya
+Madhya Pradesh,Singrauli,Vindhya,231,TRUE,Singrauli,Madhya Pradesh - Vindhya
+Madhya Pradesh,Tikamgarh,Vindhya,231,TRUE,Tikamgarh,Madhya Pradesh - Vindhya
+Madhya Pradesh,Ujjain,Malwa,233,TRUE,Ujjain,Madhya Pradesh - Malwa
+Madhya Pradesh,Umaria,Vindhya,231,TRUE,Umaria,Madhya Pradesh - Vindhya
+Madhya Pradesh,Vidisha,Central,232,TRUE,Vidisha,Madhya Pradesh - Central
+Maharashtra,Ahmadnagar,Inland Western,272,TRUE,Ahmadnagar,Maharashtra - Inland Western
+Maharashtra,Akola,Inland Eastern,275,TRUE,Akola,Maharashtra - Inland Eastern
+Maharashtra,Amravati,Inland Eastern,275,TRUE,Amravati,Maharashtra - Inland Eastern
+Maharashtra,Aurangabad,Inland Central,274,TRUE,Aurangabad,Maharashtra - Inland Central
+Maharashtra,Bhandara,Eastern,276,TRUE,Bhandara,Maharashtra - Eastern
+Maharashtra,Bid,Inland Central,274,TRUE,Bid,Maharashtra - Inland Central
+Maharashtra,Buldana,Inland Eastern,275,TRUE,Buldana,Maharashtra - Inland Eastern
+Maharashtra,Chandrapur,Eastern,276,TRUE,Chandrapur,Maharashtra - Eastern
+Maharashtra,Dhule,Inland Northern,273,TRUE,Dhule,Maharashtra - Inland Northern
+Maharashtra,Gadchiroli,Eastern,276,TRUE,Gadchiroli,Maharashtra - Eastern
+Maharashtra,Gondiya,Eastern,276,TRUE,Gondiya,Maharashtra - Eastern
+Maharashtra,Hingoli,Inland Central,274,TRUE,Hingoli,Maharashtra - Inland Central
+Maharashtra,Jalgaon,Inland Northern,273,TRUE,Jalgaon,Maharashtra - Inland Northern
+Maharashtra,Jalna,Inland Central,274,TRUE,Jalna,Maharashtra - Inland Central
+Maharashtra,Kolhapur,Inland Western,272,TRUE,Kolhapur,Maharashtra - Inland Western
+Maharashtra,Latur,Inland Central,274,TRUE,Latur,Maharashtra - Inland Central
+Maharashtra,Mumbai,Coastal,271,TRUE,Mumbai,Maharashtra - Coastal
+Maharashtra,Mumbaisuburban,Coastal,271,TRUE,Mumbai Suburban,Maharashtra - Coastal
+Maharashtra,Nagpur,Inland Eastern,275,TRUE,Nagpur,Maharashtra - Inland Eastern
+Maharashtra,Nanded,Inland Central,274,TRUE,Nanded,Maharashtra - Inland Central
+Maharashtra,Nandurbar,Inland Northern,273,TRUE,Nandurbar,Maharashtra - Inland Northern
+Maharashtra,Nashik,Inland Northern,273,TRUE,Nashik,Maharashtra - Inland Northern
+Maharashtra,Osmanabad,Inland Central,274,TRUE,Osmanabad,Maharashtra - Inland Central
+Maharashtra,Parbhani,Inland Central,274,TRUE,Parbhani,Maharashtra - Inland Central
+Maharashtra,Pune,Inland Western,272,TRUE,Pune,Maharashtra - Inland Western
+Maharashtra,Raigarh,Coastal,271,TRUE,Raigarh,Maharashtra - Coastal
+Maharashtra,Ratnagiri,Coastal,271,TRUE,Ratnagiri,Maharashtra - Coastal
+Maharashtra,Sangli,Inland Western,272,TRUE,Sangli,Maharashtra - Inland Western
+Maharashtra,Satara,Inland Western,272,TRUE,Satara,Maharashtra - Inland Western
+Maharashtra,Sindhudurg,Coastal,271,TRUE,Sindhudurg,Maharashtra - Coastal
+Maharashtra,Solapur,Inland Western,272,TRUE,Solapur,Maharashtra - Inland Western
+Maharashtra,Thane,Coastal,271,TRUE,Thane,Maharashtra - Coastal
+Maharashtra,Wardha,Inland Eastern,275,TRUE,Wardha,Maharashtra - Inland Eastern
+Maharashtra,Washim,Inland Eastern,275,TRUE,Washim,Maharashtra - Inland Eastern
+Maharashtra,Yavatmal,Inland Eastern,275,TRUE,Yavatmal,Maharashtra - Inland Eastern
+Manipur,Bishnupur,Plains,141,TRUE,Bishnupur,Manipur - Plains
+Manipur,Chandel,Hills,142,TRUE,Chandel,Manipur - Hills
+Manipur,Churachandpur,Hills,142,TRUE,Churachandpur,Manipur - Hills
+Manipur,Imphaleast,Plains,141,TRUE,Imphal East,Manipur - Plains
+Manipur,Imphalwest,Plains,141,TRUE,Imphal West,Manipur - Plains
+Manipur,Senapati,Hills,142,TRUE,Senapati,Manipur - Hills
+Manipur,Tamenglong,Hills,142,TRUE,Tamenglong,Manipur - Hills
+Manipur,Thoubal,Plains,141,TRUE,Thoubal,Manipur - Plains
+Manipur,Ukhrul,Hills,142,TRUE,Ukhrul,Manipur - Hills
+Meghalaya,Eastgarohills,Meghalaya,171,TRUE,East Garo Hills,Meghalaya - Meghalaya
+Meghalaya,Eastkhasihills,Meghalaya,171,TRUE,East Khasi Hills,Meghalaya - Meghalaya
+Meghalaya,Jaintiahills,Meghalaya,171,TRUE,Jaintia Hills,Meghalaya - Meghalaya
+Meghalaya,Ribhoi,Meghalaya,171,TRUE,Ribhoi,Meghalaya - Meghalaya
+Meghalaya,Southgarohills,Meghalaya,171,TRUE,South Garo Hills,Meghalaya - Meghalaya
+Meghalaya,Westgarohills,Meghalaya,171,TRUE,West Garo Hills,Meghalaya - Meghalaya
+Meghalaya,Westkhasihills,Meghalaya,171,TRUE,West Khasi Hills,Meghalaya - Meghalaya
+Mizoram,Aizwal,Mizoram,151,TRUE,Aizwal,Mizoram - Mizoram
+Mizoram,Champhai,Mizoram,151,TRUE,Champhai,Mizoram - Mizoram
+Mizoram,Kolasib,Mizoram,151,TRUE,Kolasib,Mizoram - Mizoram
+Mizoram,Lawngtlai,Mizoram,151,TRUE,Lawngtlai,Mizoram - Mizoram
+Mizoram,Lunglei,Mizoram,151,TRUE,Lunglei,Mizoram - Mizoram
+Mizoram,Mamit,Mizoram,151,TRUE,Mamit,Mizoram - Mizoram
+Mizoram,Saiha,Mizoram,151,TRUE,Saiha,Mizoram - Mizoram
+Mizoram,Serchhip,Mizoram,151,TRUE,Serchhip,Mizoram - Mizoram
+Nagaland,Dimapur,Nagaland,131,TRUE,Dimapur,Nagaland - Nagaland
+Nagaland,Kiphire,Nagaland,131,TRUE,Kiphire,Nagaland - Nagaland
+Nagaland,Kohima,Nagaland,131,TRUE,Kohima,Nagaland - Nagaland
+Nagaland,Longleng,Nagaland,131,TRUE,Longleng,Nagaland - Nagaland
+Nagaland,Mokokchung,Nagaland,131,TRUE,Mokokchung,Nagaland - Nagaland
+Nagaland,Mon,Nagaland,131,TRUE,Mon,Nagaland - Nagaland
+Nagaland,Peren,Nagaland,131,TRUE,Peren,Nagaland - Nagaland
+Nagaland,Phek,Nagaland,131,TRUE,Phek,Nagaland - Nagaland
+Nagaland,Tuensang,Nagaland,131,TRUE,Tuensang,Nagaland - Nagaland
+Nagaland,Wokha,Nagaland,131,TRUE,Wokha,Nagaland - Nagaland
+Nagaland,Zunheboto,Nagaland,131,TRUE,Zunheboto,Nagaland - Nagaland
+Nct Of Delhi,Central,Delhi,71,TRUE,Central,Nct Of Delhi - Delhi
+Nct Of Delhi,East,Delhi,71,TRUE,East,Nct Of Delhi - Delhi
+Nct Of Delhi,Newdelhi,Delhi,71,TRUE,New Delhi,Nct Of Delhi - Delhi
+Nct Of Delhi,North,Delhi,71,TRUE,North,Nct Of Delhi - Delhi
+Nct Of Delhi,Northeast,Delhi,71,TRUE,North East,Nct Of Delhi - Delhi
+Nct Of Delhi,Northwest,Delhi,71,TRUE,North West,Nct Of Delhi - Delhi
+Nct Of Delhi,South,Delhi,71,TRUE,South,Nct Of Delhi - Delhi
+Nct Of Delhi,Southwest,Delhi,71,TRUE,South West,Nct Of Delhi - Delhi
+Nct Of Delhi,West,Delhi,71,TRUE,West,Nct Of Delhi - Delhi
+Odisha,Anugul,Northern,213,TRUE,Anugul,Odisha - Northern
+Odisha,Balangir,Southern,212,TRUE,Balangir,Odisha - Southern
+Odisha,Baleshwar,Coastal,211,TRUE,Baleshwar,Odisha - Coastal
+Odisha,Bargarh,Northern,213,TRUE,Bargarh,Odisha - Northern
+Odisha,Baudh,Southern,212,TRUE,Baudh,Odisha - Southern
+Odisha,Bhadrak,Coastal,211,TRUE,Bhadrak,Odisha - Coastal
+Odisha,Cuttack,Coastal,211,TRUE,Cuttack,Odisha - Coastal
+Odisha,Debagarh,Northern,213,TRUE,Debagarh,Odisha - Northern
+Odisha,Dhenkanal,Northern,213,TRUE,Dhenkanal,Odisha - Northern
+Odisha,Gajapati,Southern,212,TRUE,Gajapati,Odisha - Southern
+Odisha,Ganjam,Southern,212,TRUE,Ganjam,Odisha - Southern
+Odisha,Jagatsinghapur,Coastal,211,TRUE,Jagatsinghapur,Odisha - Coastal
+Odisha,Jajapur,Coastal,211,TRUE,Jajapur,Odisha - Coastal
+Odisha,Jharsuguda,Northern,213,TRUE,Jharsuguda,Odisha - Northern
+Odisha,Kalahandi,Southern,212,TRUE,Kalahandi,Odisha - Southern
+Odisha,Kandhamal,Southern,212,TRUE,Kandhamal,Odisha - Southern
+Odisha,Kendrapara,Coastal,211,TRUE,Kendrapara,Odisha - Coastal
+Odisha,Kendujhar,Northern,213,TRUE,Kendujhar,Odisha - Northern
+Odisha,Khordha,Coastal,211,TRUE,Khordha,Odisha - Coastal
+Odisha,Koraput,Southern,212,TRUE,Koraput,Odisha - Southern
+Odisha,Malkangiri,Southern,212,TRUE,Malkangiri,Odisha - Southern
+Odisha,Mayurbhanj,Northern,213,TRUE,Mayurbhanj,Odisha - Northern
+Odisha,Nabarangapur,Southern,212,TRUE,Nabarangapur,Odisha - Southern
+Odisha,Nayagarh,Coastal,211,TRUE,Nayagarh,Odisha - Coastal
+Odisha,Nuapada,Southern,212,TRUE,Nuapada,Odisha - Southern
+Odisha,Puri,Coastal,211,TRUE,Puri,Odisha - Coastal
+Odisha,Rayagada,Southern,212,TRUE,Rayagada,Odisha - Southern
+Odisha,Sambalpur,Northern,213,TRUE,Sambalpur,Odisha - Northern
+Odisha,Subarnapur,Southern,212,TRUE,Subarnapur,Odisha - Southern
+Odisha,Sundargarh,Northern,213,TRUE,Sundargarh,Odisha - Northern
+Puducherry,Karaikal,Puducherry,341,TRUE,Karaikal,Puducherry - Puducherry
+Puducherry,Mahe,Puducherry,341,TRUE,Mahe,Puducherry - Puducherry
+Puducherry,Puducherry,Puducherry,341,TRUE,Puducherry,Puducherry - Puducherry
+Puducherry,Yanam,Puducherry,341,TRUE,Yanam,Puducherry - Puducherry
+Punjab,Amritsar,Northern,31,TRUE,Amritsar,Punjab - Northern
+Punjab,Barnala,Southern,32,TRUE,Barnala,Punjab - Southern
+Punjab,Bhatinda,Southern,32,TRUE,Bhatinda,Punjab - Southern
+Punjab,Faridkot,Southern,32,TRUE,Faridkot,Punjab - Southern
+Punjab,Fatehgarhsahib,Southern,32,TRUE,Fatehgarh Sahib,Punjab - Southern
+Punjab,Fazilka,Southern,32,TRUE,Fazilka,Punjab - Southern
+Punjab,Firozpur,Southern,32,TRUE,Firozpur,Punjab - Southern
+Punjab,Gurdaspur,Northern,31,TRUE,Gurdaspur,Punjab - Northern
+Punjab,Hoshiarpur,Northern,31,TRUE,Hoshiarpur,Punjab - Northern
+Punjab,Jalandhar,Northern,31,TRUE,Jalandhar,Punjab - Northern
+Punjab,Kapurthala,Northern,31,TRUE,Kapurthala,Punjab - Northern
+Punjab,Ludhiana,Southern,32,TRUE,Ludhiana,Punjab - Southern
+Punjab,Mansa,Southern,32,TRUE,Mansa,Punjab - Southern
+Punjab,Moga,Southern,32,TRUE,Moga,Punjab - Southern
+Punjab,Muktsar,Southern,32,TRUE,Muktsar,Punjab - Southern
+Punjab,Pathankot,Northern,31,TRUE,Pathankot,Punjab - Northern
+Punjab,Patiala,Southern,32,TRUE,Patiala,Punjab - Southern
+Punjab,Rupnagar,Northern,31,TRUE,Rupnagar,Punjab - Northern
+Punjab,Sahibzadaajitsinghnagar,Northern,31,TRUE,Sahibzada Ajit Singh Nagar,Punjab - Northern
+Punjab,Sangrur,Southern,32,TRUE,Sangrur,Punjab - Southern
+Punjab,Shahidbhagatsinghnagar,Northern,31,TRUE,Shahid Bhagat Singh Nagar,Punjab - Northern
+Punjab,Tarntaran,Northern,31,TRUE,Tarn Taran,Punjab - Northern
+Rajasthan,Ajmer,North Eastern,82,TRUE,Ajmer,Rajasthan - North Eastern
+Rajasthan,Alwar,North Eastern,82,TRUE,Alwar,Rajasthan - North Eastern
+Rajasthan,Banswara,Southern,83,TRUE,Banswara,Rajasthan - Southern
+Rajasthan,Baran,South Eastern,84,TRUE,Baran,Rajasthan - South Eastern
+Rajasthan,Barmer,Western,81,TRUE,Barmer,Rajasthan - Western
+Rajasthan,Bharatpur,North Eastern,82,TRUE,Bharatpur,Rajasthan - North Eastern
+Rajasthan,Bhilwara,North Eastern,82,TRUE,Bhilwara,Rajasthan - North Eastern
+Rajasthan,Bikaner,Western,81,TRUE,Bikaner,Rajasthan - Western
+Rajasthan,Bundi,South Eastern,84,TRUE,Bundi,Rajasthan - South Eastern
+Rajasthan,Chittaurgarh,South Eastern,84,TRUE,Chittaurgarh,Rajasthan - South Eastern
+Rajasthan,Churu,Northern,85,TRUE,Churu,Rajasthan - Northern
+Rajasthan,Dausa,North Eastern,82,TRUE,Dausa,Rajasthan - North Eastern
+Rajasthan,Dhaulpur,North Eastern,82,TRUE,Dhaulpur,Rajasthan - North Eastern
+Rajasthan,Dungarpur,Southern,83,TRUE,Dungarpur,Rajasthan - Southern
+Rajasthan,Hanumangarh,Northern,85,TRUE,Hanumangarh,Rajasthan - Northern
+Rajasthan,Jaipur,North Eastern,82,TRUE,Jaipur,Rajasthan - North Eastern
+Rajasthan,Jaisalmer,Western,81,TRUE,Jaisalmer,Rajasthan - Western
+Rajasthan,Jalor,Western,81,TRUE,Jalor,Rajasthan - Western
+Rajasthan,Jhalawar,South Eastern,84,TRUE,Jhalawar,Rajasthan - South Eastern
+Rajasthan,Jhunjhunun,Northern,85,TRUE,Jhunjhunun,Rajasthan - Northern
+Rajasthan,Jodhpur,Western,81,TRUE,Jodhpur,Rajasthan - Western
+Rajasthan,Karauli,North Eastern,82,TRUE,Karauli,Rajasthan - North Eastern
+Rajasthan,Kota,South Eastern,84,TRUE,Kota,Rajasthan - South Eastern
+Rajasthan,Nagaur,Northern,85,TRUE,Nagaur,Rajasthan - Northern
+Rajasthan,Pali,Western,81,TRUE,Pali,Rajasthan - Western
+Rajasthan,Pratapgarh,South Eastern,84,TRUE,Pratapgarh,Rajasthan - South Eastern
+Rajasthan,Rajsamand,Southern,83,TRUE,Rajsamand,Rajasthan - Southern
+Rajasthan,Sawaimadhopur,North Eastern,82,TRUE,Sawai Madhopur,Rajasthan - North Eastern
+Rajasthan,Sikar,Northern,85,TRUE,Sikar,Rajasthan - Northern
+Rajasthan,Sirohi,Western,81,TRUE,Sirohi,Rajasthan - Western
+Rajasthan,Sriganganagar,Northern,85,TRUE,Sri Ganganagar,Rajasthan - Northern
+Rajasthan,Tonk,North Eastern,82,TRUE,Tonk,Rajasthan - North Eastern
+Rajasthan,Udaipur,Southern,83,TRUE,Udaipur,Rajasthan - Southern
+Sikkim,Eastdistrict,Sikkim,111,TRUE,East District,Sikkim - Sikkim
+Sikkim,Northdistrict,Sikkim,111,TRUE,North District,Sikkim - Sikkim
+Sikkim,Southdistrict,Sikkim,111,TRUE,South District,Sikkim - Sikkim
+Sikkim,Westdistrict,Sikkim,111,TRUE,West District,Sikkim - Sikkim
+Tamil Nadu,Ariyalur,Coastal,332,TRUE,Ariyalur,Tamil Nadu - Coastal
+Tamil Nadu,Chennai,Coastal Northern,331,TRUE,Chennai,Tamil Nadu - Coastal Northern
+Tamil Nadu,Coimbatore,Inland,334,TRUE,Coimbatore,Tamil Nadu - Inland
+Tamil Nadu,Cuddalore,Coastal Northern,331,TRUE,Cuddalore,Tamil Nadu - Coastal Northern
+Tamil Nadu,Dharmapuri,Inland,334,TRUE,Dharmapuri,Tamil Nadu - Inland
+Tamil Nadu,Dindigul,Southern,333,TRUE,Dindigul,Tamil Nadu - Southern
+Tamil Nadu,Erode,Inland,334,TRUE,Erode,Tamil Nadu - Inland
+Tamil Nadu,Kancheepuram,Coastal Northern,331,TRUE,Kancheepuram,Tamil Nadu - Coastal Northern
+Tamil Nadu,Kanniyakumari,Southern,333,TRUE,Kanniyakumari,Tamil Nadu - Southern
+Tamil Nadu,Karur,Coastal,332,TRUE,Karur,Tamil Nadu - Coastal
+Tamil Nadu,Krishnagiri,Inland,334,TRUE,Krishnagiri,Tamil Nadu - Inland
+Tamil Nadu,Madurai,Southern,333,TRUE,Madurai,Tamil Nadu - Southern
+Tamil Nadu,Nagapattinam,Coastal,332,TRUE,Nagapattinam,Tamil Nadu - Coastal
+Tamil Nadu,Namakkal,Inland,334,TRUE,Namakkal,Tamil Nadu - Inland
+Tamil Nadu,Perambalur,Coastal,332,TRUE,Perambalur,Tamil Nadu - Coastal
+Tamil Nadu,Pudukkottai,Coastal,332,TRUE,Pudukkottai,Tamil Nadu - Coastal
+Tamil Nadu,Ramanathapuram,Southern,333,TRUE,Ramanathapuram,Tamil Nadu - Southern
+Tamil Nadu,Salem,Inland,334,TRUE,Salem,Tamil Nadu - Inland
+Tamil Nadu,Sivaganga,Southern,333,TRUE,Sivaganga,Tamil Nadu - Southern
+Tamil Nadu,Thanjavur,Coastal,332,TRUE,Thanjavur,Tamil Nadu - Coastal
+Tamil Nadu,Thenilgiris,Inland,334,TRUE,The Nilgiris,Tamil Nadu - Inland
+Tamil Nadu,Theni,Southern,333,TRUE,Theni,Tamil Nadu - Southern
+Tamil Nadu,Thiruvallur,Coastal Northern,331,TRUE,Thiruvallur,Tamil Nadu - Coastal Northern
+Tamil Nadu,Thiruvarur,Coastal,332,TRUE,Thiruvarur,Tamil Nadu - Coastal
+Tamil Nadu,Thoothukkudi,Southern,333,TRUE,Thoothukkudi,Tamil Nadu - Southern
+Tamil Nadu,Tiruchirappalli,Coastal,332,TRUE,Tiruchirappalli,Tamil Nadu - Coastal
+Tamil Nadu,Tirunelveli,Southern,333,TRUE,Tirunelveli,Tamil Nadu - Southern
+Tamil Nadu,Tiruppur,Inland,334,TRUE,Tiruppur,Tamil Nadu - Inland
+Tamil Nadu,Tiruvannamalai,Coastal Northern,331,TRUE,Tiruvannamalai,Tamil Nadu - Coastal Northern
+Tamil Nadu,Vellore,Coastal Northern,331,TRUE,Vellore,Tamil Nadu - Coastal Northern
+Tamil Nadu,Viluppuram,Coastal Northern,331,TRUE,Viluppuram,Tamil Nadu - Coastal Northern
+Tamil Nadu,Virudhunagar,Southern,333,TRUE,Virudhunagar,Tamil Nadu - Southern
+Telangana,Adilabad,Inland North Western,361,TRUE,Adilabad,Telangana - Inland North Western
+Telangana,Bhadradri,Inland North Eastern,362,TRUE,Bhadradri,Telangana - Inland North Eastern
+Telangana,Hyderabad,Inland North Western,361,TRUE,Hyderabad,Telangana - Inland North Western
+Telangana,Jagtial,Inland North Eastern,362,TRUE,Jagtial,Telangana - Inland North Eastern
+Telangana,Jangaon,Inland North Eastern,362,TRUE,Jangaon,Telangana - Inland North Eastern
+Telangana,Jayashankar,Inland North Eastern,362,TRUE,Jayashankar,Telangana - Inland North Eastern
+Telangana,Jogulamba,Inland North Western,361,TRUE,Jogulamba,Telangana - Inland North Western
+Telangana,Kamareddy,Inland North Western,361,TRUE,Kamareddy,Telangana - Inland North Western
+Telangana,Karimnagar,Inland North Eastern,362,TRUE,Karimnagar,Telangana - Inland North Eastern
+Telangana,Khammam,Inland North Eastern,362,TRUE,Khammam,Telangana - Inland North Eastern
+Telangana,Komarambheem,Inland North Western,361,TRUE,Komaram Bheem,Telangana - Inland North Western
+Telangana,Mahabubabad,Inland North Eastern,362,TRUE,Mahabubabad,Telangana - Inland North Eastern
+Telangana,Mahbubnagar,Inland North Western,361,TRUE,Mahbubnagar,Telangana - Inland North Western
+Telangana,Mancherial,Inland North Western,361,TRUE,Mancherial,Telangana - Inland North Western
+Telangana,Medak,Inland North Western,361,TRUE,Medak,Telangana - Inland North Western
+Telangana,Medchalmalkajgiri,Inland North Western,361,TRUE,MedchalMalkajgiri,Telangana - Inland North Western
+Telangana,Nagarkurnool,Inland North Western,361,TRUE,Nagarkurnool,Telangana - Inland North Western
+Telangana,Nalgonda,Inland North Eastern,362,TRUE,Nalgonda,Telangana - Inland North Eastern
+Telangana,Nirmal,Inland North Western,361,TRUE,Nirmal,Telangana - Inland North Western
+Telangana,Nizamabad,Inland North Western,361,TRUE,Nizamabad,Telangana - Inland North Western
+Telangana,Peddapalli,Inland North Eastern,362,TRUE,Peddapalli,Telangana - Inland North Eastern
+Telangana,Rajanna,Inland North Eastern,362,TRUE,Rajanna,Telangana - Inland North Eastern
+Telangana,Rangareddy,Inland North Western,361,TRUE,Rangareddy,Telangana - Inland North Western
+Telangana,Sangareddy,Inland North Western,361,TRUE,Sangareddy,Telangana - Inland North Western
+Telangana,Siddipet,Inland North Western,361,TRUE,Siddipet,Telangana - Inland North Western
+Telangana,Suryapet,Inland North Eastern,362,TRUE,Suryapet,Telangana - Inland North Eastern
+Telangana,Vikarabad,Inland North Western,361,TRUE,Vikarabad,Telangana - Inland North Western
+Telangana,Wanaparthy,Inland North Western,361,TRUE,Wanaparthy,Telangana - Inland North Western
+Telangana,Warangalrural,Inland North Eastern,362,TRUE,Warangal Rural,Telangana - Inland North Eastern
+Telangana,Warangalurban,Inland North Eastern,362,TRUE,Warangal Urban,Telangana - Inland North Eastern
+Telangana,Yadadri,Inland North Eastern,362,TRUE,Yadadri,Telangana - Inland North Eastern
+Tripura,Dhalai,Tripura,161,TRUE,Dhalai,Tripura - Tripura
+Tripura,Northtripura,Tripura,161,TRUE,North Tripura,Tripura - Tripura
+Tripura,Southtripura,Tripura,161,TRUE,South Tripura,Tripura - Tripura
+Tripura,Westtripura,Tripura,161,TRUE,West Tripura,Tripura - Tripura
+Uttar Pradesh,Agra,Southern Upper Ganga Plains,95,TRUE,Agra,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Aligarh,Southern Upper Ganga Plains,95,TRUE,Aligarh,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Allahabad,Eastern,93,TRUE,Allahabad,Uttar Pradesh - Eastern
+Uttar Pradesh,Ambedkarnagar,Eastern,93,TRUE,Ambedkar Nagar,Uttar Pradesh - Eastern
+Uttar Pradesh,Auraiya,Southern Upper Ganga Plains,95,TRUE,Auraiya,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Azamgarh,Eastern,93,TRUE,Azamgarh,Uttar Pradesh - Eastern
+Uttar Pradesh,Baghpat,Central,92,TRUE,Baghpat,Uttar Pradesh - Central
+Uttar Pradesh,Bahraich,Eastern,93,TRUE,Bahraich,Uttar Pradesh - Eastern
+Uttar Pradesh,Ballia,Eastern,93,TRUE,Ballia,Uttar Pradesh - Eastern
+Uttar Pradesh,Balrampur,Eastern,93,TRUE,Balrampur,Uttar Pradesh - Eastern
+Uttar Pradesh,Banda,Southern,94,TRUE,Banda,Uttar Pradesh - Southern
+Uttar Pradesh,Barabanki,Central,92,TRUE,Bara Banki,Uttar Pradesh - Central
+Uttar Pradesh,Bareilly,Southern Upper Ganga Plains,95,TRUE,Bareilly,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Basti,Eastern,93,TRUE,Basti,Uttar Pradesh - Eastern
+Uttar Pradesh,Bijnor,Northern Upper Ganga Plains,91,TRUE,Bijnor,Uttar Pradesh - Northern Upper Ganga Plains
+Uttar Pradesh,Budaun,Southern Upper Ganga Plains,95,TRUE,Budaun,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Bulandshahr,Southern Upper Ganga Plains,95,TRUE,Bulandshahr,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Chandauli,Eastern,93,TRUE,Chandauli,Uttar Pradesh - Eastern
+Uttar Pradesh,Chitrakoot,Southern,94,TRUE,Chitrakoot,Uttar Pradesh - Southern
+Uttar Pradesh,Deoria,Eastern,93,TRUE,Deoria,Uttar Pradesh - Eastern
+Uttar Pradesh,Etah,Southern Upper Ganga Plains,95,TRUE,Etah,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Etawah,Southern Upper Ganga Plains,95,TRUE,Etawah,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Faizabad,Eastern,93,TRUE,Faizabad,Uttar Pradesh - Eastern
+Uttar Pradesh,Farrukhabad,Southern Upper Ganga Plains,95,TRUE,Farrukhabad,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Fatehpur,Central,92,TRUE,Fatehpur,Uttar Pradesh - Central
+Uttar Pradesh,Firozabad,Southern Upper Ganga Plains,95,TRUE,Firozabad,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Gautambuddhanagar,Central,92,TRUE,Gautam Buddha Nagar,Uttar Pradesh - Central
+Uttar Pradesh,Ghaziabad,Central,92,TRUE,Ghaziabad,Uttar Pradesh - Central
+Uttar Pradesh,Ghazipur,Eastern,93,TRUE,Ghazipur,Uttar Pradesh - Eastern
+Uttar Pradesh,Gonda,Eastern,93,TRUE,Gonda,Uttar Pradesh - Eastern
+Uttar Pradesh,Gorakhpur,Eastern,93,TRUE,Gorakhpur,Uttar Pradesh - Eastern
+Uttar Pradesh,Hamirpur,Southern,94,TRUE,Hamirpur,Uttar Pradesh - Southern
+Uttar Pradesh,Hardoi,Central,92,TRUE,Hardoi,Uttar Pradesh - Central
+Uttar Pradesh,Jalaun,Southern,94,TRUE,Jalaun,Uttar Pradesh - Southern
+Uttar Pradesh,Jaunpur,Eastern,93,TRUE,Jaunpur,Uttar Pradesh - Eastern
+Uttar Pradesh,Jhansi,Southern,94,TRUE,Jhansi,Uttar Pradesh - Southern
+Uttar Pradesh,Jyotibaphulenagar,Central,92,TRUE,Jyotiba Phule Nagar,Uttar Pradesh - Central
+Uttar Pradesh,Kannauj,Southern Upper Ganga Plains,95,TRUE,Kannauj,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Kanpurdehat,Central,92,TRUE,Kanpur Dehat,Uttar Pradesh - Central
+Uttar Pradesh,Kanpurnagar,Central,92,TRUE,Kanpur Nagar,Uttar Pradesh - Central
+Uttar Pradesh,Kanshiramnagar,Southern Upper Ganga Plains,95,TRUE,Kanshiram Nagar,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Kaushambi,Eastern,93,TRUE,Kaushambi,Uttar Pradesh - Eastern
+Uttar Pradesh,Kheri,Southern Upper Ganga Plains,95,TRUE,Kheri,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Kushinagar,Eastern,93,TRUE,Kushinagar,Uttar Pradesh - Eastern
+Uttar Pradesh,Lalitpur,Southern,94,TRUE,Lalitpur,Uttar Pradesh - Southern
+Uttar Pradesh,Lucknow,Central,92,TRUE,Lucknow,Uttar Pradesh - Central
+Uttar Pradesh,Mahamayanagar,Southern Upper Ganga Plains,95,TRUE,Mahamaya Nagar,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Maharajganj,Eastern,93,TRUE,Maharajganj,Uttar Pradesh - Eastern
+Uttar Pradesh,Mahoba,Southern,94,TRUE,Mahoba,Uttar Pradesh - Southern
+Uttar Pradesh,Mainpuri,Southern Upper Ganga Plains,95,TRUE,Mainpuri,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Mathura,Southern Upper Ganga Plains,95,TRUE,Mathura,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Mau,Eastern,93,TRUE,Mau,Uttar Pradesh - Eastern
+Uttar Pradesh,Meerut,Central,92,TRUE,Meerut,Uttar Pradesh - Central
+Uttar Pradesh,Mirzapur,Eastern,93,TRUE,Mirzapur,Uttar Pradesh - Eastern
+Uttar Pradesh,Moradabad,Northern Upper Ganga Plains,91,TRUE,Moradabad,Uttar Pradesh - Northern Upper Ganga Plains
+Uttar Pradesh,Muzaffarnagar,Northern Upper Ganga Plains,91,TRUE,Muzaffarnagar,Uttar Pradesh - Northern Upper Ganga Plains
+Uttar Pradesh,Pilibhit,Southern Upper Ganga Plains,95,TRUE,Pilibhit,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Pratapgarh,Eastern,93,TRUE,Pratapgarh,Uttar Pradesh - Eastern
+Uttar Pradesh,Raebareli,Central,92,TRUE,Rae Bareli,Uttar Pradesh - Central
+Uttar Pradesh,Rampur,Northern Upper Ganga Plains,91,TRUE,Rampur,Uttar Pradesh - Northern Upper Ganga Plains
+Uttar Pradesh,Saharanpur,Northern Upper Ganga Plains,91,TRUE,Saharanpur,Uttar Pradesh - Northern Upper Ganga Plains
+Uttar Pradesh,Santkabirnagar,Eastern,93,TRUE,Sant Kabir Nagar,Uttar Pradesh - Eastern
+Uttar Pradesh,Santravidasnagar(Bhadohi),Eastern,93,TRUE,Sant Ravidas Nagar(Bhadohi),Uttar Pradesh - Eastern
+Uttar Pradesh,Shahjahanpur,Southern Upper Ganga Plains,95,TRUE,Shahjahanpur,Uttar Pradesh - Southern Upper Ganga Plains
+Uttar Pradesh,Shrawasti,Eastern,93,TRUE,Shrawasti,Uttar Pradesh - Eastern
+Uttar Pradesh,Siddharthnagar,Eastern,93,TRUE,Siddharthnagar,Uttar Pradesh - Eastern
+Uttar Pradesh,Sitapur,Central,92,TRUE,Sitapur,Uttar Pradesh - Central
+Uttar Pradesh,Sonbhadra,Eastern,93,TRUE,Sonbhadra,Uttar Pradesh - Eastern
+Uttar Pradesh,Sultanpur,Eastern,93,TRUE,Sultanpur,Uttar Pradesh - Eastern
+Uttar Pradesh,Unnao,Central,92,TRUE,Unnao,Uttar Pradesh - Central
+Uttar Pradesh,Varanasi,Eastern,93,TRUE,Varanasi,Uttar Pradesh - Eastern
+Uttarakhand,Almora,Uttarakhand,51,TRUE,Almora,Uttarakhand - Uttarakhand
+Uttarakhand,Bageshwar,Uttarakhand,51,TRUE,Bageshwar,Uttarakhand - Uttarakhand
+Uttarakhand,Chamoli,Uttarakhand,51,TRUE,Chamoli,Uttarakhand - Uttarakhand
+Uttarakhand,Champawat,Uttarakhand,51,TRUE,Champawat,Uttarakhand - Uttarakhand
+Uttarakhand,Dehradun,Uttarakhand,51,TRUE,Dehradun,Uttarakhand - Uttarakhand
+Uttarakhand,Garhwal,Uttarakhand,51,TRUE,Garhwal,Uttarakhand - Uttarakhand
+Uttarakhand,Hardwar,Uttarakhand,51,TRUE,Hardwar,Uttarakhand - Uttarakhand
+Uttarakhand,Nainital,Uttarakhand,51,TRUE,Nainital,Uttarakhand - Uttarakhand
+Uttarakhand,Pithoragarh,Uttarakhand,51,TRUE,Pithoragarh,Uttarakhand - Uttarakhand
+Uttarakhand,Rudraprayag,Uttarakhand,51,TRUE,Rudraprayag,Uttarakhand - Uttarakhand
+Uttarakhand,Tehrigarhwal,Uttarakhand,51,TRUE,Tehri Garhwal,Uttarakhand - Uttarakhand
+Uttarakhand,Udhamsinghnagar,Uttarakhand,51,TRUE,Udham Singh Nagar,Uttarakhand - Uttarakhand
+Uttarakhand,Uttarkashi,Uttarakhand,51,TRUE,Uttarkashi,Uttarakhand - Uttarakhand
+West Bengal,Bankura,Western Plains,195,TRUE,Bankura,West Bengal - Western Plains
+West Bengal,Barddhaman,Central Plains,194,TRUE,Barddhaman,West Bengal - Central Plains
+West Bengal,Birbhum,Eastern Plains,192,TRUE,Birbhum,West Bengal - Eastern Plains
+West Bengal,Dakshindinajpur,Eastern Plains,192,TRUE,Dakshin Dinajpur,West Bengal - Eastern Plains
+West Bengal,Darjiling,Himalayan,191,TRUE,Darjiling,West Bengal - Himalayan
+West Bengal,Haora,Central Plains,194,TRUE,Haora,West Bengal - Central Plains
+West Bengal,Hugli,Central Plains,194,TRUE,Hugli,West Bengal - Central Plains
+West Bengal,Jalpaiguri,Himalayan,191,TRUE,Jalpaiguri,West Bengal - Himalayan
+West Bengal,Kochbihar,Himalayan,191,TRUE,Koch Bihar,West Bengal - Himalayan
+West Bengal,Kolkata,Southern Plains,193,TRUE,Kolkata,West Bengal - Southern Plains
+West Bengal,Maldah,Eastern Plains,192,TRUE,Maldah,West Bengal - Eastern Plains
+West Bengal,Murshidabad,Eastern Plains,192,TRUE,Murshidabad,West Bengal - Eastern Plains
+West Bengal,Nadia,Eastern Plains,192,TRUE,Nadia,West Bengal - Eastern Plains
+West Bengal,Northtwentyfourparganas,Southern Plains,193,TRUE,North Twenty Four Parganas,West Bengal - Southern Plains
+West Bengal,Paschimmedinipur,Western Plains,195,TRUE,Paschim Medinipur,West Bengal - Western Plains
+West Bengal,Purbamedinipur,Western Plains,195,TRUE,Purba Medinipur,West Bengal - Western Plains
+West Bengal,Puruliya,Western Plains,195,TRUE,Puruliya,West Bengal - Western Plains
+West Bengal,Southtwentyfourparganas,Southern Plains,193,TRUE,South Twenty Four Parganas,West Bengal - Southern Plains
+West Bengal,Uttardinajpur,Eastern Plains,192,TRUE,Uttar Dinajpur,West Bengal - Eastern Plains
