@@ -49,6 +49,7 @@ export interface IndiaMapRef {
   exportSVG: () => void;
   exportPDF: () => void;
   downloadCSVTemplate: () => void;
+  getSVGElement: () => SVGSVGElement | null;
 }
 
 export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false }, ref) => {
@@ -81,7 +82,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: 190, y: 60 } : DEFAULT_LEGEND_POSITION.STATES);
+    setLegendPosition(isMobile ? { x: -10, y: 160 } : DEFAULT_LEGEND_POSITION.STATES);
   }, [isMobile]);
 
   useEffect(() => {
@@ -330,38 +331,32 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     }
   };
 
-  // Fallback raster PDF export method
+  // Fallback  PDF export method
   const exportFallbackPDF = async () => {
     if (!svgRef.current) return;
     
     const svg = svgRef.current;
-    
-    // Create a clean SVG clone for raster export
     const svgClone = svg.cloneNode(true) as SVGSVGElement;
     const svgWidth = isMobile ? 350 : 800;
     const svgHeight = isMobile ? 350 : 800;
     
-    // Ensure proper dimensions and viewBox
+    // applying proper dimensions and viewBox
     svgClone.setAttribute('width', svgWidth.toString());
     svgClone.setAttribute('height', svgHeight.toString());
     svgClone.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
     svgClone.removeAttribute('class');
     
-    // Force all elements to be visible and properly positioned
     const allElements = svgClone.querySelectorAll('*');
     allElements.forEach(el => {
       const element = el as SVGElement;
       element.style.visibility = 'visible';
       element.style.display = 'block';
-      // Ensure text elements are properly rendered with consistent font
       if (element.tagName === 'text') {
-        // Use both attribute and style to ensure compatibility
         element.setAttribute('font-family', 'Arial, Helvetica, sans-serif');
         element.style.fontFamily = 'Arial, Helvetica, sans-serif';
       }
     });
     
-    // Fix the legend gradient to match the selected color scale
     fixLegendGradient(svgClone);
     
     const svgData = new XMLSerializer().serializeToString(svgClone);
@@ -378,7 +373,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           // Dynamically import jsPDF for fallback
           const { default: jsPDF } = await import('jspdf');
           
-          // Use very high resolution for crisp output
+          // Use very high resolution 
           const dpiScale = 8; // 8x resolution for maximum quality
           canvas.width = svgWidth * dpiScale;
           canvas.height = svgHeight * dpiScale;
@@ -442,7 +437,6 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     });
   };
 
-  // Final fallback using html2canvas for maximum compatibility
   const exportHtml2CanvasPDF = async () => {
     if (!svgRef.current) return;
     
@@ -575,6 +569,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     exportSVG,
     exportPDF,
     downloadCSVTemplate,
+    getSVGElement: () => svgRef.current,
   }));
 
   useEffect(() => {
@@ -873,16 +868,18 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         
         // Only show labels if we have data
         if (data.length > 0 && value !== undefined && originalName) {
+          // Calculate appropriate font size based on path bounds
           const bounds = path.bounds(d);
           const width = bounds[1][0] - bounds[0][0];
           const height = bounds[1][1] - bounds[0][1];
           const area = width * height;
-          let fontSize = Math.sqrt(area) / (isMobile ? 20 : 12);
-          fontSize = Math.max(isMobile ? 4 : 7, Math.min(isMobile ? 7 : 14, fontSize));
+          let fontSize = Math.sqrt(area) / (isMobile ? 16 : 12);
+          fontSize = Math.max(isMobile ? 5 : 7, Math.min(isMobile ? 10 : 14, fontSize));
           
+          // Special handling for smaller states - reduce text size
           const smallerStates = ['delhi', 'chandigarh', 'sikkim', 'tripura', 'manipur', 'mizoram', 'nagaland', 'meghalaya', 'puducherry', 'lakshadweep'];
           if (smallerStates.includes(stateName)) {
-            fontSize = Math.max(isMobile ? 3 : 6, fontSize * (isMobile ? 0.5 : 0.7));
+            fontSize = Math.max(isMobile ? 4 : 6, fontSize * 0.7);
           }
           
           // States that need forced black text (small states with external labels)
@@ -891,39 +888,44 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
           const abbreviatedStates = ABBREVIATED_STATES;
           let textColor, valueColor;
           if (blackTextStates.includes(stateName)) {
+            // Special font sizes for specific states
             if (stateName === 'delhi') {
-              fontSize = isMobile ? 3 : 6;
+              fontSize = isMobile ? 4 : 6; // Even smaller size for Delhi
             } else if (stateName === 'chandigarh') {
-              fontSize = isMobile ? 2.5 : 5;
+              fontSize = isMobile ? 3 : 5; // Even smaller size for Chandigarh
             } else if (stateName === 'himachal pradesh') {
-              fontSize = isMobile ? 3 : 6;
+              fontSize = isMobile ? 4 : 6; // Smaller size for Himachal Pradesh
             } else if (stateName === 'puducherry') {
-              fontSize = isMobile ? 3.5 : 7;
+              fontSize = isMobile ? 5 : 7; // Increased size for Puducherry
             } else if (stateName === 'dnhdd') {
-              fontSize = isMobile ? 3.5 : 7;
+              fontSize = isMobile ? 5 : 7; // Smaller size for DNHDD
             } else if (stateName === 'karnataka') {
-              fontSize = isMobile ? 4 : 8;
+              fontSize = isMobile ? 5 : 8; // Slightly larger size for Karnataka (KA)
             } else if (stateName === 'mizoram' || stateName === 'tripura') {
-              fontSize = isMobile ? 3.5 : 7;
+              fontSize = isMobile ? 5 : 7; // Smaller size for Mizoram and Tripura
             } else if (stateName === 'nagaland' || stateName === 'manipur') {
-              fontSize = isMobile ? 3.5 : 7;
+              fontSize = isMobile ? 5 : 7; // Smaller size for Nagaland and Manipur
             } else {
-              fontSize = isMobile ? 4 : 9;
+              fontSize = isMobile ? 6 : 9; // Standard size for other external labels
             }
-            textColor = "#000000";
+            textColor = "#000000"; // Black text for white background
             valueColor = "#000000";
           } else if (abbreviatedStates.includes(stateName)) {
+            // States with abbreviated names - use smaller font size
             if (stateName === 'karnataka') {
-              fontSize = isMobile ? 4 : 8;
+              fontSize = isMobile ? 5 : 8; // Standard size for Karnataka
             }
+            
+            // States with external positioning but automatic color detection
             const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
             textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
             valueColor = textColor;
           } else {
             if (stateName === 'rajasthan') {
-              fontSize = Math.max(isMobile ? 5 : 8, fontSize * 0.7);
+              fontSize = Math.max(8, fontSize * 0.7);
             } else if (stateName === 'andhra pradesh') {
-              fontSize = Math.max(isMobile ? 4 : 7, fontSize * 0.8);
+              // Andhra Pradesh is abbreviated to "Andhra" - reduce font size to match Telangana
+              fontSize = Math.max(isMobile ? 5 : 7, fontSize * 0.8);
             }
             const backgroundColor = colorScaleFunction ? colorScaleFunction(value) : "#e5e7eb";
             textColor = isColorDark(backgroundColor) ? "#ffffff" : "#1f2937";
@@ -1202,7 +1204,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       )}
       <svg
         ref={svgRef}
-        className="max-w-full h-auto border rounded-lg"
+        className="max-w-full h-auto"
         width={isMobile ? 350 : MAP_DIMENSIONS.STATES.width}
         height={isMobile ? 350 : MAP_DIMENSIONS.STATES.height}
         style={{ userSelect: 'none', backgroundColor: darkMode ? '#000000' : '#ffffff' }}
