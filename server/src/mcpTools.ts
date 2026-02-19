@@ -90,9 +90,7 @@ export function createMcpServer(): Server {
             'Renders a choropleth map of India at the state level. Provide an array of {state, value} data ' +
             'points and the tool will generate a high-quality 300 DPI PNG map image. Supports 17 color scales ' +
             '(spectral, viridis, plasma, blues, reds, etc.), dark mode, customizable titles, and multiple ' +
-            'boundary sets (1941-2011 census, LGD, NFHS, SOI, Bhuvan). State names are case-insensitive. ' +
-            'The response includes both an inline image and the base64-encoded PNG prefixed with [base64_png]. ' +
-            'To save the map to a file, decode the base64 string and write the bytes to a .png file.',
+            'boundary sets (1941-2011 census, LGD, NFHS, SOI, Bhuvan). State names are case-insensitive.',
           inputSchema: {
             type: 'object' as const,
             properties: {
@@ -139,9 +137,7 @@ export function createMcpServer(): Server {
             'Renders a choropleth map of India at the district level. Provide an array of ' +
             '{state, district, value} data points. Can render all-India districts or zoom into a single state. ' +
             'Supports 17 color scales, dark mode, state boundary overlays, and multiple boundary sets. ' +
-            'Default output is 300 DPI PNG. ' +
-            'The response includes both an inline image and the base64-encoded PNG prefixed with [base64_png]. ' +
-            'To save the map to a file, decode the base64 string and write the bytes to a .png file.',
+            'Default output is 300 DPI PNG.',
           inputSchema: {
             type: 'object' as const,
             properties: {
@@ -265,7 +261,6 @@ export function createMcpServer(): Server {
           const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
           if (result.png) {
             content.push({ type: 'image', data: result.png, mimeType: 'image/png' });
-            content.push({ type: 'text', text: `[base64_png]\n${result.png}` });
           }
           if (result.svg) {
             content.push({ type: 'text', text: result.svg });
@@ -297,7 +292,6 @@ export function createMcpServer(): Server {
           const content: Array<{ type: string; text?: string; data?: string; mimeType?: string }> = [];
           if (result.png) {
             content.push({ type: 'image', data: result.png, mimeType: 'image/png' });
-            content.push({ type: 'text', text: `[base64_png]\n${result.png}` });
           }
           if (result.svg) {
             content.push({ type: 'text', text: result.svg });
