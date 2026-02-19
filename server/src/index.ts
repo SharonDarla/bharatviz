@@ -36,7 +36,6 @@ app.use(helmet({
   }
 }));
 
-// CORS configuration - allow all origins for embedding to work on any website
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST'],
@@ -55,35 +54,27 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-// Serve static files from public directory (relative to project root, not dist)
 app.use(express.static(join(__dirname, '..', 'public')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ---------------------------------------------------------------------------
 // MCP Streamable HTTP endpoint
-// ---------------------------------------------------------------------------
-// Track active transports by session ID for stateful mode
 const mcpTransports = new Map<string, StreamableHTTPServerTransport>();
 
-app.post('/mcp', async (req, res) => {
+app.post('/api/mcp', async (req, res) => {
   try {
-    // Check for existing session
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
     let transport: StreamableHTTPServerTransport;
 
     if (sessionId && mcpTransports.has(sessionId)) {
-      // Reuse existing transport for this session
       transport = mcpTransports.get(sessionId)!;
     } else if (!sessionId) {
-      // New session — create server + transport
       transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
       });
 
-      // Clean up on close
       transport.onclose = () => {
         if (transport.sessionId) {
           mcpTransports.delete(transport.sessionId);
@@ -93,14 +84,12 @@ app.post('/mcp', async (req, res) => {
       const server = createMcpServer();
       await server.connect(transport);
     } else {
-      // Invalid session ID
       res.status(404).json({ error: 'Session not found. Start a new session without Mcp-Session-Id header.' });
       return;
     }
 
     await transport.handleRequest(req, res, req.body);
 
-    // Store transport after first handleRequest so sessionId is assigned
     if (transport.sessionId && !mcpTransports.has(transport.sessionId)) {
       mcpTransports.set(transport.sessionId, transport);
     }
@@ -112,17 +101,17 @@ app.post('/mcp', async (req, res) => {
   }
 });
 
-app.get('/mcp', async (req, res) => {
+app.get('/api/mcp', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (!sessionId || !mcpTransports.has(sessionId)) {
-    res.status(400).json({ error: 'Missing or invalid Mcp-Session-Id header. Send a POST to /mcp first to initialize.' });
+    res.status(400).json({ error: 'Missing or invalid Mcp-Session-Id header. Send a POST to /api/mcp first to initialize.' });
     return;
   }
   const transport = mcpTransports.get(sessionId)!;
   await transport.handleRequest(req, res);
 });
 
-app.delete('/mcp', async (req, res) => {
+app.delete('/api/mcp', async (req, res) => {
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   if (!sessionId || !mcpTransports.has(sessionId)) {
     res.status(404).json({ error: 'Session not found.' });
@@ -139,19 +128,16 @@ app.use('/api/v1/districts', districtsMapRoutes);
 app.use('/api/v1/embed', embedRoutes);
 app.use('/api/v1/proxy', proxyRoutes);
 
-// Serve embed.js from /api/embed.js to bypass nginx static file handling
 app.get('/api/embed.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(join(__dirname, '..', 'public', 'embed.js'));
 });
 
-// Also try to serve from root path (in case nginx allows it)
 app.get('/embed.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(join(__dirname, '..', 'public', 'embed.js'));
 });
 
-// Root endpoint with API documentation
 app.get('/', (req, res) => {
   res.json({
     name: 'BharatViz API',
@@ -231,34 +217,34 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    error: {
-      message: 'Endpoint not found',
-      code: 'NOT_FOUND'
-    }
+    error: { message: 'Endpoint not found', code: 'NOT_FOUND' }
   });
 });
 
-// Error handler
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);
   res.status(500).json({
     success: false,
-    error: {
-      message: 'Internal server error',
-      code: 'INTERNAL_ERROR'
-    }
+    error: { message: 'Internal server error', code: 'INTERNAL_ERROR' }
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log(`BharatViz API server running on http://bharatviz.saketlab.org`);
-  console.log(`Generate India maps at POST http://bharatviz.saketlab.org/api/v1/states/map`);
-  console.log(`API documentation at http://bharatviz.saketlab.org/`);
+  if (typeof process.send === 'function') {
+    process.send('ready');
+  }
+});
+
+process.on('SIGINT', () => {
+  httpServer.close(() => process.exit(0));
+});
+
+process.on('SIGTERM', () => {
+  httpServer.close(() => process.exit(0));
 });
 
 export default app;

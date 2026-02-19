@@ -58,7 +58,7 @@ const MCPDocs: React.FC<MCPDocsProps> = ({ darkMode = false }) => {
   "mcpServers": {
     "bharatviz": {
       "type": "url",
-      "url": "https://bharatviz.saketlab.org/mcp"
+      "url": "https://bharatviz.saketlab.org/api/mcp"
     }
   }
 }`;
@@ -210,7 +210,7 @@ npm run build`;
             1. Add to your AI assistant (Recommended — no install needed)
           </h4>
           <p className={`${textClass} mb-3`}>
-            Use the hosted MCP server at <code className={`font-mono text-sm ${darkMode ? 'text-green-300' : 'text-green-700'}`}>https://bharatviz.saketlab.org/mcp</code>. No cloning or building required.
+            Use the hosted MCP server at <code className={`font-mono text-sm ${darkMode ? 'text-green-300' : 'text-green-700'}`}>https://bharatviz.saketlab.org/api/mcp</code>. No cloning or building required.
           </p>
 
           <div className="space-y-4">

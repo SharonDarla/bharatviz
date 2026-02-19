@@ -15,7 +15,7 @@ BharatViz provides a Model Context Protocol (MCP) server that lets AI assistants
   "mcpServers": {
     "bharatviz": {
       "type": "url",
-      "url": "https://bharatviz.saketlab.org/mcp"
+      "url": "https://bharatviz.saketlab.org/api/mcp"
     }
   }
 }
