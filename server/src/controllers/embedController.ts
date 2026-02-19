@@ -625,7 +625,7 @@ export class EmbedController {
         <div class="tooltip" id="tooltip"></div>
     </div>
     <div class="credits">
-        Created with <a href="https://bharatviz.saketlab.in" target="_blank">BharatViz</a>
+        Created with <a href="https://bharatviz.saketlab.org" target="_blank">BharatViz</a>
     </div>
     <script>
         // Add interactivity to the embedded map

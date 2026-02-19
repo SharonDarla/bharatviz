@@ -21,8 +21,8 @@ BharatViz <- R6::R6Class(
     api_url = NULL,
 
     #' @description Create a new BharatViz client
-    #' @param api_url API base URL (default: "https://bharatviz.saketlab.in")
-    initialize = function(api_url = "https://bharatviz.saketlab.in") {
+    #' @param api_url API base URL (default: "https://bharatviz.saketlab.org")
+    initialize = function(api_url = "https://bharatviz.saketlab.org") {
       self$api_url <- sub("/$", "", api_url)
       message("BharatViz client initialized")
       message("API URL: ", self$api_url)

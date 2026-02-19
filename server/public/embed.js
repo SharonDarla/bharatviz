@@ -4,7 +4,7 @@
  *
  * Usage:
  * <div id="bharatviz-map"></div>
- * <script src="https://bharatviz.saketlab.in/embed.js"></script>
+ * <script src="https://bharatviz.saketlab.org/embed.js"></script>
  * <script>
  *   BharatViz.embed({
  *     container: '#bharatviz-map',
@@ -19,7 +19,7 @@
   'use strict';
 
   const currentScript = document.currentScript || document.querySelector('script[src*="embed.js"]');
-  let API_BASE = 'https://bharatviz.saketlab.in/api/v1';
+  let API_BASE = 'https://bharatviz.saketlab.org/api/v1';
 
   if (currentScript) {
     const scriptSrc = currentScript.src;

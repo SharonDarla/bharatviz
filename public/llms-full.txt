@@ -1,0 +1,387 @@
+# BharatViz - Complete LLM Reference
+
+> Fast, high-quality choropleth map generator for India
+> Website: https://bharatviz.saketlab.org
+> GitHub: https://github.com/saketlab/bharatviz
+> License: MIT
+
+BharatViz generates publication-ready choropleth maps of India at state and district levels. It supports 27 different administrative boundary sets spanning Census years 1941-2011, LGD (latest official), NFHS-4, NFHS-5, Survey of India, ISRO Bhuvan, and NSSO regions. Output formats: PNG (300 DPI), SVG, PDF.
+
+---
+
+## MCP Server
+
+BharatViz provides a Model Context Protocol (MCP) server that allows AI assistants (Claude, Codex, GPT, etc.) to generate India maps directly through tool calls. It supports both remote HTTP and local stdio transports.
+
+### Installation
+
+**Option 1: Remote URL (Recommended — no install needed)**
+
+Add to `.mcp.json`, `claude_desktop_config.json`, or any MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "bharatviz": {
+      "type": "url",
+      "url": "https://bharatviz.saketlab.org/mcp"
+    }
+  }
+}
+```
+
+This uses the hosted Streamable HTTP MCP endpoint. No cloning, building, or Node.js required.
+
+**Option 2: Local stdio (from source)**
+
+```bash
+git clone https://github.com/saketlab/bharatviz.git
+cd bharatviz/server
+npm install
+npm run build
+```
+
+Then add to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "bharatviz": {
+      "command": "node",
+      "args": ["/absolute/path/to/bharatviz/server/dist/mcp.js"]
+    }
+  }
+}
+```
+
+---
+
+## MCP Tools Reference
+
+### Tool: list_available_maps
+
+Lists all 27 available India map boundary sets with metadata.
+
+**Input:** None required
+
+**Output:** JSON array of objects with fields:
+- `id` (string) - Map boundary ID used in other tools
+- `source` (string) - Data source name
+- `year` (number) - Reference year
+- `level` (string) - "states", "districts", or "regions"
+- `description` (string) - Human-readable description
+- `featureCount` (number) - Number of geographic features
+
+---
+
+### Tool: list_states
+
+Lists all state and union territory names for a given map boundary set.
+
+**Input:**
+- `mapId` (string, required) - Map boundary ID (e.g. "lgd-states", "census-2011-states")
+
+**Output:** JSON array of state name strings
+
+---
+
+### Tool: list_districts
+
+Lists all districts for a given district-level map boundary set.
+
+**Input:**
+- `mapId` (string, required) - District-level map boundary ID (e.g. "lgd-districts")
+- `state` (string, optional) - Filter by state name (case-insensitive)
+
+**Output:** JSON array of `{state, district}` objects
+
+---
+
+### Tool: render_states_map
+
+Renders a choropleth map of India at the state level. Returns a 300 DPI PNG image by default.
+
+**Input:**
+- `data` (array, required) - Array of `{state: string, value: number}` objects. At least 1 item required. State names are case-insensitive.
+- `mapId` (string, optional) - Map boundary ID. Default: "lgd-states"
+- `colorScale` (string, optional) - Color scale name. Default: "spectral"
+- `title` (string, optional) - Map title. Default: "BharatViz"
+- `legendTitle` (string, optional) - Legend title. Default: "Values"
+- `darkMode` (boolean, optional) - Dark background. Default: false
+- `invertColors` (boolean, optional) - Invert color direction. Default: false
+- `hideStateNames` (boolean, optional) - Hide state labels. Default: false
+- `hideValues` (boolean, optional) - Hide value labels. Default: false
+- `outputFormat` (string, optional) - "png", "svg", or "both". Default: "png"
+
+**Output:** Image content (PNG) and/or text content (SVG string)
+
+**Example:**
+```json
+{
+  "data": [
+    {"state": "Maharashtra", "value": 112},
+    {"state": "Uttar Pradesh", "value": 200},
+    {"state": "Bihar", "value": 104},
+    {"state": "Kerala", "value": 34},
+    {"state": "Tamil Nadu", "value": 72}
+  ],
+  "title": "Population (millions)",
+  "colorScale": "viridis",
+  "legendTitle": "Population"
+}
+```
+
+---
+
+### Tool: render_districts_map
+
+Renders a choropleth map of India at the district level. Can render all-India or zoom into a single state.
+
+**Input:**
+- `data` (array, required) - Array of `{state: string, district: string, value: number}` objects
+- `mapId` (string, optional) - Map boundary ID. Default: "lgd-districts"
+- `state` (string, optional) - If provided, zooms into this single state
+- `colorScale` (string, optional) - Default: "spectral"
+- `title` (string, optional) - Default: "BharatViz"
+- `legendTitle` (string, optional) - Default: "Values"
+- `darkMode` (boolean, optional) - Default: false
+- `invertColors` (boolean, optional) - Default: false
+- `hideDistrictNames` (boolean, optional) - Default: true
+- `hideValues` (boolean, optional) - Default: true
+- `showStateBoundaries` (boolean, optional) - Default: true
+- `outputFormat` (string, optional) - "png", "svg", or "both". Default: "png"
+
+**Output:** Image content (PNG) and/or text content (SVG string)
+
+**Example (single state):**
+```json
+{
+  "data": [
+    {"state": "Kerala", "district": "Thiruvananthapuram", "value": 33},
+    {"state": "Kerala", "district": "Ernakulam", "value": 32},
+    {"state": "Kerala", "district": "Kozhikode", "value": 31}
+  ],
+  "state": "Kerala",
+  "title": "Kerala Districts - Temperature",
+  "colorScale": "reds"
+}
+```
+
+---
+
+### Tool: get_csv_template
+
+Returns a CSV template with all entity names pre-filled for a given boundary type.
+
+**Input:**
+- `mapId` (string, required) - Map boundary ID
+
+**Output:** CSV text with headers and entity names (values column empty)
+
+---
+
+## Available Map IDs
+
+### Census Boundaries (1941-2011)
+
+| Map ID | Level | Source | Year | Description |
+|--------|-------|--------|------|-------------|
+| census-1941-states | states | Census 1941 | 1941 | State boundaries from the 1941 Census |
+| census-1941-districts | districts | Census 1941 | 1941 | District boundaries from the 1941 Census |
+| census-1951-states | states | Census 1951 | 1951 | State boundaries from the 1951 Census |
+| census-1951-districts | districts | Census 1951 | 1951 | District boundaries from the 1951 Census |
+| census-1961-states | states | Census 1961 | 1961 | State boundaries from the 1961 Census |
+| census-1961-districts | districts | Census 1961 | 1961 | District boundaries from the 1961 Census |
+| census-1971-states | states | Census 1971 | 1971 | State boundaries from the 1971 Census |
+| census-1971-districts | districts | Census 1971 | 1971 | District boundaries from the 1971 Census |
+| census-1981-states | states | Census 1981 | 1981 | State boundaries from the 1981 Census |
+| census-1981-districts | districts | Census 1981 | 1981 | District boundaries from the 1981 Census |
+| census-1991-states | states | Census 1991 | 1991 | State boundaries from the 1991 Census |
+| census-1991-districts | districts | Census 1991 | 1991 | District boundaries from the 1991 Census |
+| census-2001-states | states | Census 2001 | 2001 | State boundaries from the 2001 Census |
+| census-2001-districts | districts | Census 2001 | 2001 | District boundaries from the 2001 Census |
+| census-2011-states | states | Census 2011 | 2011 | State boundaries from the 2011 Census |
+| census-2011-districts | districts | Census 2011 | 2011 | District boundaries from the 2011 Census |
+
+### Official Boundaries (LGD)
+
+| Map ID | Level | Source | Description |
+|--------|-------|--------|-------------|
+| lgd-states | states | LGD (Latest Official) | Latest official state boundaries from Local Government Directory |
+| lgd-districts | districts | LGD (Latest Official) | Latest official district boundaries (785 districts) |
+
+### Survey Boundaries (NFHS)
+
+| Map ID | Level | Source | Description |
+|--------|-------|--------|-------------|
+| nfhs4-states | states | NFHS-4 (2015-16) | State boundaries from National Family Health Survey 4 |
+| nfhs4-districts | districts | NFHS-4 (2015-16) | District boundaries from NFHS-4 |
+| nfhs5-states | states | NFHS-5 (2019-21) | State boundaries from National Family Health Survey 5 |
+| nfhs5-districts | districts | NFHS-5 (2019-21) | District boundaries from NFHS-5 (711 districts) |
+
+### Other Boundaries
+
+| Map ID | Level | Source | Description |
+|--------|-------|--------|-------------|
+| soi-states | states | Survey of India | State boundaries from Survey of India |
+| soi-districts | districts | Survey of India | District boundaries from Survey of India |
+| bhuvan-states | states | ISRO Bhuvan | State boundaries from ISRO satellite data |
+| bhuvan-districts | districts | ISRO Bhuvan | District boundaries from ISRO satellite data |
+| nsso-regions | regions | NSSO | NSSO regional boundaries based on NFHS-5 |
+
+---
+
+## Color Scales
+
+### Sequential
+- `blues` - Light to dark blue
+- `greens` - Light to dark green
+- `reds` - Light to dark red
+- `oranges` - Light to dark orange
+- `purples` - Light to dark purple
+- `pinks` - Light to dark pink
+
+### Perceptually Uniform
+- `viridis` - Purple to yellow (colorblind-safe)
+- `plasma` - Purple to yellow via pink
+- `inferno` - Black to yellow via red
+- `magma` - Black to light yellow via purple
+
+### Diverging
+- `spectral` - Red to blue via yellow (default)
+- `rdylbu` - Red to blue via yellow
+- `rdylgn` - Red to green via yellow
+- `brbg` - Brown to blue-green
+- `piyg` - Pink to yellow-green
+- `puor` - Purple to orange
+
+### Special
+- `aqi` - Air Quality Index standard colors
+
+---
+
+## REST API Reference
+
+Base URL: `https://bharatviz.saketlab.org/api/v1`
+
+### POST /states/map
+
+Generate a state-level choropleth map.
+
+**Request body:**
+```json
+{
+  "data": [{"state": "Maharashtra", "value": 100}],
+  "colorScale": "spectral",
+  "mainTitle": "My Map",
+  "legendTitle": "Values",
+  "darkMode": false,
+  "invertColors": false,
+  "hideStateNames": false,
+  "hideValues": false,
+  "formats": ["png", "svg"]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "exports": [
+    {"format": "png", "data": "<base64>", "mimeType": "image/png"},
+    {"format": "svg", "data": "<base64>", "mimeType": "image/svg+xml"}
+  ],
+  "metadata": {
+    "dataPoints": 1,
+    "colorScale": "spectral",
+    "minValue": 100,
+    "maxValue": 100,
+    "meanValue": 100
+  }
+}
+```
+
+### POST /districts/map
+
+Generate an all-India district-level choropleth map.
+
+**Request body:**
+```json
+{
+  "data": [{"state": "Maharashtra", "district": "Mumbai", "value": 100}],
+  "mapType": "LGD",
+  "colorScale": "viridis",
+  "mainTitle": "District Map",
+  "legendTitle": "Values",
+  "showStateBoundaries": true,
+  "formats": ["png"]
+}
+```
+
+### POST /districts/state-districts/map
+
+Generate a single-state district map (zoomed view).
+
+**Request body:**
+```json
+{
+  "data": [{"state": "Kerala", "district": "Ernakulam", "value": 50}],
+  "state": "Kerala",
+  "mapType": "LGD",
+  "colorScale": "blues",
+  "formats": ["png"]
+}
+```
+
+---
+
+## Python Example
+
+```python
+import requests
+import base64
+
+response = requests.post(
+    "https://bharatviz.saketlab.org/api/v1/states/map",
+    json={
+        "data": [
+            {"state": "Maharashtra", "value": 112},
+            {"state": "Uttar Pradesh", "value": 200},
+            {"state": "Bihar", "value": 104},
+        ],
+        "colorScale": "viridis",
+        "mainTitle": "Population (millions)",
+        "formats": ["png"]
+    }
+)
+
+result = response.json()
+png_data = base64.b64decode(result["exports"][0]["data"])
+with open("india_map.png", "wb") as f:
+    f.write(png_data)
+```
+
+## R Example
+
+```r
+library(httr)
+library(jsonlite)
+
+response <- POST(
+  "https://bharatviz.saketlab.org/api/v1/states/map",
+  body = list(
+    data = list(
+      list(state = "Maharashtra", value = 112),
+      list(state = "Uttar Pradesh", value = 200)
+    ),
+    colorScale = "spectral",
+    mainTitle = "Population",
+    formats = list("png")
+  ),
+  encode = "json"
+)
+
+result <- content(response, as = "parsed")
+png_data <- base64enc::base64decode(result$exports[[1]]$data)
+writeBin(png_data, "india_map.png")
+```

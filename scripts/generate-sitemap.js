@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Your domain
-const DOMAIN = 'https://bharatviz.saketlab.in';
+const DOMAIN = 'https://bharatviz.saketlab.org';
 
 // Define your routes and their metadata
 const routes = [

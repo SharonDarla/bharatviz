@@ -148,7 +148,7 @@ bv.compare_scales(data, scales=['spectral', 'viridis', 'plasma'])
 Main client class.
 
 **Parameters:**
-- `api_url` (str): API server URL. Default: `"https://bharatviz.saketlab.in"`
+- `api_url` (str): API server URL. Default: `"https://bharatviz.saketlab.org"`
 
 ### `generate_map(data, **options)`
 Generate a choropleth map.

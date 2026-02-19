@@ -4,8 +4,8 @@
 
 ## Quick links
 
-- **Web application**: [bharatviz.saketlab.in](https://bharatviz.saketlab.org/)
-- **REST api**: [bharatviz.saketlab.in/api](https://bharatviz.saketlab.org/api/)
+- **Web application**: [bharatviz.saketlab.org](https://bharatviz.saketlab.org/)
+- **REST api**: [bharatviz.saketlab.org/api](https://bharatviz.saketlab.org/api/)
 
 ## Supported maps
 
@@ -47,7 +47,7 @@ We support two embed modes 1) iframe 2) javascript
 **iframe method**:
 ```html
 <iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://your-site.com/data.csv&colorScale=viridis&title=My%20Map"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://your-site.com/data.csv&colorScale=viridis&title=My%20Map"
   width="800"
   height="600"
   frameborder="0">
@@ -57,7 +57,7 @@ We support two embed modes 1) iframe 2) javascript
 **JavaScript widget**:
 ```html
 <div id="my-map"></div>
-<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script src="https://bharatviz.saketlab.org/embed.js"></script>
 <script>
   BharatViz.embed({
     container: '#my-map',
@@ -74,7 +74,7 @@ We support two embed modes 1) iframe 2) javascript
 Generate maps programmatically with the REST API:
 
 ```bash
-curl -X POST https://bharatviz.saketlab.in/api/v1/states/map \
+curl -X POST https://bharatviz.saketlab.org/api/v1/states/map \
   -H "Content-Type: application/json" \
   -d '{
     "data": [

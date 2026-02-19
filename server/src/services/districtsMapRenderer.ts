@@ -81,7 +81,7 @@ export class DistrictsMapRenderer {
       this.districtsGeojson = JSON.parse(districtsContent);
     } catch (error) {
       // If local file doesn't exist, fetch from the live BharatViz site
-      const response = await fetch(`https://bharatviz.web.app/${config.geojsonPath}`);
+      const response = await fetch(`https://bharatviz.saketlab.org/${config.geojsonPath}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch districts GeoJSON: ${response.status} ${response.statusText}`);
       }
@@ -95,11 +95,26 @@ export class DistrictsMapRenderer {
       this.statesGeojson = JSON.parse(statesContent);
     } catch (error) {
       // If local file doesn't exist, fetch from the live BharatViz site
-      const response = await fetch(`https://bharatviz.web.app/${config.statesPath}`);
+      const response = await fetch(`https://bharatviz.saketlab.org/${config.statesPath}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch states GeoJSON: ${response.status} ${response.statusText}`);
       }
       this.statesGeojson = await response.json() as GeoJSON.FeatureCollection;
+    }
+  }
+
+  /**
+   * Load GeoJSON data from custom file paths
+   */
+  async loadGeoJSONFromPaths(districtsPath: string, statesPath?: string): Promise<void> {
+    const districtsContent = await readFile(districtsPath, 'utf-8');
+    this.districtsGeojson = JSON.parse(districtsContent);
+
+    if (statesPath) {
+      const statesContent = await readFile(statesPath, 'utf-8');
+      this.statesGeojson = JSON.parse(statesContent);
+    } else {
+      this.statesGeojson = null;
     }
   }
 

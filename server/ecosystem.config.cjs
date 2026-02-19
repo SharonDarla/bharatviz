@@ -12,7 +12,7 @@ module.exports = {
     env_production: {
       NODE_ENV: 'production',
       PORT: 3001,
-      //ALLOWED_ORIGINS: 'http://bharatviz.saketlab.in,https://bharatviz.saketlab.in,http://localhost:8080,http://localhost:5173, https://colab.research.google.com/'
+      //ALLOWED_ORIGINS: 'http://bharatviz.saketlab.org,https://bharatviz.saketlab.org,http://localhost:8080,http://localhost:5173, https://colab.research.google.com/'
       ALLOWED_ORIGINS: '*',
       // Memory optimization: limit Node.js heap size
       NODE_OPTIONS: '--max-old-space-size=600 --optimize-for-size'

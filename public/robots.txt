@@ -44,7 +44,7 @@ User-agent: DotBot
 Disallow: /
 
 # Sitemaps
-Sitemap: https://bharatviz.saketlab.in/sitemap.xml
+Sitemap: https://bharatviz.saketlab.org/sitemap.xml
 
 # Crawl-delay for default bot
 Crawl-delay: 1

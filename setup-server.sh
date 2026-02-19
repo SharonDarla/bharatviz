@@ -93,7 +93,7 @@ echo -e "${YELLOW}Step 8: Creating environment file...${NC}"
 cat > /var/www/bharatviz/server/.env.production << EOF
 NODE_ENV=production
 PORT=3001
-ALLOWED_ORIGINS=http://bharatviz.saketlab.in,https://bharatviz.saketlab.in
+ALLOWED_ORIGINS=http://bharatviz.saketlab.org,https://bharatviz.saketlab.org
 EOF
 echo -e "${GREEN}.env.production created${NC}"
 
@@ -144,7 +144,7 @@ echo ""
 echo ""
 echo "Next steps:"
 echo "1. Configure nginx (see LINODE_SETUP_SAKETLAB.md Step 7)"
-echo "2. Add DNS record for bharatviz.saketlab.in"
+echo "2. Add DNS record for bharatviz.saketlab.org"
 echo "3. Set up GitHub secrets"
 echo "4. Push code to trigger automatic deployment"
 echo ""

@@ -14,6 +14,7 @@ import { DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesLis
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
 import Credits from '@/components/Credits';
+import MCPDocs from '@/components/MCPDocs';
 import { DistrictStats } from '@/components/DistrictStats';
 import { Github, Moon, Sun } from 'lucide-react';
 import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
@@ -52,7 +53,7 @@ const Index = () => {
 
   const getTabFromPath = (pathname: string): string => {
     const path = pathname.slice(1);
-    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'district-stats', 'help', 'credits'];
+    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'district-stats', 'help', 'credits', 'mcp'];
     return validTabs.includes(path) ? path : 'states';
   };
 
@@ -975,7 +976,7 @@ const Index = () => {
   };
 
   const getSEOContent = () => {
-    const baseUrl = 'https://bharatviz.saketlab.in';
+    const baseUrl = 'https://bharatviz.saketlab.org';
 
     const seoConfigs = {
       states: {
@@ -1025,6 +1026,14 @@ const Index = () => {
         canonical: `${baseUrl}/credits`,
         ogTitle: 'Credits & Acknowledgments | BharatViz',
         ogDescription: 'Acknowledgments for BharatViz - data sources, libraries, and contributors.'
+      },
+      mcp: {
+        title: 'MCP Server for AI Assistants | BharatViz India Maps',
+        description: 'Connect BharatViz to Claude, Codex, or any MCP-compatible AI assistant. Generate India choropleth maps through natural language with 27 boundary sets, 17 color scales, and 300 DPI PNG output.',
+        keywords: 'MCP server, Model Context Protocol, Claude AI maps, AI map generation, India maps API, LLM tools, bharatviz MCP, choropleth AI',
+        canonical: `${baseUrl}/mcp`,
+        ogTitle: 'BharatViz MCP Server for AI Assistants',
+        ogDescription: 'Generate India choropleth maps through AI assistants. MCP server with 27 boundary sets and 17 color scales.'
       }
     };
 
@@ -1047,7 +1056,7 @@ const Index = () => {
         <meta property="og:url" content={seoContent.canonical} />
         <meta property="og:title" content={seoContent.ogTitle} />
         <meta property="og:description" content={seoContent.ogDescription} />
-        <meta property="og:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+        <meta property="og:image" content="https://bharatviz.saketlab.org/bharatviz_favicon.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:image:alt" content="BharatViz - Interactive India Maps" />
@@ -1058,7 +1067,7 @@ const Index = () => {
         <meta name="twitter:url" content={seoContent.canonical} />
         <meta name="twitter:title" content={seoContent.ogTitle} />
         <meta name="twitter:description" content={seoContent.ogDescription} />
-        <meta name="twitter:image" content="https://bharatviz.saketlab.in/bharatviz_favicon.png" />
+        <meta name="twitter:image" content="https://bharatviz.saketlab.org/bharatviz_favicon.png" />
         <meta name="twitter:image:alt" content="BharatViz - Interactive India Maps" />
         <meta name="twitter:site" content="@saketkc" />
         <meta name="twitter:creator" content="@saketkc" />
@@ -1075,7 +1084,7 @@ const Index = () => {
             "@type": "WebApplication",
             "name": "BharatViz",
             "description": "Fast choropleth maps for India - visualize state and district level data",
-            "url": "https://bharatviz.saketlab.in",
+            "url": "https://bharatviz.saketlab.org",
             "applicationCategory": "DataVisualization",
             "operatingSystem": "Web Browser",
             "offers": {
@@ -1115,7 +1124,7 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 bg-transparent p-0 h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
                 className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
@@ -1185,6 +1194,16 @@ const Index = () => {
                 }`}
               >
                 Credits
+              </TabsTrigger>
+              <TabsTrigger
+                value="mcp"
+                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
+                  darkMode
+                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
+                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
+                }`}
+              >
+                MCP
               </TabsTrigger>
             </TabsList>
           </div>
@@ -1885,7 +1904,7 @@ POST /api/v1/districts/map
                       <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>iframe embed</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`<iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://yoursite.com/data.csv&colorScale=viridis&title=My%20Map"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://yoursite.com/data.csv&colorScale=viridis&title=My%20Map"
   width="800"
   height="600"
   frameborder="0">
@@ -1897,7 +1916,7 @@ POST /api/v1/districts/map
                       <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>JavaScript widget</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
 {`<div id="my-map"></div>
-<script src="https://bharatviz.saketlab.in/api/embed.js"></script>
+<script src="https://bharatviz.saketlab.org/api/embed.js"></script>
 <script>
   BharatViz.embed({
     container: '#my-map',
@@ -1912,7 +1931,7 @@ POST /api/v1/districts/map
                     <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
                       <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>Direct SVG</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-{`<img src="https://bharatviz.saketlab.in/api/v1/embed/svg?dataUrl=https://yoursite.com/data.csv&colorScale=viridis" />`}
+{`<img src="https://bharatviz.saketlab.org/api/v1/embed/svg?dataUrl=https://yoursite.com/data.csv&colorScale=viridis" />`}
                       </pre>
                     </div>
 
@@ -1922,7 +1941,7 @@ POST /api/v1/districts/map
 {`# 1. Create data.csv in your GitHub repo
 # 2. Enable GitHub Pages in repo settings
 # 3. Embed using your GitHub Pages URL:
-<iframe src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://USERNAME.github.io/REPO/data.csv&colorScale=viridis"></iframe>`}
+<iframe src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://USERNAME.github.io/REPO/data.csv&colorScale=viridis"></iframe>`}
                       </pre>
                     </div>
 
@@ -1971,6 +1990,10 @@ POST /api/v1/districts/map
 
           <div className={`space-y-6 ${activeTab === 'credits' ? 'block' : 'hidden'}`}>
             <Credits darkMode={darkMode} />
+          </div>
+
+          <div className={`space-y-6 ${activeTab === 'mcp' ? 'block' : 'hidden'}`}>
+            <MCPDocs darkMode={darkMode} />
           </div>
         </Tabs>
       </div>

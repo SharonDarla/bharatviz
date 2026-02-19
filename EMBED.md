@@ -22,7 +22,7 @@ The easiest way to embed a BharatViz map is to host your CSV data file on GitHub
 ```html
 <!-- Auto-detects map type from CSV! -->
 <iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://yourusername.github.io/yourrepo/data.csv&colorScale=viridis&title=My%20Map"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://yourusername.github.io/yourrepo/data.csv&colorScale=viridis&title=My%20Map"
   width="800"
   height="600"
   frameborder="0"
@@ -72,7 +72,7 @@ Karnataka,Bengaluru Urban,88.7
 
 ```html
 <iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=YOUR_CSV_URL"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=YOUR_CSV_URL"
   width="800"
   height="600"
   frameborder="0">
@@ -110,7 +110,7 @@ Karnataka,Bengaluru Urban,88.7
 
 ```html
 <iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://example.com/states.csv&colorScale=viridis&title=Literacy%20Rate&legendTitle=Percentage"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://example.com/states.csv&colorScale=viridis&title=Literacy%20Rate&legendTitle=Percentage"
   width="800"
   height="600"
   frameborder="0">
@@ -122,7 +122,7 @@ Karnataka,Bengaluru Urban,88.7
 ```html
 <!-- Auto-detects 'districts' from CSV structure -->
 <iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://example.com/districts.csv&colorScale=reds&title=Population%20Density&boundary=LGD"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://example.com/districts.csv&colorScale=reds&title=Population%20Density&boundary=LGD"
   width="800"
   height="700"
   frameborder="0">
@@ -134,7 +134,7 @@ Karnataka,Bengaluru Urban,88.7
 ```html
 <!-- Auto-detects districts, then 'state' parameter triggers state-districts mode -->
 <iframe
-  src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://example.com/rajasthan.csv&state=Rajasthan&colorScale=blues&title=Rajasthan%20Districts&boundary=LGD"
+  src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://example.com/rajasthan.csv&state=Rajasthan&colorScale=blues&title=Rajasthan%20Districts&boundary=LGD"
   width="800"
   height="600"
   frameborder="0">
@@ -150,7 +150,7 @@ For more control and a cleaner integration, use the JavaScript widget.
 Add the widget script to your HTML:
 
 ```html
-<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script src="https://bharatviz.saketlab.org/embed.js"></script>
 ```
 
 ### Basic Usage
@@ -160,7 +160,7 @@ Add the widget script to your HTML:
 <div id="my-map"></div>
 
 <!-- Include the widget -->
-<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script src="https://bharatviz.saketlab.org/embed.js"></script>
 
 <!-- Embed the map -->
 <script>
@@ -181,7 +181,7 @@ You can also provide data directly instead of a URL:
 ```html
 <div id="my-map"></div>
 
-<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script src="https://bharatviz.saketlab.org/embed.js"></script>
 <script>
   BharatViz.embed({
     container: '#my-map',
@@ -266,7 +266,7 @@ For the most lightweight option, embed SVG directly:
 
 ```html
 <img
-  src="https://bharatviz.saketlab.in/api/v1/embed/svg?dataUrl=https://example.com/data.csv&colorScale=viridis"
+  src="https://bharatviz.saketlab.org/api/v1/embed/svg?dataUrl=https://example.com/data.csv&colorScale=viridis"
   alt="Map"
   style="max-width: 100%;">
 ```
@@ -275,7 +275,7 @@ Or use it in an `<object>` tag for interactive SVG:
 
 ```html
 <object
-  data="https://bharatviz.saketlab.in/api/v1/embed/svg?dataUrl=https://example.com/data.csv&colorScale=viridis"
+  data="https://bharatviz.saketlab.org/api/v1/embed/svg?dataUrl=https://example.com/data.csv&colorScale=viridis"
   type="image/svg+xml"
   width="800"
   height="600">
@@ -330,7 +330,7 @@ Kerala,Thiruvananthapuram,93.0
 5. **Use in embed**:
    ```html
    <iframe
-     src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://yourusername.github.io/your-repo/data.csv&colorScale=viridis"
+     src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://yourusername.github.io/your-repo/data.csv&colorScale=viridis"
      width="800"
      height="600">
    </iframe>
@@ -386,7 +386,7 @@ Access-Control-Allow-Methods: GET
     <div class="map-container">
         <!-- Method 1: iframe -->
         <iframe
-            src="https://bharatviz.saketlab.in/api/v1/embed?dataUrl=https://yourusername.github.io/your-repo/literacy.csv&colorScale=viridis&title=Literacy%20Rate&legendTitle=Percentage"
+            src="https://bharatviz.saketlab.org/api/v1/embed?dataUrl=https://yourusername.github.io/your-repo/literacy.csv&colorScale=viridis&title=Literacy%20Rate&legendTitle=Percentage"
             width="100%"
             height="600"
             frameborder="0"
@@ -396,7 +396,7 @@ Access-Control-Allow-Methods: GET
 
     <!-- OR Method 2: JavaScript Widget -->
     <div id="my-map" class="map-container"></div>
-    <script src="https://bharatviz.saketlab.in/embed.js"></script>
+    <script src="https://bharatviz.saketlab.org/embed.js"></script>
     <script>
         BharatViz.embed({
             container: '#my-map',
@@ -453,7 +453,7 @@ Delhi,86.3
 <h2>Population Density</h2>
 <div id="population-map"></div>
 
-<script src="https://bharatviz.saketlab.in/embed.js"></script>
+<script src="https://bharatviz.saketlab.org/embed.js"></script>
 <script>
   // Literacy map
   BharatViz.embed({
@@ -529,7 +529,7 @@ Generate embeddable content from posted data.
 
 ## Support
 
-- **Documentation**: https://bharatviz.saketlab.in
+- **Documentation**: https://bharatviz.saketlab.org
 - **GitHub**: https://github.com/saketlab/bharatviz
 - **Issues**: https://github.com/saketlab/bharatviz/issues
 

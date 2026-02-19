@@ -1,0 +1,65 @@
+# BharatViz
+
+> Fast, high-quality choropleth map generator for India
+
+BharatViz generates publication-ready choropleth maps of India at state and district levels. It supports 27 different administrative boundary sets spanning Census years 1941-2011, LGD (latest official), NFHS-4, NFHS-5, Survey of India, ISRO Bhuvan, and NSSO regions.
+
+## MCP Server
+
+BharatViz provides a Model Context Protocol (MCP) server that lets AI assistants generate India maps directly.
+
+### Remote (Recommended — no install needed)
+
+```json
+{
+  "mcpServers": {
+    "bharatviz": {
+      "type": "url",
+      "url": "https://bharatviz.saketlab.org/mcp"
+    }
+  }
+}
+```
+
+### Local (stdio transport)
+
+```bash
+git clone https://github.com/saketlab/bharatviz.git
+cd bharatviz/server && npm install && npm run build
+```
+
+```json
+{
+  "mcpServers": {
+    "bharatviz": {
+      "command": "node",
+      "args": ["/path/to/bharatviz/server/dist/mcp.js"]
+    }
+  }
+}
+```
+
+### Available Tools
+
+- `list_available_maps` - Lists all 27 boundary sets with metadata (id, source, year, level, feature count)
+- `list_states` - Lists state/UT names for a given boundary type
+- `list_districts` - Lists district names for a given boundary type, optionally filtered by state
+- `render_states_map` - Renders a state-level choropleth map (returns 300 DPI PNG or SVG)
+- `render_districts_map` - Renders a district-level choropleth map (all-India or single state)
+- `get_csv_template` - Returns a CSV template with all entity names for a given boundary type
+
+### Color Scales
+
+17 color scales: spectral, viridis, plasma, inferno, magma, blues, greens, reds, oranges, purples, pinks, rdylbu, rdylgn, brbg, piyg, puor, aqi
+
+## REST API
+
+Base URL: `https://bharatviz.saketlab.org/api/v1`
+
+- `POST /states/map` - Generate state-level map
+- `POST /districts/map` - Generate district-level map
+- `POST /districts/state-districts/map` - Generate single-state district map
+
+## Full Documentation
+
+For complete tool schemas, all 27 map IDs, and detailed examples: https://bharatviz.saketlab.org/llms-full.txt

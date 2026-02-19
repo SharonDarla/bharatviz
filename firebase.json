@@ -7,30 +7,16 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "headers": [
+    "redirects": [
       {
-        "source": "**/*.geojson",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "application/geo+json"
-          }
-        ]
+        "source": "/:path*",
+        "destination": "https://bharatviz.saketlab.org/:path*",
+        "type": 301
       },
       {
-        "source": "**/*.csv",
-        "headers": [
-          {
-            "key": "Content-Type",
-            "value": "text/csv"
-          }
-        ]
-      }
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/",
+        "destination": "https://bharatviz.saketlab.org/",
+        "type": 301
       }
     ]
   }

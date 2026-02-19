@@ -59,12 +59,20 @@ export class StatesMapRenderer {
       this.geojsonData = JSON.parse(geojsonContent);
     } catch (error) {
       // If local file doesn't exist, fetch from the live BharatViz site
-      const response = await fetch('https://bharatviz.web.app/India_LGD_states.geojson');
+      const response = await fetch('https://bharatviz.saketlab.org/India_LGD_states.geojson');
       if (!response.ok) {
         throw new Error(`Failed to fetch GeoJSON: ${response.status} ${response.statusText}`);
       }
       this.geojsonData = await response.json() as StateFeatureCollection;
     }
+  }
+
+  /**
+   * Load GeoJSON data from a custom file path
+   */
+  async loadGeoJSONFromPath(geojsonPath: string): Promise<void> {
+    const geojsonContent = await readFile(geojsonPath, 'utf-8');
+    this.geojsonData = JSON.parse(geojsonContent);
   }
 
   /**

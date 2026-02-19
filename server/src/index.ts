@@ -2,8 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { createMcpServer } from './mcpTools.js';
 import mapRoutes from './routes/mapRoutes.js';
 import districtsMapRoutes from './routes/districtsMapRoutes.js';
 import embedRoutes from './routes/embedRoutes.js';
@@ -57,6 +60,78 @@ app.use(express.static(join(__dirname, '..', 'public')));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// ---------------------------------------------------------------------------
+// MCP Streamable HTTP endpoint
+// ---------------------------------------------------------------------------
+// Track active transports by session ID for stateful mode
+const mcpTransports = new Map<string, StreamableHTTPServerTransport>();
+
+app.post('/mcp', async (req, res) => {
+  try {
+    // Check for existing session
+    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    let transport: StreamableHTTPServerTransport;
+
+    if (sessionId && mcpTransports.has(sessionId)) {
+      // Reuse existing transport for this session
+      transport = mcpTransports.get(sessionId)!;
+    } else if (!sessionId) {
+      // New session — create server + transport
+      transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+      });
+
+      // Clean up on close
+      transport.onclose = () => {
+        if (transport.sessionId) {
+          mcpTransports.delete(transport.sessionId);
+        }
+      };
+
+      const server = createMcpServer();
+      await server.connect(transport);
+    } else {
+      // Invalid session ID
+      res.status(404).json({ error: 'Session not found. Start a new session without Mcp-Session-Id header.' });
+      return;
+    }
+
+    await transport.handleRequest(req, res, req.body);
+
+    // Store transport after first handleRequest so sessionId is assigned
+    if (transport.sessionId && !mcpTransports.has(transport.sessionId)) {
+      mcpTransports.set(transport.sessionId, transport);
+    }
+  } catch (error) {
+    console.error('MCP POST error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+});
+
+app.get('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  if (!sessionId || !mcpTransports.has(sessionId)) {
+    res.status(400).json({ error: 'Missing or invalid Mcp-Session-Id header. Send a POST to /mcp first to initialize.' });
+    return;
+  }
+  const transport = mcpTransports.get(sessionId)!;
+  await transport.handleRequest(req, res);
+});
+
+app.delete('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  if (!sessionId || !mcpTransports.has(sessionId)) {
+    res.status(404).json({ error: 'Session not found.' });
+    return;
+  }
+  const transport = mcpTransports.get(sessionId)!;
+  await transport.close();
+  mcpTransports.delete(sessionId);
+  res.status(200).json({ status: 'Session closed.' });
 });
 
 app.use('/api/v1/states', mapRoutes);
@@ -141,7 +216,7 @@ app.get('/', (req, res) => {
       ]
     },
     examples: {
-      curl: `curl -X POST http://bharatviz.saketlab.in/api/v1/states/map \\
+      curl: `curl -X POST http://bharatviz.saketlab.org/api/v1/states/map \\
   -H "Content-Type: application/json" \\
   -d '{
     "data": [
@@ -181,9 +256,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`BharatViz API server running on http://bharatviz.saketlab.in`);
-  console.log(`Generate India maps at POST http://bharatviz.saketlab.in/api/v1/states/map`);
-  console.log(`API documentation at http://bharatviz.saketlab.in/`);
+  console.log(`BharatViz API server running on http://bharatviz.saketlab.org`);
+  console.log(`Generate India maps at POST http://bharatviz.saketlab.org/api/v1/states/map`);
+  console.log(`API documentation at http://bharatviz.saketlab.org/`);
 });
 
 export default app;
