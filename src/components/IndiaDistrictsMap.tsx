@@ -81,6 +81,7 @@ interface IndiaDistrictsMapProps {
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
   darkMode?: boolean;
+  valueDomain?: [number, number];
 }
 
 export interface IndiaDistrictsMapRef {
@@ -152,7 +153,8 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   dataType = 'numerical',
   categoryColors = {},
   naInfo,
-  darkMode = false
+  darkMode = false,
+  valueDomain
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
   const [statesData, setStatesData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -215,19 +217,25 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   useEffect(() => {
     if (data.length > 0 && dataType === 'numerical') {
-      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
-      const minValue = values.length > 0 ? Math.min(...values) : 0;
-      const maxValue = values.length > 0 ? Math.max(...values) : 1;
-      const meanValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0.5;
-      setLegendMin(roundToSignificantDigits(minValue));
-      setLegendMean(roundToSignificantDigits(meanValue));
-      setLegendMax(roundToSignificantDigits(maxValue));
+      if (valueDomain) {
+        setLegendMin(roundToSignificantDigits(valueDomain[0]));
+        setLegendMean(roundToSignificantDigits((valueDomain[0] + valueDomain[1]) / 2));
+        setLegendMax(roundToSignificantDigits(valueDomain[1]));
+      } else {
+        const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
+        const minValue = values.length > 0 ? Math.min(...values) : 0;
+        const maxValue = values.length > 0 ? Math.max(...values) : 1;
+        const meanValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0.5;
+        setLegendMin(roundToSignificantDigits(minValue));
+        setLegendMean(roundToSignificantDigits(meanValue));
+        setLegendMax(roundToSignificantDigits(maxValue));
+      }
     } else {
       setLegendMin('0');
       setLegendMean('0.5');
       setLegendMax('1');
     }
-  }, [data, dataType]);
+  }, [data, dataType, valueDomain]);
 
   useEffect(() => {
     const loadGeoData = async () => {
@@ -515,8 +523,8 @@ return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
       .attr('y2', '0%');
 
     const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
-    const minValue = values.length > 0 ? Math.min(...values) : 0;
-    const maxValue = values.length > 0 ? Math.max(...values) : 1;
+    const minValue = valueDomain ? valueDomain[0] : (values.length > 0 ? Math.min(...values) : 0);
+    const maxValue = valueDomain ? valueDomain[1] : (values.length > 0 ? Math.max(...values) : 1);
 
     const getAQIColorAbsolute = (value: number): string => {
       if (value <= 50) return '#10b981';
@@ -543,7 +551,7 @@ return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings, dataType, geojsonData]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType, geojsonData, valueDomain]);
 
   const projectCoordinate = (lng: number, lat: number, width = 800, height = 890): [number, number] => {
     if (!bounds) return [0, 0];
@@ -617,8 +625,8 @@ return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
-      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
-      return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+      const valuesForScale = valueDomain ? [valueDomain[0], valueDomain[1]] : (data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[]);
+      return getColorForValue(value, valuesForScale, colorScale, invertColors, colorBarSettings);
     }
 
     return darkMode ? '#1a1a1a' : '#e5e7eb';
@@ -909,8 +917,8 @@ const handleLabelTouchMove = useCallback(
       const [minVal, maxVal] = dataExtent;
       if (minVal === maxVal) return colorScales[colorScale](0.5);
 
-      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[];
-      return getColorForValue(value, values, colorScale, invertColors, colorBarSettings);
+      const valuesForScale = valueDomain ? [valueDomain[0], valueDomain[1]] : (data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v)) as number[]);
+      return getColorForValue(value, valuesForScale, colorScale, invertColors, colorBarSettings);
     };
 
     // Calculate color scale values
@@ -918,8 +926,8 @@ const handleLabelTouchMove = useCallback(
   .map(d => d.value)
   .filter((v): v is number => typeof v === "number" && !isNaN(v));
 
-const minValue = numericValues.length > 0 ? Math.min(...numericValues) : 0;
-const maxValue = numericValues.length > 0 ? Math.max(...numericValues) : 1;
+const minValue = valueDomain ? valueDomain[0] : (numericValues.length > 0 ? Math.min(...numericValues) : 0);
+const maxValue = valueDomain ? valueDomain[1] : (numericValues.length > 0 ? Math.max(...numericValues) : 1);
 
     
     // Find the legend rectangle that uses the gradient
@@ -1240,10 +1248,12 @@ Chittoor,50`;
   .map(d => d.value)
   .filter(v => typeof v === 'number' && !isNaN(v)) as number[];
 
-const dataExtent =
-  numericValues.length > 0
-    ? ([Math.min(...numericValues), Math.max(...numericValues)] as [number, number])
-    : undefined;
+  const dataExtent =
+    valueDomain
+      ? valueDomain
+      : numericValues.length > 0
+        ? ([Math.min(...numericValues), Math.max(...numericValues)] as [number, number])
+        : undefined;
 
 
   return (

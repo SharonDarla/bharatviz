@@ -40,6 +40,12 @@ interface NAInfo {
   count: number;
 }
 
+interface WideFormatMeta {
+  numericColumns: string[];
+  globalMin: number;
+  globalMax: number;
+}
+
 interface MultiYearSeries {
   key: string;
   title: string;
@@ -47,10 +53,11 @@ interface MultiYearSeries {
   naInfo?: NAInfo;
 }
 
-interface WideFormatMeta {
-  numericColumns: string[];
-  globalMin: number;
-  globalMax: number;
+interface DistrictSeries {
+  key: string;
+  title: string;
+  data: DistrictMapData[];
+  naInfo?: NAInfo;
 }
 
 const Index = () => {
@@ -121,6 +128,10 @@ const Index = () => {
   const [stateGistMapping, setStateGistMapping] = useState<StateGistMapping | null>(null);
   const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
   const [stateDistrictNAInfo, setStateDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
+  const [stateDistrictMultiSeries, setStateDistrictMultiSeries] = useState<DistrictSeries[]>([]);
+  const [stateDistrictWideFormatMeta, setStateDistrictWideFormatMeta] = useState<WideFormatMeta | null>(null);
+  const [stateDistrictColorScaleMode, setStateDistrictColorScaleMode] = useState<'single' | 'independent'>('independent');
+  const [stateDistrictSelectedColumn, setStateDistrictSelectedColumn] = useState<string | null>(null);
 
   const [darkMode, setDarkMode] = useState(false);
 
@@ -135,6 +146,7 @@ const Index = () => {
   const stateMultiYearMapRefs = useRef<Map<string, IndiaMapRef>>(new Map());
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
+  const stateDistrictMapRefs = useRef<Map<string, IndiaDistrictsMapRef>>(new Map());
 
   const hasReadInitialUrl = useRef<Set<string>>(new Set());
 
@@ -677,6 +689,9 @@ const Index = () => {
   };
 
   const handleStateDistrictDataLoad = (rawData: Array<{ state?: string; state_name?: string; district?: string; district_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
+    setStateDistrictMultiSeries([]);
+    setStateDistrictWideFormatMeta(null);
+    setStateDistrictSelectedColumn(null);
     const data: DistrictMapData[] = rawData.map(row => ({
       state: row.state || row.state_name || '',
       district: row.district || row.district_name || '',
@@ -698,6 +713,23 @@ const Index = () => {
     }
   };
 
+  const handleStateDistrictMultiDataLoad = (series: DistrictSeries[], wideFormat?: WideFormatMeta | null) => {
+    setStateDistrictMapData([]);
+    setStateDistrictDataTitle('');
+    setStateDistrictNAInfo(undefined);
+    setStateDistrictWideFormatMeta(wideFormat ?? null);
+    setStateDistrictSelectedColumn(null);
+    setStateDistrictMultiSeries(series);
+    const allValues = series.flatMap(s => s.data.map(d => d.value));
+    const dataType = detectDataType(allValues);
+    setStateDistrictDataType(dataType);
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(allValues);
+      setStateDistrictCategoryColors(generateDefaultCategoryColors(categories));
+      setStateDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
+  };
+
   const handleExportPNG = () => {
     if (activeTab === 'states') {
       if (stateMultiYearSeries.length > 0) {
@@ -708,6 +740,9 @@ const Index = () => {
       }
     } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPNG();
+    } else if (activeTab === 'state-districts' && stateDistrictMultiSeries.length > 0) {
+      const refs = displayedStateDistrictSeries.map(s => stateDistrictMapRefs.current.get(s.key)).filter(Boolean) as IndiaDistrictsMapRef[];
+      if (refs.length > 0) refs[0].exportPNG();
     } else {
       stateDistrictMapRef.current?.exportPNG();
     }
@@ -723,6 +758,9 @@ const Index = () => {
       }
     } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportSVG();
+    } else if (activeTab === 'state-districts' && stateDistrictMultiSeries.length > 0) {
+      const refs = displayedStateDistrictSeries.map(s => stateDistrictMapRefs.current.get(s.key)).filter(Boolean) as IndiaDistrictsMapRef[];
+      if (refs.length > 0) refs[0].exportSVG();
     } else {
       stateDistrictMapRef.current?.exportSVG();
     }
@@ -738,6 +776,9 @@ const Index = () => {
       }
     } else if (activeTab === 'districts' || activeTab === 'regions') {
       districtMapRef.current?.exportPDF();
+    } else if (activeTab === 'state-districts' && stateDistrictMultiSeries.length > 0) {
+      const refs = displayedStateDistrictSeries.map(s => stateDistrictMapRefs.current.get(s.key)).filter(Boolean) as IndiaDistrictsMapRef[];
+      if (refs.length > 0) refs[0].exportPDF();
     } else {
       stateDistrictMapRef.current?.exportPDF();
     }
@@ -763,6 +804,10 @@ const Index = () => {
   const displayedStateSeries = stateSelectedWideColumn
     ? stateMultiYearSeries.filter(s => s.key === stateSelectedWideColumn)
     : stateMultiYearSeries;
+
+  const displayedStateDistrictSeries = stateDistrictSelectedColumn
+    ? stateDistrictMultiSeries.filter(s => s.key === stateDistrictSelectedColumn)
+    : stateDistrictMultiSeries;
 
   const getOrderedMultiYearMapRefs = () => {
     return displayedStateSeries
@@ -1622,6 +1667,69 @@ const Index = () => {
           <div className={`space-y-6 ${activeTab === 'state-districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 order-2 lg:order-2">
+                {stateDistrictMultiSeries.length > 0 ? (
+                  <div className="space-y-4">
+                    {stateDistrictWideFormatMeta && (
+                      <div className={`flex flex-wrap items-center gap-4 p-3 rounded-lg border ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-muted/40 border-border'}`}>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>Color scale:</span>
+                        <label className={`flex items-center gap-2 cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
+                          <input type="radio" name="stateDistrictScaleMode" checked={stateDistrictColorScaleMode === 'single'} onChange={() => setStateDistrictColorScaleMode('single')} className="rounded-full" />
+                          <span className="text-sm">Single scale for all maps</span>
+                        </label>
+                        <label className={`flex items-center gap-2 cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
+                          <input type="radio" name="stateDistrictScaleMode" checked={stateDistrictColorScaleMode === 'independent'} onChange={() => setStateDistrictColorScaleMode('independent')} className="rounded-full" />
+                          <span className="text-sm">Independent per column</span>
+                        </label>
+                        <div className="flex items-center gap-2 ml-auto">
+                          <Label htmlFor="state-district-column-select" className={`text-sm whitespace-nowrap ${darkMode ? 'text-gray-300' : ''}`}>Show:</Label>
+                          <Select value={stateDistrictSelectedColumn ?? '__all__'} onValueChange={(v) => setStateDistrictSelectedColumn(v === '__all__' ? null : v)}>
+                            <SelectTrigger id="state-district-column-select" className="w-[140px]"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">All</SelectItem>
+                              {stateDistrictWideFormatMeta.numericColumns.map((col) => <SelectItem key={col} value={col}>{col}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                    {displayedStateDistrictSeries.length === 1 ? (
+                      <div className="flex flex-col items-center">
+                        <div className={`text-sm font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-700'}`}>{displayedStateDistrictSeries[0].title}</div>
+                        <IndiaDistrictsMap
+                          ref={(el) => { if (el) stateDistrictMapRefs.current.set(displayedStateDistrictSeries[0].key, el); else stateDistrictMapRefs.current.delete(displayedStateDistrictSeries[0].key); }}
+                          data={displayedStateDistrictSeries[0].data.filter(d => !selectedStateForMap || d.state === selectedStateForMap)}
+                          colorScale={stateDistrictColorScale} invertColors={stateDistrictInvertColors} dataTitle={displayedStateDistrictSeries[0].title} showStateBoundaries={true}
+                          colorBarSettings={stateDistrictColorBarSettings} geojsonPath={getDistrictMapConfig(selectedStateMapType).geojsonPath} statesGeojsonPath={getDistrictMapConfig(selectedStateMapType).states}
+                          selectedState={selectedStateForMap} gistUrlProvider={createGistUrlProvider()}
+                          hideDistrictNames={stateDistrictHideNames} hideDistrictValues={stateDistrictHideValues}
+                          onHideDistrictNamesChange={setStateDistrictHideNames} onHideDistrictValuesChange={setStateDistrictHideValues}
+                          dataType={stateDistrictDataType} categoryColors={stateDistrictCategoryColors}                           naInfo={displayedStateDistrictSeries[0].naInfo} darkMode={darkMode}
+                          valueDomain={stateDistrictWideFormatMeta && stateDistrictColorScaleMode === 'single' ? [stateDistrictWideFormatMeta.globalMin, stateDistrictWideFormatMeta.globalMax] : undefined}
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 overflow-auto max-h-[1400px]">
+                        {displayedStateDistrictSeries.map((series) => (
+                          <div key={series.key} className="flex flex-col items-center gap-2">
+                            <div className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
+                            <div className="w-full overflow-hidden" style={{ minHeight: 320 }}>
+                              <IndiaDistrictsMap
+                                ref={(el) => { if (el) stateDistrictMapRefs.current.set(series.key, el); else stateDistrictMapRefs.current.delete(series.key); }}
+                                data={series.data.filter(d => !selectedStateForMap || d.state === selectedStateForMap)}
+                                colorScale={stateDistrictColorScale} invertColors={stateDistrictInvertColors} dataTitle={series.title} showStateBoundaries={true}
+                                colorBarSettings={stateDistrictColorBarSettings} geojsonPath={getDistrictMapConfig(selectedStateMapType).geojsonPath} statesGeojsonPath={getDistrictMapConfig(selectedStateMapType).states}
+                                selectedState={selectedStateForMap} gistUrlProvider={createGistUrlProvider()}
+                                hideDistrictNames={stateDistrictHideNames} hideDistrictValues={stateDistrictHideValues}
+                                dataType={stateDistrictDataType} categoryColors={stateDistrictCategoryColors}                                 naInfo={series.naInfo} darkMode={darkMode}
+                                valueDomain={stateDistrictWideFormatMeta && stateDistrictColorScaleMode === 'single' ? [stateDistrictWideFormatMeta.globalMin, stateDistrictWideFormatMeta.globalMax] : undefined}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
                 <IndiaDistrictsMap
                   ref={stateDistrictMapRef}
                   data={stateDistrictMapData}
@@ -1643,6 +1751,7 @@ const Index = () => {
                   naInfo={stateDistrictNAInfo}
                   darkMode={darkMode}
                 />
+                )}
                 <div className="mt-6 flex justify-center">
                   <ExportOptions
                     onExportPNG={handleExportPNG}
@@ -1720,6 +1829,11 @@ const Index = () => {
 
                 <FileUpload
                   onDataLoad={handleStateDistrictDataLoad}
+                  onMultiDataLoad={(payload) => {
+                    if (payload.kind === 'districts') {
+                      handleStateDistrictMultiDataLoad(payload.series, payload.wideFormat ?? null);
+                    }
+                  }}
                   mode="districts"
                   templateCsvPath={getDistrictMapConfig(selectedStateMapType).templateCsvPath}
                   demoDataPath={getDistrictMapConfig(selectedStateMapType).demoDataPath}
