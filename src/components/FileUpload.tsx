@@ -6,6 +6,7 @@ import Papa from 'papaparse';
 import pako from 'pako';
 import { processStateData, processDistrictData } from '@/lib/dataProcessor';
 import { fetchWithCorsFallback, fetchAndDecompressGz } from '@/lib/corsProxy';
+import { extractNumericColumns } from '@/lib/csvUtils';
 
 interface NAInfo {
   states?: string[];
@@ -16,10 +17,17 @@ interface NAInfo {
 type StateValueRow = { state: string; value: number | string };
 type DistrictValueRow = { state: string; district: string; value: number | string };
 
+type WideFormatMeta = {
+  numericColumns: string[];
+  globalMin: number;
+  globalMax: number;
+};
+
 type MultiSeriesPayload =
   | {
       kind: 'states';
       series: Array<{ key: string; title: string; data: StateValueRow[]; naInfo?: NAInfo }>;
+      wideFormat?: WideFormatMeta;
     }
   | {
       kind: 'districts';
@@ -90,6 +98,48 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
         const num = Number(trimmed);
         return isNaN(num) ? trimmed : num;
       };
+
+      // Wide format: numeric columns > 2 → one map per column
+      const numericColumns = extractNumericColumns(data);
+      if (mode === 'states' && onMultiDataLoad && numericColumns.length > 2) {
+        let globalMin = Infinity;
+        let globalMax = -Infinity;
+        for (const row of data) {
+          for (const col of numericColumns) {
+            const v = parseValue(row[col]);
+            if (typeof v === 'number' && !isNaN(v) && isFinite(v)) {
+              if (v < globalMin) globalMin = v;
+              if (v > globalMax) globalMax = v;
+            }
+          }
+        }
+        if (globalMin === Infinity) globalMin = 0;
+        if (globalMax === -Infinity) globalMax = 1;
+
+        const allSeries: Array<{ key: string; title: string; data: StateValueRow[]; naInfo?: NAInfo }> = [];
+        for (const col of numericColumns) {
+          const seriesRaw = data
+            .filter(row => row[stateColumn])
+            .map(row => ({ state: row[stateColumn].trim(), value: parseValue(row[col]) }));
+          const processed = await processStateData(
+            seriesRaw as StateValueRow[],
+            geojsonPath || '',
+            fuzzyThreshold
+          );
+          allSeries.push({
+            key: col,
+            title: col,
+            data: processed.matched,
+            naInfo: processed.naInfo
+          });
+        }
+        onMultiDataLoad({
+          kind: 'states',
+          series: allSeries,
+          wideFormat: { numericColumns, globalMin, globalMax }
+        });
+        return;
+      }
 
       /**
        * SPECIAL CASE: state, value, year format

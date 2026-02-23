@@ -47,6 +47,12 @@ interface MultiYearSeries {
   naInfo?: NAInfo;
 }
 
+interface WideFormatMeta {
+  numericColumns: string[];
+  globalMin: number;
+  globalMax: number;
+}
+
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -75,6 +81,9 @@ const Index = () => {
   const [stateDataType, setStateDataType] = useState<DataType>('numerical');
   const [stateCategoryColors, setStateCategoryColors] = useState<CategoryColorMapping>({});
   const [stateNAInfo, setStateNAInfo] = useState<NAInfo | undefined>(undefined);
+  const [stateWideFormatMeta, setStateWideFormatMeta] = useState<WideFormatMeta | null>(null);
+  const [stateWideColorScaleMode, setStateWideColorScaleMode] = useState<'single' | 'independent'>('independent');
+  const [stateSelectedWideColumn, setStateSelectedWideColumn] = useState<string | null>(null);
 
   const [districtMapData, setDistrictMapData] = useState<DistrictMapData[]>([]);
   const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
@@ -603,8 +612,10 @@ const Index = () => {
   ]);
 
   const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
-    // Clear multi-year data when single-year data is loaded
+    // Clear multi-year and wide-format state when single-year data is loaded
     setStateMultiYearSeries([]);
+    setStateWideFormatMeta(null);
+    setStateSelectedWideColumn(null);
     setStateMapData(data);
     setStateDataTitle(title || '');
     setStateNAInfo(naInfo);
@@ -621,12 +632,13 @@ const Index = () => {
     }
   };
 
-  const handleStateMultiYearDataLoad = (series: MultiYearSeries[]) => {
+  const handleStateMultiYearDataLoad = (series: MultiYearSeries[], wideFormat?: WideFormatMeta | null) => {
     // Clear single-year data when multi-year data is loaded
     setStateMapData([]);
     setStateDataTitle('');
     setStateNAInfo(undefined);
-    
+    setStateWideFormatMeta(wideFormat ?? null);
+    setStateSelectedWideColumn(null);
     setStateMultiYearSeries(series);
     
     // Determine data type from all series
@@ -748,8 +760,12 @@ const Index = () => {
    * instead of one file per map.
    */
 
+  const displayedStateSeries = stateSelectedWideColumn
+    ? stateMultiYearSeries.filter(s => s.key === stateSelectedWideColumn)
+    : stateMultiYearSeries;
+
   const getOrderedMultiYearMapRefs = () => {
-    return stateMultiYearSeries
+    return displayedStateSeries
       .map(series => stateMultiYearMapRefs.current.get(series.key))
       .filter((ref): ref is IndiaMapRef => Boolean(ref));
   };
@@ -1213,10 +1229,52 @@ const Index = () => {
               <div className="lg:col-span-2 order-2 lg:order-2">
                 {stateMultiYearSeries.length > 0 ? (
                   <div className="space-y-4">
-                    {/* Multi-year grid layout */}
-                    {stateMultiYearSeries.length === 2 ? (
+                    {stateWideFormatMeta && (
+                      <div className={`flex flex-wrap items-center gap-4 p-3 rounded-lg border ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-muted/40 border-border'}`}>
+                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>Color scale:</span>
+                        <label className={`flex items-center gap-2 cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
+                          <input
+                            type="radio"
+                            name="wideScaleMode"
+                            checked={stateWideColorScaleMode === 'single'}
+                            onChange={() => setStateWideColorScaleMode('single')}
+                            className="rounded-full"
+                          />
+                          <span className="text-sm">Single scale for all maps</span>
+                        </label>
+                        <label className={`flex items-center gap-2 cursor-pointer ${darkMode ? 'text-gray-300' : ''}`}>
+                          <input
+                            type="radio"
+                            name="wideScaleMode"
+                            checked={stateWideColorScaleMode === 'independent'}
+                            onChange={() => setStateWideColorScaleMode('independent')}
+                            className="rounded-full"
+                          />
+                          <span className="text-sm">Independent per column</span>
+                        </label>
+                        <div className="flex items-center gap-2 ml-auto">
+                          <Label htmlFor="wide-column-select" className={`text-sm whitespace-nowrap ${darkMode ? 'text-gray-300' : ''}`}>Show:</Label>
+                          <Select
+                            value={stateSelectedWideColumn ?? '__all__'}
+                            onValueChange={(v) => setStateSelectedWideColumn(v === '__all__' ? null : v)}
+                          >
+                            <SelectTrigger id="wide-column-select" className="w-[140px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__all__">All columns</SelectItem>
+                              {stateWideFormatMeta.numericColumns.map((col) => (
+                                <SelectItem key={col} value={col}>{col}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                    {/* Multi-year / multi-column grid layout */}
+                    {displayedStateSeries.length === 2 ? (
                       <div className="grid grid-cols-2 gap-4">
-                        {stateMultiYearSeries.map((series) => (
+                        {displayedStateSeries.map((series) => (
                           <div key={series.key} className="flex flex-col items-center">
                             <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
                             <div className="w-full overflow-hidden" style={{ height: '85%' }}>
@@ -1240,15 +1298,16 @@ const Index = () => {
                                   categoryColors={stateCategoryColors}
                                   naInfo={series.naInfo}
                                   darkMode={darkMode}
+                                  valueDomain={stateWideFormatMeta && stateWideColorScaleMode === 'single' ? [stateWideFormatMeta.globalMin, stateWideFormatMeta.globalMax] : undefined}
                                 />
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
-                    ) : stateMultiYearSeries.length === 3 ? (
+                    ) : displayedStateSeries.length === 3 ? (
                       <div className="grid grid-cols-2 gap-4">
-                        {stateMultiYearSeries.map((series, idx) => (
+                        {displayedStateSeries.map((series, idx) => (
                           <div key={series.key} className={`flex flex-col items-center ${idx === 2 ? 'col-span-2' : ''}`}>
                             <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
                             <div className="w-full overflow-hidden" style={{ height: idx === 2 ? '70%' : '85%' }}>
@@ -1278,15 +1337,16 @@ const Index = () => {
                                   categoryColors={stateCategoryColors}
                                   naInfo={series.naInfo}
                                   darkMode={darkMode}
+                                  valueDomain={stateWideFormatMeta && stateWideColorScaleMode === 'single' ? [stateWideFormatMeta.globalMin, stateWideFormatMeta.globalMax] : undefined}
                                 />
                               </div>
                             </div>
                           </div>
                         ))}
                       </div>
-                    ) : stateMultiYearSeries.length >= 4 ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        {stateMultiYearSeries.slice(0, 4).map((series) => (
+                    ) : displayedStateSeries.length >= 4 ? (
+                      <div className="grid grid-cols-2 gap-2 overflow-auto max-h-[1400px]">
+                        {displayedStateSeries.map((series) => (
                             <div key={series.key} className="flex flex-col items-center gap-2">
                               <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{series.title}</div>
                               <div className="w-full overflow-hidden" style={{ height: '90%' }}>
@@ -1316,11 +1376,34 @@ const Index = () => {
                                   categoryColors={stateCategoryColors}
                                   naInfo={series.naInfo}
                                   darkMode={darkMode}
+                                  valueDomain={stateWideFormatMeta && stateWideColorScaleMode === 'single' ? [stateWideFormatMeta.globalMin, stateWideFormatMeta.globalMax] : undefined}
                                 />
                               </div>
                             </div>
                           </div>
                         ))}
+                      </div>
+                    ) : displayedStateSeries.length === 1 ? (
+                      <div className="flex flex-col items-center">
+                        <div className={`text-sm font-semibold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-700'}`}>{displayedStateSeries[0].title}</div>
+                        <IndiaMap
+                          ref={(el) => {
+                            if (el) stateMultiYearMapRefs.current.set(displayedStateSeries[0].key, el);
+                            else stateMultiYearMapRefs.current.delete(displayedStateSeries[0].key);
+                          }}
+                          data={displayedStateSeries[0].data}
+                          colorScale={stateColorScale}
+                          invertColors={stateInvertColors}
+                          hideStateNames={stateHideNames}
+                          hideValues={stateHideValues}
+                          dataTitle={displayedStateSeries[0].title}
+                          colorBarSettings={stateColorBarSettings}
+                          dataType={stateDataType}
+                          categoryColors={stateCategoryColors}
+                          naInfo={displayedStateSeries[0].naInfo}
+                          darkMode={darkMode}
+                          valueDomain={stateWideFormatMeta && stateWideColorScaleMode === 'single' ? [stateWideFormatMeta.globalMin, stateWideFormatMeta.globalMax] : undefined}
+                        />
                       </div>
                     ) : null}
                   </div>
@@ -1352,7 +1435,7 @@ const Index = () => {
                   onDataLoad={handleStateDataLoad}
                   onMultiDataLoad={(payload) => {
                     if (payload.kind === 'states') {
-                      handleStateMultiYearDataLoad(payload.series);
+                      handleStateMultiYearDataLoad(payload.series, payload.wideFormat ?? null);
                     }
                   }}
                   mode="states"

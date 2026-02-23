@@ -42,6 +42,8 @@ interface IndiaMapProps {
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
   darkMode?: boolean;
+//  color scale 
+  valueDomain?: [number, number];
 }
 
 export interface IndiaMapRef {
@@ -52,7 +54,7 @@ export interface IndiaMapRef {
   getSVGElement: () => SVGSVGElement | null;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false, valueDomain }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
   const [renderingData, setRenderingData] = useState(false);
@@ -196,9 +198,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       return invertColors ? (t: number) => baseInterpolator(1 - t) : baseInterpolator;
     };
 
-    const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
-    const minValue = values.length > 0 ? Math.min(...values) : 0;
-    const maxValue = values.length > 0 ? Math.max(...values) : 1;
+    const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
+    const minValue = valueDomain ? valueDomain[0] : (values.length > 0 ? Math.min(...values) : 0);
+    const maxValue = valueDomain ? valueDomain[1] : (values.length > 0 ? Math.max(...values) : 1);
     const colorInterpolator = getColorInterpolator(colorScale);
     const colorScaleFunction = d3.scaleSequential(colorInterpolator)
       .domain([minValue, maxValue]);
@@ -649,12 +651,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
     // Create color scale only if we have data
     let colorScaleFunction;
+    const rawValues = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
+    const minValue = valueDomain ? valueDomain[0] : (rawValues.length > 0 ? Math.min(...rawValues) : 0);
+    const maxValue = valueDomain ? valueDomain[1] : (rawValues.length > 0 ? Math.max(...rawValues) : 1);
+    const valuesForScale = valueDomain ? [valueDomain[0], valueDomain[1]] : rawValues;
+
     if (data.length > 0) {
-      const values = data.map(d => d.value).filter(v => !isNaN(v) && isFinite(v));
-      const minValue = values.length > 0 ? Math.min(...values) : 0;
-      const maxValue = values.length > 0 ? Math.max(...values) : 1;
-      
-      
       // Check if it's a diverging scale
       const divergingScales = ['rdylbu', 'rdylgn', 'spectral', 'brbg', 'piyg', 'puor'];
       const isDiverging = divergingScales.includes(colorScale);
@@ -701,8 +703,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         }
 
         // Use the new discrete color utility for numerical data
-        const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
-        return getColorForValue(value as number, values, colorScale, invertColors, colorBarSettings);
+        return getColorForValue(value as number, valuesForScale, colorScale, invertColors, colorBarSettings);
       })
       .attr("stroke", (d: GeoJSON.Feature) => {
         // If no data, use appropriate stroke color
@@ -974,28 +975,34 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       }, 300);
     }
 
-  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType, darkMode]);
+  }, [mapData, data, colorScale, invertColors, hideStateNames, hideValues, isMobile, colorBarSettings, categoryColors, dataType, darkMode, valueDomain]);
 
   // Legend values from data (only for numerical data)
   useEffect(() => {
     if (data.length > 0 && dataType === 'numerical') {
-      const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
-      if (values.length > 0) {
-        const meanValue = values.reduce((a, b) => a + b, 0) / values.length;
-        setLegendMin(roundToSignificantDigits(Math.min(...values)));
-        setLegendMean(roundToSignificantDigits(meanValue));
-        setLegendMax(roundToSignificantDigits(Math.max(...values)));
+      if (valueDomain) {
+        setLegendMin(roundToSignificantDigits(valueDomain[0]));
+        setLegendMean(roundToSignificantDigits((valueDomain[0] + valueDomain[1]) / 2));
+        setLegendMax(roundToSignificantDigits(valueDomain[1]));
       } else {
-        setLegendMin('0');
-        setLegendMean('0.5');
-        setLegendMax('1');
+        const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
+        if (values.length > 0) {
+          const meanValue = values.reduce((a, b) => a + b, 0) / values.length;
+          setLegendMin(roundToSignificantDigits(Math.min(...values)));
+          setLegendMean(roundToSignificantDigits(meanValue));
+          setLegendMax(roundToSignificantDigits(Math.max(...values)));
+        } else {
+          setLegendMin('0');
+          setLegendMean('0.5');
+          setLegendMax('1');
+        }
       }
     } else {
       setLegendMin('0');
       setLegendMean('0.5');
       setLegendMax('1');
     }
-  }, [data, dataType]);
+  }, [data, dataType, valueDomain]);
 
   // D3 gradient for legend (only for continuous mode and numerical data)
   useEffect(() => {
@@ -1021,8 +1028,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
     // Color scale - continuous mode only for numerical data
     const values = data.map(d => d.value).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v)) as number[];
-    const minValue = values.length > 0 ? Math.min(...values) : 0;
-    const maxValue = values.length > 0 ? Math.max(...values) : 1;
+    const minValue = valueDomain ? valueDomain[0] : (values.length > 0 ? Math.min(...values) : 0);
+    const maxValue = valueDomain ? valueDomain[1] : (values.length > 0 ? Math.max(...values) : 1);
 
     const getAQIColorAbsolute = (value: number): string => {
       if (value <= 50) return '#10b981';
@@ -1068,7 +1075,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         .attr('offset', `${t * 100}%`)
         .attr('stop-color', color);
     }
-  }, [colorScale, invertColors, data, colorBarSettings, dataType, mapData]);
+  }, [colorScale, invertColors, data, colorBarSettings, dataType, mapData, valueDomain]);
 
   // Drag handlers
   const handleLegendMouseDown = (e: React.MouseEvent) => {
