@@ -80,6 +80,45 @@ async function loadGeoJSON(filename: string): Promise<FeatureCollection> {
   return data;
 }
 
+/** Levenshtein distance between two strings (two-row optimization) */
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  let prev = new Array(n + 1);
+  let curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      curr[j] = a[i - 1] === b[j - 1]
+        ? prev[j - 1]
+        : 1 + Math.min(prev[j - 1], prev[j], curr[j - 1]);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+/** Find the best fuzzy match for `input` among `candidates`. Returns null if no good match. */
+function fuzzyMatchName(input: string, candidates: string[]): string | null {
+  const norm = input.toLowerCase().trim();
+  const normalized = candidates.map(c => c.toLowerCase().trim());
+
+  const exactIdx = normalized.indexOf(norm);
+  if (exactIdx !== -1) return candidates[exactIdx];
+
+  const maxDist = Math.max(1, Math.floor(norm.length * 0.3));
+  let bestMatch: string | null = null;
+  let bestDist = Infinity;
+  for (let i = 0; i < normalized.length; i++) {
+    const dist = levenshtein(norm, normalized[i]);
+    if (dist <= maxDist && dist < bestDist) {
+      bestDist = dist;
+      bestMatch = candidates[i];
+    }
+  }
+  return bestMatch;
+}
+
 export class McpMapService {
   private exportService = new ExportService();
 
@@ -173,8 +212,15 @@ export class McpMapService {
     const geojsonPath = join(getPublicDir(), entry.file);
     await renderer.loadGeoJSONFromPath(geojsonPath);
 
+    // Fuzzy-match user-provided state names to GeoJSON names
+    const geojsonStates = await this.listStates(mapId);
+    const resolvedData = options.data.map(d => {
+      const matched = fuzzyMatchName(d.state, geojsonStates);
+      return { state: matched || d.state, value: d.value };
+    });
+
     const svgString = await renderer.renderMap({
-      data: options.data,
+      data: resolvedData,
       colorScale: (options.colorScale as any) || 'spectral',
       invertColors: options.invertColors ?? false,
       hideStateNames: options.hideStateNames ?? false,
@@ -223,8 +269,25 @@ export class McpMapService {
     const statesPath = entry.statesFile ? join(getPublicDir(), entry.statesFile) : undefined;
     await renderer.loadGeoJSONFromPaths(districtsPath, statesPath);
 
+    // Fuzzy-match user-provided names to GeoJSON names
+    const allDistricts = await this.listDistricts(mapId);
+    const geojsonStates = [...new Set(allDistricts.map(d => d.state))];
+    const districtsByState = new Map<string, string[]>();
+    for (const d of allDistricts) {
+      const key = d.state.toLowerCase().trim();
+      if (!districtsByState.has(key)) districtsByState.set(key, []);
+      districtsByState.get(key)!.push(d.district);
+    }
+
+    const resolvedData = options.data.map(d => {
+      const matchedState = fuzzyMatchName(d.state, geojsonStates) || d.state;
+      const stateDistricts = districtsByState.get(matchedState.toLowerCase().trim()) || [];
+      const matchedDistrict = fuzzyMatchName(d.district, stateDistricts) || d.district;
+      return { state: matchedState, district: matchedDistrict, value: d.value };
+    });
+
     const svgString = await renderer.renderMap({
-      data: options.data.map(d => ({ state: d.state, district: d.district, value: d.value })),
+      data: resolvedData.map(d => ({ state: d.state, district: d.district, value: d.value })),
       colorScale: (options.colorScale as any) || 'spectral',
       invertColors: options.invertColors ?? false,
       hideDistrictNames: options.hideDistrictNames ?? true,
@@ -232,7 +295,7 @@ export class McpMapService {
       mainTitle: options.title || 'BharatViz',
       legendTitle: options.legendTitle || 'Values',
       showStateBoundaries: options.showStateBoundaries ?? true,
-      state: options.state,
+      state: options.state ? (fuzzyMatchName(options.state, geojsonStates) || options.state) : undefined,
       darkMode: options.darkMode ?? false,
       formats: ['svg'],
     });
