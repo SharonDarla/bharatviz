@@ -43,6 +43,10 @@ Disallow: /
 User-agent: DotBot
 Disallow: /
 
+# LLM-readable documentation
+Allow: /llms.txt
+Allow: /llms-full.txt
+
 # Sitemaps
 Sitemap: https://bharatviz.saketlab.org/sitemap.xml
 
