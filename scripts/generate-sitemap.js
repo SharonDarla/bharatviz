@@ -1,5 +1,4 @@
 import { SitemapStream, streamToPromise } from 'sitemap';
-import { createGzip } from 'zlib';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -7,66 +6,45 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Your domain
 const DOMAIN = 'https://bharatviz.saketlab.org';
 
-// Define your routes and their metadata
 const routes = [
-  {
-    url: '/',
-    changefreq: 'weekly',
-    priority: 1.0,
-    lastmod: new Date()
-  },
-  {
-    url: '/api',
-    changefreq: 'monthly', 
-    priority: 0.8,
-    lastmod: new Date()
-  }
+  { url: '/', changefreq: 'weekly', priority: 1.0 },
+  { url: '/states', changefreq: 'weekly', priority: 0.9 },
+  { url: '/districts', changefreq: 'weekly', priority: 0.9 },
+  { url: '/state-districts', changefreq: 'weekly', priority: 0.8 },
+  { url: '/regions', changefreq: 'monthly', priority: 0.7 },
+  { url: '/district-stats', changefreq: 'monthly', priority: 0.7 },
+  { url: '/mcp', changefreq: 'monthly', priority: 0.8 },
+  { url: '/help', changefreq: 'monthly', priority: 0.7 },
+  { url: '/embed-demo', changefreq: 'monthly', priority: 0.6 },
+  { url: '/credits', changefreq: 'yearly', priority: 0.3 },
+  { url: '/llms.txt', changefreq: 'monthly', priority: 0.5 },
+  { url: '/llms-full.txt', changefreq: 'monthly', priority: 0.5 },
 ];
 
-// Generate sitemap
 async function generateSitemap() {
   try {
-    const sitemap = new SitemapStream({
-      hostname: DOMAIN,
-      xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9'
-    });
+    const sitemap = new SitemapStream({ hostname: DOMAIN });
+    const lastmod = new Date().toISOString();
 
-    // Write each route
     routes.forEach(route => {
-      sitemap.write({
-        url: route.url,
-        changefreq: route.changefreq,
-        priority: route.priority,
-        lastmod: route.lastmod
-      });
+      sitemap.write({ ...route, lastmod });
     });
 
     sitemap.end();
 
-    // Generate the sitemap XML
     const sitemapXML = await streamToPromise(sitemap);
-    
-    // Write to public directory with proper formatting
     const outputPath = path.join(__dirname, '../public/sitemap.xml');
     const formattedXML = sitemapXML.toString().replace(/></g, '>\n<');
     fs.writeFileSync(outputPath, formattedXML);
-    
-    console.log('✅ Sitemap generated successfully!');
-    console.log(`📍 Location: ${outputPath}`);
-    console.log(`🌐 Available at: ${DOMAIN}/sitemap.xml`);
-    
-    // Skip gzipped version for now (buffer issue)
-    console.log('📦 Sitemap generation complete');
-    
+
+    console.log(`Sitemap generated: ${outputPath} (${routes.length} URLs)`);
   } catch (error) {
-    console.error('❌ Error generating sitemap:', error);
+    console.error('Error generating sitemap:', error);
   }
 }
 
-// Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   generateSitemap();
 }
