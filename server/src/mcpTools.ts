@@ -10,6 +10,7 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { McpMapService } from './mcpMapService.js';
+import type { ColorScale } from './types/index.js';
 
 const COLOR_SCALES = [
   'aqi', 'spectral', 'rdylbu', 'rdylgn', 'brbg', 'piyg', 'puor',
@@ -248,7 +249,7 @@ export function createMcpServer(): Server {
           const result = await mapService.renderStatesMap({
             data,
             mapId: args?.mapId as string | undefined,
-            colorScale: args?.colorScale as string | undefined,
+            colorScale: args?.colorScale as ColorScale | undefined,
             title: args?.title as string | undefined,
             legendTitle: args?.legendTitle as string | undefined,
             darkMode: args?.darkMode as boolean | undefined,
@@ -278,7 +279,7 @@ export function createMcpServer(): Server {
             data,
             mapId: args?.mapId as string | undefined,
             state: args?.state as string | undefined,
-            colorScale: args?.colorScale as string | undefined,
+            colorScale: args?.colorScale as ColorScale | undefined,
             title: args?.title as string | undefined,
             legendTitle: args?.legendTitle as string | undefined,
             darkMode: args?.darkMode as boolean | undefined,
