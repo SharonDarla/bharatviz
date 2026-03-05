@@ -39,14 +39,14 @@ function getPolygonCenter(geometry: { type: string; coordinates: number[][][] | 
       }
       coords = polygons[largestIdx];
     } else {
-      coords = geometry.coordinates;
+      coords = geometry.coordinates as number[][][];
     }
 
     return polylabel(coords, 1.0) as [number, number];
   } catch (e) {
     console.warn('Polylabel failed:', e);
   }
-  return d3.geoCentroid(geometry) as [number, number];
+  return d3.geoCentroid(geometry as d3.GeoGeometryObjects) as [number, number];
 }
 
 interface DistrictMapData {
@@ -427,7 +427,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
     return { x, y };
   };
 
-  const isPointInsideDistrict = (
+  const isPointInsideDistrict = useCallback((
     screenPoint: { x: number; y: number },
     feature: GeoJSONFeature
   ): boolean => {
@@ -475,7 +475,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
 return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
 
-  };
+  }, [bounds, isMobile, selectedState]);
 
   const wouldLabelsOverlap = (
     pos1: { x: number; y: number }, text1: string, fontSize1: number,
@@ -804,7 +804,7 @@ return isPointInPolygonScreen([screenPoint.x, screenPoint.y], screenPolygon);
     newPositions.set(draggingLabel.districtKey, newPosition);
     setLabelPositions(newPositions);
   },
-  [draggingLabel, labelPositions, geojsonData, bounds, isMobile, selectedState]
+  [draggingLabel, labelPositions, geojsonData, isPointInsideDistrict]
 );
 const handleLabelMouseUp = () => {
   setDraggingLabel(null);
@@ -856,7 +856,7 @@ const handleLabelTouchMove = useCallback(
     newPositions.set(draggingLabel.districtKey, newPosition);
     setLabelPositions(newPositions);
   },
-  [draggingLabel, labelPositions, geojsonData, bounds, isMobile, selectedState]
+  [draggingLabel, labelPositions, geojsonData, isPointInsideDistrict]
 );
 
 
