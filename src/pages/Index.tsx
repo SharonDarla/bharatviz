@@ -1041,20 +1041,20 @@ const Index = () => {
 
     const seoConfigs = {
       states: {
-        title: 'BharatViz - Fast Choropleth Maps for India | State-Level Data Visualization',
-        description: 'Create beautiful, publication-ready choropleth maps of Indian states. Free online tool for data visualization with customizable color scales, export to PNG/SVG/PDF. Perfect for research, journalism, and presentations.',
-        keywords: 'India maps, choropleth, state maps, data visualization, India states, interactive maps, geospatial analysis, India data, map maker, research visualization',
+        title: 'BharatViz - Fast Choropleth Maps for India | 36 States & UTs',
+        description: 'Create publication-ready choropleth maps of India\'s 36 states and union territories. 27 boundary sets spanning Census 1941-2011, LGD, NFHS. 17 color scales, dark mode, export to PNG/SVG/PDF. Free and open source.',
+        keywords: 'India maps, choropleth, state maps, data visualization, India states, Census India maps, LGD boundaries, research visualization, map maker',
         canonical: baseUrl,
         ogTitle: 'BharatViz - Fast Choropleth Maps for India',
-        ogDescription: 'Create beautiful choropleth maps of Indian states with customizable colors and export to PNG/SVG/PDF. Free and open source.'
+        ogDescription: 'Create publication-ready choropleth maps of India\'s 36 states. 27 boundary sets, 17 color scales, export to PNG/SVG/PDF. Free and open source.'
       },
       districts: {
-        title: 'District-Level Maps of India | BharatViz Choropleth Visualization',
-        description: 'Visualize 800+ Indian districts with choropleth maps. Support for LGD, NFHS-5, and NFHS-4 boundaries. Export to PNG, SVG, PDF. Free tool for district-level data analysis and visualization.',
-        keywords: 'India district maps, district choropleth, LGD districts, NFHS-5, NFHS-4, district data visualization, India geography, granular maps, district boundaries',
+        title: 'Explore India\'s 750+ Districts | BharatViz District Choropleth Maps',
+        description: 'Explore India\'s 750+ districts with choropleth maps. Support for LGD, NFHS-5, NFHS-4, Census 2011-1941, Survey of India, and ISRO Bhuvan boundaries. Export to PNG, SVG, PDF. Free tool for district-level data analysis.',
+        keywords: 'India district maps, district choropleth, LGD districts, NFHS-5, NFHS-4, Census 2011, district data visualization, India geography, district boundaries',
         canonical: `${baseUrl}/districts`,
-        ogTitle: 'District-Level Maps of India | BharatViz',
-        ogDescription: 'Visualize 800+ Indian districts with customizable choropleth maps. Support for LGD, NFHS-5, and NFHS-4 boundaries.'
+        ogTitle: 'Explore India\'s 750+ Districts | BharatViz',
+        ogDescription: 'Explore India\'s 750+ districts with customizable choropleth maps. LGD, NFHS-5, NFHS-4, Census, and more boundary sets.'
       },
       regions: {
         title: 'NSSO Regions Maps | BharatViz India Regional Visualization',
@@ -1071,6 +1071,14 @@ const Index = () => {
         canonical: `${baseUrl}/state-districts`,
         ogTitle: 'Individual State District Maps | BharatViz',
         ogDescription: 'Create detailed district-level maps for individual Indian states with customizable visualization options.'
+      },
+      'district-stats': {
+        title: 'District Statistics & Boundary Comparison | BharatViz India Maps',
+        description: 'Compare district counts and boundary definitions across LGD, NFHS-5, NFHS-4, Census 2011, and more. Explore how India\'s 750+ districts are defined across 27 administrative boundary sets spanning 1941 to present.',
+        keywords: 'India district statistics, district count, LGD districts, NFHS districts, Census districts, boundary comparison, administrative divisions, India geography data',
+        canonical: `${baseUrl}/district-stats`,
+        ogTitle: 'District Statistics & Boundary Comparison | BharatViz',
+        ogDescription: 'Compare district counts and boundaries across LGD, NFHS, Census, and other sources. Explore India\'s 750+ districts.'
       },
       help: {
         title: 'Help & API Documentation | BharatViz India Maps',
