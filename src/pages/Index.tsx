@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Papa from 'papaparse';
@@ -9,14 +9,19 @@ import { ExportOptions } from '@/components/ExportOptions';
 import { ColorMapChooser, type ColorScale, type ColorBarSettings } from '@/components/ColorMapChooser';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import { DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
+import { getCityList, getCityDataset, getCityDatasets, DEFAULT_CITY, DEFAULT_CITY_DATASET } from '@/lib/cityMapConfig';
+import { IndiaCityMap, type IndiaCityMapRef, type CityWardData } from '@/components/IndiaCityMap';
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
 import Credits from '@/components/Credits';
 import MCPDocs from '@/components/MCPDocs';
 import { DistrictStats } from '@/components/DistrictStats';
-import { Github, Moon, Sun } from 'lucide-react';
+import { Github, Moon, Sun, Check, ChevronsUpDown } from 'lucide-react';
 import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { buildDynamicContext } from '@/lib/chat/contextBuilder';
@@ -53,7 +58,7 @@ const Index = () => {
 
   const getTabFromPath = (pathname: string): string => {
     const path = pathname.slice(1);
-    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'district-stats', 'help', 'credits', 'mcp'];
+    const validTabs = ['states', 'districts', 'regions', 'state-districts', 'cities', 'district-stats', 'help', 'credits', 'mcp'];
     return validTabs.includes(path) ? path : 'states';
   };
 
@@ -113,7 +118,26 @@ const Index = () => {
   const [stateSearchQuery, setStateSearchQuery] = useState<string>('');
   const [stateDistrictNAInfo, setStateDistrictNAInfo] = useState<NAInfo | undefined>(undefined);
 
-  const [darkMode, setDarkMode] = useState(false);
+  const [cityMapData, setCityMapData] = useState<CityWardData[]>([]);
+  const [cityColorScale, setCityColorScale] = useState<ColorScale>('spectral');
+  const [cityInvertColors, setCityInvertColors] = useState(false);
+  const [cityDataTitle, setCityDataTitle] = useState<string>('');
+  const [cityColorBarSettings, setCityColorBarSettings] = useState<ColorBarSettings>({
+    isDiscrete: false,
+    binCount: 5,
+    customBoundaries: [],
+    useCustomBoundaries: false
+  });
+  const [cityDataType, setCityDataType] = useState<DataType>('numerical');
+  const [cityCategoryColors, setCityCategoryColors] = useState<CategoryColorMapping>({});
+  const [cityNAInfo, setCityNAInfo] = useState<NAInfo | undefined>(undefined);
+  const [selectedCity, setSelectedCity] = useState<string>(DEFAULT_CITY);
+  const [selectedCityDataset, setSelectedCityDataset] = useState<string>(DEFAULT_CITY_DATASET);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
+  const [cityHideNames, setCityHideNames] = useState(true);
+  const [cityHideValues, setCityHideValues] = useState(false);
+
+  const [darkMode, setDarkMode] = useState(() => new URLSearchParams(window.location.search).get('darkMode') === 'true');
 
   const [chatContext, setChatContext] = useState<DynamicChatContext | null>(null);
   const prevContextRef = useRef<{
@@ -126,10 +150,15 @@ const Index = () => {
   const stateMultiYearMapRefs = useRef<Map<string, IndiaMapRef>>(new Map());
   const districtMapRef = useRef<IndiaDistrictsMapRef>(null);
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
+  const cityMapRef = useRef<IndiaCityMapRef>(null);
 
   const hasReadInitialUrl = useRef<Set<string>>(new Set());
   const selectedStateRef = useRef(selectedStateForMap);
   useEffect(() => { selectedStateRef.current = selectedStateForMap; }, [selectedStateForMap]);
+
+  const cityList = useMemo(() => getCityList(), []);
+  const currentCityDataset = useMemo(() => getCityDataset(selectedCityDataset), [selectedCityDataset]);
+  const currentCityDatasets = useMemo(() => getCityDatasets(selectedCity), [selectedCity]);
 
   useEffect(() => {
     const tabFromPath = getTabFromPath(location.pathname);
@@ -139,7 +168,6 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  // Read URL parameters on initial mount for States tab
   useEffect(() => {
     if (hasReadInitialUrl.current.has('states')) return;
     if (activeTab !== 'states') return;
@@ -162,7 +190,13 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Write States tab settings to URL
+  const buildUrl = (params: URLSearchParams) => {
+    if (darkMode) params.set('darkMode', 'true'); else params.delete('darkMode');
+    const search = params.toString();
+    const currentPath = location.pathname === '/' ? '' : location.pathname;
+    return `${currentPath}${search ? '?' + search : ''}`;
+  };
+
   useEffect(() => {
     if (!hasReadInitialUrl.current.has('states')) return;
     if (activeTab !== 'states') return;
@@ -189,16 +223,13 @@ const Index = () => {
       params.delete('hideValues');
     }
 
-    const newSearch = params.toString();
-    const currentPath = location.pathname === '/' ? '' : location.pathname;
-    const newUrl = `${currentPath}${newSearch ? '?' + newSearch : ''}`;
+    const newUrl = buildUrl(params);
 
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, stateColorScale, stateInvertColors, stateHideNames, stateHideValues, location.pathname, location.search, navigate]);
+  }, [activeTab, stateColorScale, stateInvertColors, stateHideNames, stateHideValues, darkMode, location.pathname, location.search, navigate]);
 
-  // Read URL parameters on initial mount for Districts tab
   useEffect(() => {
     if (hasReadInitialUrl.current.has('districts')) return;
     if (activeTab !== 'districts') return;
@@ -213,18 +244,19 @@ const Index = () => {
 
     const mapType = params.get('mapType');
     if (mapType) {
-      // Validate that the mapType exists in the config
       const config = getDistrictMapConfig(mapType);
       if (config) {
         setSelectedDistrictMapType(mapType);
       }
     }
 
+    const showBoundaries = params.get('showStateBoundaries');
+    if (showBoundaries !== null) setShowStateBoundaries(showBoundaries !== 'false');
+
     hasReadInitialUrl.current.add('districts');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Write Districts tab settings to URL
   useEffect(() => {
     if (!hasReadInitialUrl.current.has('districts')) return;
     if (activeTab !== 'districts') return;
@@ -240,16 +272,19 @@ const Index = () => {
       params.delete('invertColors');
     }
 
-    const newSearch = params.toString();
-    const currentPath = location.pathname;
-    const newUrl = `${currentPath}${newSearch ? '?' + newSearch : ''}`;
+    if (!showStateBoundaries) {
+      params.set('showStateBoundaries', 'false');
+    } else {
+      params.delete('showStateBoundaries');
+    }
+
+    const newUrl = buildUrl(params);
 
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, districtColorScale, districtInvertColors, selectedDistrictMapType, location.pathname, location.search, navigate]);
+  }, [activeTab, districtColorScale, districtInvertColors, selectedDistrictMapType, showStateBoundaries, darkMode, location.pathname, location.search, navigate]);
 
-  // Read URL parameters on initial mount for Regions tab
   useEffect(() => {
     if (hasReadInitialUrl.current.has('regions')) return;
     if (activeTab !== 'regions') return;
@@ -266,7 +301,6 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Write Regions tab settings to URL
   useEffect(() => {
     if (!hasReadInitialUrl.current.has('regions')) return;
     if (activeTab !== 'regions') return;
@@ -281,16 +315,13 @@ const Index = () => {
       params.delete('invertColors');
     }
 
-    const newSearch = params.toString();
-    const currentPath = location.pathname;
-    const newUrl = `${currentPath}${newSearch ? '?' + newSearch : ''}`;
+    const newUrl = buildUrl(params);
 
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, districtColorScale, districtInvertColors, location.pathname, location.search, navigate]);
+  }, [activeTab, districtColorScale, districtInvertColors, darkMode, location.pathname, location.search, navigate]);
 
-  // Read URL parameters on initial mount for State-Districts tab
   useEffect(() => {
     if (hasReadInitialUrl.current.has('state-districts')) return;
     if (activeTab !== 'state-districts') return;
@@ -319,7 +350,6 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Write State-Districts tab settings to URL
   useEffect(() => {
     if (!hasReadInitialUrl.current.has('state-districts')) return;
     if (activeTab !== 'state-districts') return;
@@ -348,21 +378,96 @@ const Index = () => {
       params.delete('hideValues');
     }
 
-    const newSearch = params.toString();
-    const currentPath = location.pathname;
-    const newUrl = `${currentPath}${newSearch ? '?' + newSearch : ''}`;
+    const newUrl = buildUrl(params);
 
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, stateDistrictColorScale, stateDistrictInvertColors, stateDistrictHideNames, stateDistrictHideValues, selectedStateForMap, selectedStateMapType, location.pathname, location.search, navigate]);
+  }, [activeTab, stateDistrictColorScale, stateDistrictInvertColors, stateDistrictHideNames, stateDistrictHideValues, selectedStateForMap, selectedStateMapType, darkMode, location.pathname, location.search, navigate]);
+
+  useEffect(() => {
+    if (hasReadInitialUrl.current.has('cities')) return;
+    if (activeTab !== 'cities') return;
+
+    const params = new URLSearchParams(location.search);
+
+    const city = params.get('city');
+    if (city) {
+      const cityEntry = cityList.find(c => c.displayName === city);
+      if (cityEntry) {
+        setSelectedCity(city);
+        const datasetParam = params.get('dataset');
+        if (datasetParam) {
+          const ds = getCityDataset(datasetParam);
+          if (ds && ds.displayName === city) {
+            setSelectedCityDataset(datasetParam);
+          }
+        } else {
+          const wardDs = cityEntry.datasets.find(d => d.type === 'wards') || cityEntry.datasets[0];
+          setSelectedCityDataset(wardDs.id);
+        }
+      }
+    }
+
+    const colorScale = params.get('colorScale') as ColorScale;
+    if (colorScale) setCityColorScale(colorScale);
+
+    const invertColors = params.get('invertColors');
+    if (invertColors) setCityInvertColors(invertColors === 'true');
+
+    const hideNames = params.get('hideNames');
+    if (hideNames) setCityHideNames(hideNames === 'true');
+
+    const hideValues = params.get('hideValues');
+    if (hideValues) setCityHideValues(hideValues === 'true');
+
+    hasReadInitialUrl.current.add('cities');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!hasReadInitialUrl.current.has('cities')) return;
+    if (activeTab !== 'cities') return;
+
+    const params = new URLSearchParams();
+
+    params.set('city', selectedCity);
+    params.set('dataset', selectedCityDataset);
+    params.set('colorScale', cityColorScale);
+    if (cityInvertColors) params.set('invertColors', 'true');
+    if (cityHideNames) params.set('hideNames', 'true');
+    if (cityHideValues) params.set('hideValues', 'true');
+
+    const newUrl = buildUrl(params);
+
+    if (location.pathname + location.search !== newUrl) {
+      navigate(newUrl, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedCity, selectedCityDataset, cityColorScale, cityInvertColors, cityHideNames, cityHideValues, darkMode, location.pathname, navigate]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     const basePath = value === 'states' ? '' : value;
-    const search = location.search;
-    navigate(`/${basePath}${search}`);
+    const globalParams = new URLSearchParams();
+    if (darkMode) globalParams.set('darkMode', 'true');
+    const search = globalParams.toString();
+    navigate(`/${basePath}${search ? '?' + search : ''}`);
   };
+
+  useEffect(() => {
+    const nonMapTabs = ['district-stats', 'help', 'credits', 'mcp'];
+    if (!nonMapTabs.includes(activeTab)) return;
+
+    const params = new URLSearchParams(location.search);
+    const hasDarkParam = params.get('darkMode') === 'true';
+    if (darkMode === hasDarkParam) return;
+
+    const newUrl = buildUrl(params);
+    if (location.pathname + location.search !== newUrl) {
+      navigate(newUrl, { replace: true });
+    }
+  }, [activeTab, darkMode, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -705,69 +810,66 @@ const Index = () => {
     }
   };
 
+  const handleCityDataLoad = (rawData: Array<{ ward?: string; ward_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
+    const data: CityWardData[] = rawData
+      .filter(row => row.value !== '' && row.value !== 'NA')
+      .map(row => ({
+        ward: row.ward || row.ward_name || '',
+        value: row.value
+      }));
+
+    setCityMapData(data);
+    setCityDataTitle(title || '');
+    setCityNAInfo(naInfo ? { wards: naInfo.states, count: naInfo.count } : undefined);
+
+    const values = data.map(d => d.value);
+    const dataType = detectDataType(values);
+    setCityDataType(dataType);
+
+    if (dataType === 'categorical') {
+      const categories = getUniqueCategories(values);
+      setCityCategoryColors(generateDefaultCategoryColors(categories));
+      setCityColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+    }
+  };
+
+  const getActiveMapRef = () => {
+    if (activeTab === 'states') return stateMapRef.current;
+    if (activeTab === 'districts' || activeTab === 'regions') return districtMapRef.current;
+    if (activeTab === 'cities') return cityMapRef.current;
+    return stateDistrictMapRef.current;
+  };
+
   const handleExportPNG = () => {
-    if (activeTab === 'states') {
-      if (stateMultiYearSeries.length > 0) {
-        // Export all multi-year state maps as a single combined PNG
-        exportMultiYearStatesAsPNG();
-      } else {
-        stateMapRef.current?.exportPNG();
-      }
-    } else if (activeTab === 'districts' || activeTab === 'regions') {
-      districtMapRef.current?.exportPNG();
+    if (activeTab === 'states' && stateMultiYearSeries.length > 0) {
+      exportMultiYearStatesAsPNG();
     } else {
-      stateDistrictMapRef.current?.exportPNG();
+      getActiveMapRef()?.exportPNG();
     }
   };
 
   const handleExportSVG = () => {
-    if (activeTab === 'states') {
-      if (stateMultiYearSeries.length > 0) {
-        // Export all multi-year state maps as a single combined SVG
-        exportMultiYearStatesAsSVG();
-      } else {
-        stateMapRef.current?.exportSVG();
-      }
-    } else if (activeTab === 'districts' || activeTab === 'regions') {
-      districtMapRef.current?.exportSVG();
+    if (activeTab === 'states' && stateMultiYearSeries.length > 0) {
+      exportMultiYearStatesAsSVG();
     } else {
-      stateDistrictMapRef.current?.exportSVG();
+      getActiveMapRef()?.exportSVG();
     }
   };
 
   const handleExportPDF = () => {
-    if (activeTab === 'states') {
-      if (stateMultiYearSeries.length > 0) {
-        // Export all multi-year state maps as a single combined PDF
-        exportMultiYearStatesAsPDF();
-      } else {
-        stateMapRef.current?.exportPDF();
-      }
-    } else if (activeTab === 'districts' || activeTab === 'regions') {
-      districtMapRef.current?.exportPDF();
+    if (activeTab === 'states' && stateMultiYearSeries.length > 0) {
+      exportMultiYearStatesAsPDF();
     } else {
-      stateDistrictMapRef.current?.exportPDF();
+      getActiveMapRef()?.exportPDF();
     }
   };
 
   const handleCopyToClipboard = () => {
-    if (activeTab === 'states') {
-      stateMapRef.current?.copyToClipboard();
-    } else if (activeTab === 'districts' || activeTab === 'regions') {
-      districtMapRef.current?.copyToClipboard();
-    } else {
-      stateDistrictMapRef.current?.copyToClipboard();
-    }
+    getActiveMapRef()?.copyToClipboard();
   };
 
   const handleDownloadCSVTemplate = () => {
-    if (activeTab === 'states') {
-      stateMapRef.current?.downloadCSVTemplate();
-    } else if (activeTab === 'districts' || activeTab === 'regions') {
-      districtMapRef.current?.downloadCSVTemplate();
-    } else {
-      stateDistrictMapRef.current?.downloadCSVTemplate();
-    }
+    getActiveMapRef()?.downloadCSVTemplate();
   };
 
   /**
@@ -1040,6 +1142,14 @@ const Index = () => {
         ogTitle: 'Individual State District Maps | BharatViz',
         ogDescription: 'Create detailed district-level maps for individual Indian states with customizable visualization options.'
       },
+      cities: {
+        title: 'City Ward Maps | BharatViz - 130+ Indian Cities',
+        description: 'Explore ward-level choropleth maps for 130+ Indian cities including Mumbai, Delhi, Bangalore, Chennai, and more. Data from DataMeet, SBM, and AMRUT sources. Free and open source.',
+        keywords: 'India city ward maps, municipal ward boundaries, city choropleth, Mumbai wards, Delhi wards, Bangalore wards, SBM ward data, AMRUT boundaries',
+        canonical: `${baseUrl}/cities`,
+        ogTitle: 'City Ward Maps | BharatViz - 130+ Indian Cities',
+        ogDescription: 'Explore ward-level choropleth maps for 130+ Indian cities. Data from DataMeet, SBM, and AMRUT sources.'
+      },
       'district-stats': {
         title: 'District Statistics & Boundary Comparison | BharatViz India Maps',
         description: 'Compare district counts and boundary definitions across LGD, NFHS-5, NFHS-4, Census 2011, and more. Explore how India\'s 750+ districts are defined across 27 administrative boundary sets spanning 1941 to present.',
@@ -1078,6 +1188,12 @@ const Index = () => {
   };
 
   const seoContent = getSEOContent();
+
+  const tabTriggerClass = `rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
+    darkMode
+      ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
+      : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
+  }`;
 
   return (
     <div className="min-h-screen p-3 sm:p-6" style={{ backgroundColor: darkMode ? '#000000' : undefined }}>
@@ -1161,84 +1277,58 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-2 bg-transparent p-0 h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 States
               </TabsTrigger>
               <TabsTrigger
                 value="districts"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 Districts
               </TabsTrigger>
               <TabsTrigger
                 value="regions"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 Regions
               </TabsTrigger>
               <TabsTrigger
                 value="state-districts"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 State-District
               </TabsTrigger>
               <TabsTrigger
+                value="cities"
+                className={tabTriggerClass}
+              >
+                Cities
+              </TabsTrigger>
+              <TabsTrigger
                 value="district-stats"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 District Stats
               </TabsTrigger>
               <TabsTrigger
                 value="help"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 Help
               </TabsTrigger>
               <TabsTrigger
                 value="credits"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 Credits
               </TabsTrigger>
               <TabsTrigger
                 value="mcp"
-                className={`rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
-                  darkMode
-                    ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
-                    : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
-                }`}
+                className={tabTriggerClass}
               >
                 MCP
               </TabsTrigger>
@@ -2028,6 +2118,168 @@ POST /api/v1/districts/map
                       https://github.com/saketlab/bharatviz
                     </a>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`space-y-6 ${activeTab === 'cities' ? 'block' : 'hidden'}`}>
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 order-2 lg:order-2">
+                <IndiaCityMap
+                  ref={cityMapRef}
+                  data={cityMapData}
+                  colorScale={cityColorScale}
+                  invertColors={cityInvertColors}
+                  dataTitle={cityDataTitle}
+                  colorBarSettings={cityColorBarSettings}
+                  geojsonPath={currentCityDataset?.geojsonPath || '/cities/mumbai.geojson'}
+                  hideWardNames={cityHideNames}
+                  hideWardValues={cityHideValues}
+                  onHideWardNamesChange={setCityHideNames}
+                  onHideWardValuesChange={setCityHideValues}
+                  dataType={cityDataType}
+                  categoryColors={cityCategoryColors}
+                  naInfo={cityNAInfo}
+                  darkMode={darkMode}
+                  cityName={currentCityDataset?.displayName || selectedCity}
+                />
+                <div className="mt-6 flex justify-center">
+                  <ExportOptions
+                    onExportPNG={handleExportPNG}
+                    onExportSVG={handleExportSVG}
+                    onExportPDF={handleExportPDF}
+                    onCopyToClipboard={handleCopyToClipboard}
+                    darkMode={darkMode}
+                    geojsonDownloadUrl={currentCityDataset?.geojsonPath}
+                    geojsonDownloadName={`${selectedCityDataset}.geojson`}
+                  />
+                </div>
+              </div>
+
+              <div className="lg:col-span-1 order-1 lg:order-1">
+                <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
+                  <Label htmlFor="city-select" className="text-sm font-medium mb-2 block">
+                    City
+                  </Label>
+                  <Popover open={cityPickerOpen} onOpenChange={setCityPickerOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        id="city-select"
+                        role="combobox"
+                        aria-expanded={cityPickerOpen}
+                        className={cn(
+                          "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                          !selectedCity && "text-muted-foreground"
+                        )}
+                      >
+                        {selectedCity || "Select a city"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0">
+                      <Command>
+                        <CommandInput placeholder="Search cities..." />
+                        <CommandList>
+                          <CommandEmpty>No city found.</CommandEmpty>
+                          <CommandGroup>
+                            {cityList.map((city) => (
+                              <CommandItem
+                                key={city.displayName}
+                                value={`${city.displayName} ${city.state}`}
+                                onSelect={() => {
+                                  setSelectedCity(city.displayName);
+                                  const datasets = getCityDatasets(city.displayName);
+                                  if (datasets.length > 0) {
+                                    const wardDataset = datasets.find(d => d.type === 'wards') || datasets[0];
+                                    setSelectedCityDataset(wardDataset.id);
+                                  }
+                                  setCityMapData([]);
+                                  setCityDataTitle('');
+                                  setCityPickerOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", selectedCity === city.displayName ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span>{city.displayName}</span>
+                                  <span className="text-xs text-muted-foreground">{city.state} &middot; {city.datasets.length} dataset{city.datasets.length !== 1 ? 's' : ''}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+
+                  {currentCityDatasets.length > 1 && (
+                    <div className="mt-3">
+                      <Label htmlFor="city-dataset-select" className="text-sm font-medium mb-2 block">
+                        Dataset
+                      </Label>
+                      <Select
+                        value={selectedCityDataset}
+                        onValueChange={(datasetId) => {
+                          setSelectedCityDataset(datasetId);
+                          setCityMapData([]);
+                          setCityDataTitle('');
+                        }}
+                      >
+                        <SelectTrigger id="city-dataset-select" className="w-full">
+                          <SelectValue placeholder="Select a dataset" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {currentCityDatasets.map((ds) => (
+                            <SelectItem key={ds.id} value={ds.id}>
+                              <div className="flex flex-col">
+                                <span>{ds.label || ds.type}</span>
+                                <span className="text-xs text-muted-foreground">{ds.featureCount} features &middot; {ds.source}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className={`mt-3 text-xs ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`}>
+                    {(() => {
+                      if (!currentCityDataset) return null;
+                      return (
+                        <>
+                          <span className="font-medium">{currentCityDataset.featureCount}</span> {currentCityDataset.type === 'wards' ? 'wards' : 'features'} &middot; Source: {currentCityDataset.source}
+                          {currentCityDataset.label && currentCityDataset.label !== 'Wards' && <> &middot; {currentCityDataset.label}</>}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <FileUpload
+                  onDataLoad={handleCityDataLoad}
+                  mode="states"
+                  darkMode={darkMode}
+                />
+                <div className="space-y-4 mt-6">
+                  <ColorMapChooser
+                    selectedScale={cityColorScale}
+                    onScaleChange={setCityColorScale}
+                    invertColors={cityInvertColors}
+                    onInvertColorsChange={setCityInvertColors}
+                    hideStateNames={cityHideNames}
+                    hideValues={cityHideValues}
+                    onHideStateNamesChange={setCityHideNames}
+                    onHideValuesChange={setCityHideValues}
+                    colorBarSettings={cityColorBarSettings}
+                    onColorBarSettingsChange={setCityColorBarSettings}
+                    darkMode={darkMode}
+                    dataType={cityDataType}
+                    categories={getUniqueCategories(cityMapData.map(d => d.value))}
+                    categoryColors={cityCategoryColors}
+                    onCategoryColorChange={(category, color) => {
+                      setCityCategoryColors(prev => ({ ...prev, [category]: color }));
+                    }}
+                  />
                 </div>
               </div>
             </div>

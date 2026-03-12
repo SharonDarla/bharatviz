@@ -90,6 +90,30 @@ const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
         { name: 'NFHS-5 States', path: '/India_NFHS5_states_simplified.geojson' },
         { name: 'NSSO Regions', path: '/India_NFHS5_NSSO_regions_boundaries.geojson' }
       ]
+    },
+    {
+      title: 'ramSeraph/indian_admin_boundaries',
+      description: 'Comprehensive collection of Indian administrative boundaries including ward-level data from SBM (Swachh Bharat Mission) covering 3700+ ULBs',
+      url: 'https://github.com/ramSeraph/indian_admin_boundaries',
+      usedFor: ['Ward boundaries for 90+ additional cities via SBM/AMRUT data'],
+    },
+    {
+      title: 'DataMeet',
+      description: 'Community-curated open data for Indian cities including municipal ward boundaries',
+      url: 'https://github.com/datameet/Municipal_Spatial_Data',
+      usedFor: ['City ward boundaries for 30+ cities'],
+    },
+    {
+      title: 'SBM/AMRUT',
+      description: 'Ward boundaries from the Swachh Bharat Mission and AMRUT government portals',
+      url: 'https://sbm.gov.in/',
+      usedFor: ['City ward boundaries (Indore, Nagpur, Patna, Surat, Thane, Visakhapatnam)'],
+    },
+    {
+      title: 'MCGM / MPCB',
+      description: 'Municipal Corporation of Greater Mumbai and Maharashtra Pollution Control Board ward and locality boundaries',
+      url: 'https://portal.mcgm.gov.in/',
+      usedFor: ['Mumbai wards + localities (227 features)'],
     }
   ];
 
@@ -98,7 +122,7 @@ const Credits: React.FC<CreditsProps> = ({ darkMode = false }) => {
       <div className={`border rounded-lg p-6 ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-muted/50'}`}>
         <h2 className={`text-xl font-bold mb-3 ${darkMode ? 'text-white' : ''}`}>About BharatViz</h2>
         <p className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
-          BharatViz is an open-source tool for creating fast, interactive choropleths (thematic maps) of India at state and district levels.
+          BharatViz is an open-source tool for creating fast, interactive choropleths (thematic maps) of India at state, district, and city ward levels.
         </p>
       </div>
 
