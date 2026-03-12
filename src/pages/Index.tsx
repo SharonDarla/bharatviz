@@ -128,6 +128,8 @@ const Index = () => {
   const stateDistrictMapRef = useRef<IndiaDistrictsMapRef>(null);
 
   const hasReadInitialUrl = useRef<Set<string>>(new Set());
+  const selectedStateRef = useRef(selectedStateForMap);
+  useEffect(() => { selectedStateRef.current = selectedStateForMap; }, [selectedStateForMap]);
 
   useEffect(() => {
     const tabFromPath = getTabFromPath(location.pathname);
@@ -471,8 +473,9 @@ const Index = () => {
       };
 
       const reconcileSelectedState = (states: string[]) => {
-        if (!states.includes(selectedStateForMap)) {
-          setSelectedStateForMap(fuzzyMatchState(selectedStateForMap, states) || states[0]);
+        const current = selectedStateRef.current;
+        if (!states.includes(current)) {
+          setSelectedStateForMap(fuzzyMatchState(current, states) || states[0]);
         }
       };
 
