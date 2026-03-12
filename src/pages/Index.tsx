@@ -462,6 +462,20 @@ const Index = () => {
 
   useEffect(() => {
     if (activeTab === 'state-districts') {
+      const fuzzyMatchState = (current: string, stateList: string[]): string | undefined => {
+        const normalized = current.toLowerCase().replace(/[^a-z]/g, '');
+        return stateList.find(s => {
+          const n = s.toLowerCase().replace(/[^a-z]/g, '');
+          return n.includes(normalized) || normalized.includes(n);
+        });
+      };
+
+      const reconcileSelectedState = (states: string[]) => {
+        if (!states.includes(selectedStateForMap)) {
+          setSelectedStateForMap(fuzzyMatchState(selectedStateForMap, states) || states[0]);
+        }
+      };
+
       const fetchStates = async () => {
         try {
           const mapping = await loadStateGistMapping();
@@ -473,12 +487,14 @@ const Index = () => {
           }
 
           setAvailableStates(states);
+          reconcileSelectedState(states);
         } catch (error) {
           console.error('Failed to fetch states from gist mapping:', error);
           const geojsonPath = getDistrictMapConfig(selectedStateMapType).geojsonPath;
           const states = await getUniqueStatesFromGeoJSON(geojsonPath);
           setAvailableStates(states);
           setStateGistMapping(null);
+          reconcileSelectedState(states);
         }
       };
 
@@ -728,6 +744,16 @@ const Index = () => {
       districtMapRef.current?.exportPDF();
     } else {
       stateDistrictMapRef.current?.exportPDF();
+    }
+  };
+
+  const handleCopyToClipboard = () => {
+    if (activeTab === 'states') {
+      stateMapRef.current?.copyToClipboard();
+    } else if (activeTab === 'districts' || activeTab === 'regions') {
+      districtMapRef.current?.copyToClipboard();
+    } else {
+      stateDistrictMapRef.current?.copyToClipboard();
     }
   };
 
@@ -1350,6 +1376,7 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
+                    onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
                   />
                 </div>
@@ -1415,6 +1442,7 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
+                    onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
                   />
                 </div>
@@ -1499,6 +1527,7 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
+                    onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
                   />
                 </div>
@@ -1573,7 +1602,10 @@ const Index = () => {
                     onExportPNG={handleExportPNG}
                     onExportSVG={handleExportSVG}
                     onExportPDF={handleExportPDF}
+                    onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
+                    geojsonDownloadUrl={getStateGeoJSONUrl(stateGistMapping, selectedStateMapType, selectedStateForMap)}
+                    geojsonDownloadName={`${selectedStateForMap}-${selectedStateMapType}-districts.geojson`}
                   />
                 </div>
               </div>
