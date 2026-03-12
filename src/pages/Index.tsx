@@ -1378,6 +1378,8 @@ const Index = () => {
                     onExportPDF={handleExportPDF}
                     onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
+                    geojsonDownloadUrl="/India_LGD_states.geojson"
+                    geojsonDownloadName="India_LGD_states.geojson"
                   />
                 </div>
               </div>
@@ -1444,6 +1446,8 @@ const Index = () => {
                     onExportPDF={handleExportPDF}
                     onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
+                    geojsonDownloadUrl={getDistrictMapConfig(selectedDistrictMapType)?.geojsonPath}
+                    geojsonDownloadName={`India_${selectedDistrictMapType}_districts.geojson`}
                   />
                 </div>
               </div>
@@ -1529,6 +1533,8 @@ const Index = () => {
                     onExportPDF={handleExportPDF}
                     onCopyToClipboard={handleCopyToClipboard}
                     darkMode={darkMode}
+                    geojsonDownloadUrl={getDistrictMapConfig('NSSO')?.geojsonPath}
+                    geojsonDownloadName="India_NSSO_regions.geojson"
                   />
                 </div>
               </div>
