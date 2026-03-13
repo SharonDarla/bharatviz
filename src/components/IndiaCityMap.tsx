@@ -131,7 +131,7 @@ export const IndiaCityMap = forwardRef<IndiaCityMapRef, IndiaCityMapProps>(({
   dataTitle,
   colorBarSettings,
   geojsonPath,
-  hideWardNames = true,
+  hideWardNames = false,
   hideWardValues = false,
   onHideWardNamesChange,
   onHideWardValuesChange,
@@ -222,6 +222,21 @@ export const IndiaCityMap = forwardRef<IndiaCityMapRef, IndiaCityMapProps>(({
         const response = await fetch(geojsonPath);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const geoData = await response.json();
+
+        // Normalize ward names: use "Ward <number>" when ward_name is missing or non-unique (e.g. "Na")
+        const names = geoData.features.map((f: GeoJSONFeature) => (f.properties.ward_name || '').toLowerCase().trim());
+        const uniqueNames = new Set(names.filter(Boolean));
+        if (uniqueNames.size < geoData.features.length * 0.5) {
+          for (const feature of geoData.features as GeoJSONFeature[]) {
+            const wn = (feature.properties.ward_name || '').trim().toLowerCase();
+            if (!wn || wn === 'na' || wn === 'n/a' || wn === 'm_ward') {
+              const num = feature.properties.ward_number ?? feature.properties.wardcode;
+              if (num != null) {
+                feature.properties.ward_name = `Ward ${num}`;
+              }
+            }
+          }
+        }
 
         setGeojsonData(geoData);
         calculateBounds(geoData);
@@ -986,6 +1001,9 @@ export const IndiaCityMap = forwardRef<IndiaCityMapRef, IndiaCityMapProps>(({
                 ? (typeof wardValue === 'number' ? roundToSignificantDigits(wardValue) : String(wardValue))
                 : '';
 
+              const fillColor = getWardColorForValue(wardValue, dataExtent, numericValues);
+              const textColor = fillColor === 'white' || fillColor === '#1a1a1a' || !isColorDark(fillColor) ? (darkMode ? '#ffffff' : '#0f172a') : '#ffffff';
+
               return (
                 <g key={`label-${index}`}>
                   {!hideWardNames && (
@@ -996,9 +1014,9 @@ export const IndiaCityMap = forwardRef<IndiaCityMapRef, IndiaCityMapProps>(({
                       dominantBaseline="central"
                       fontSize={finalFontSize}
                       fontWeight="600"
-                      fill={darkMode ? '#ffffff' : '#1e293b'}
-                      stroke={darkMode ? '#000000' : '#ffffff'}
-                      strokeWidth="2"
+                      fill={textColor}
+                      stroke={textColor === '#ffffff' ? 'rgba(0,0,0,0.5)' : 'none'}
+                      strokeWidth={textColor === '#ffffff' ? '1.5' : '0'}
                       paintOrder="stroke"
                       style={{ cursor: 'grab', userSelect: 'none' }}
                       onMouseDown={(e) => handleLabelMouseDown(e, wardKey, labelPosition.x, labelPosition.y)}
@@ -1015,9 +1033,9 @@ export const IndiaCityMap = forwardRef<IndiaCityMapRef, IndiaCityMapProps>(({
                       dominantBaseline="central"
                       fontSize={finalFontSize * 0.85}
                       fontWeight="500"
-                      fill={darkMode ? '#d1d5db' : '#374151'}
-                      stroke={darkMode ? '#000000' : '#ffffff'}
-                      strokeWidth="1.5"
+                      fill={textColor}
+                      stroke={textColor === '#ffffff' ? 'rgba(0,0,0,0.5)' : 'none'}
+                      strokeWidth={textColor === '#ffffff' ? '1' : '0'}
                       paintOrder="stroke"
                       style={{ cursor: 'grab', userSelect: 'none' }}
                       onMouseDown={(e) => handleLabelMouseDown(e, wardKey, labelPosition.x, labelPosition.y)}

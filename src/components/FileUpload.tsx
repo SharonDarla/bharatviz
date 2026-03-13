@@ -375,7 +375,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = mode === 'districts' ? 'bharatviz-district-template.csv' : 'bharatviz-state-template.csv';
+      const defaultName = mode === 'districts' ? 'bharatviz-district-template.csv' : 'bharatviz-state-template.csv';
+      a.download = templateCsvPath ? templateFile.split('/').pop() || defaultName : defaultName;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error) {

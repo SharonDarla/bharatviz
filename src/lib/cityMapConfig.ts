@@ -7,8 +7,10 @@
  */
 
 import cityGistMapping from './city-gist-mapping.json';
+import cityCsvGistMapping from './city-csv-gist-mapping.json';
 
 const gistUrls = cityGistMapping as Record<string, string>;
+const csvGistUrls = cityCsvGistMapping as Record<string, { demo: string; template: string }>;
 
 export interface CityDataset {
   id: string;
@@ -203,3 +205,7 @@ export function getCityDatasets(displayName: string): CityDataset[] {
  */
 export const DEFAULT_CITY = 'Mumbai';
 export const DEFAULT_CITY_DATASET = 'mumbai';
+
+export function getCityCsvUrls(datasetId: string): { demo?: string; template?: string } {
+  return csvGistUrls[datasetId] || {};
+}

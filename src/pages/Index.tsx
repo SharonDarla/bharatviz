@@ -14,7 +14,7 @@ import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, Command
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { DEFAULT_DISTRICT_MAP_TYPE, getDistrictMapConfig, getDistrictMapTypesList } from '@/lib/districtMapConfig';
-import { getCityList, getCityDataset, getCityDatasets, DEFAULT_CITY, DEFAULT_CITY_DATASET } from '@/lib/cityMapConfig';
+import { getCityList, getCityDataset, getCityDatasets, getCityCsvUrls, DEFAULT_CITY, DEFAULT_CITY_DATASET } from '@/lib/cityMapConfig';
 import { IndiaCityMap, type IndiaCityMapRef, type CityWardData } from '@/components/IndiaCityMap';
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
@@ -134,7 +134,7 @@ const Index = () => {
   const [selectedCity, setSelectedCity] = useState<string>(DEFAULT_CITY);
   const [selectedCityDataset, setSelectedCityDataset] = useState<string>(DEFAULT_CITY_DATASET);
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
-  const [cityHideNames, setCityHideNames] = useState(true);
+  const [cityHideNames, setCityHideNames] = useState(false);
   const [cityHideValues, setCityHideValues] = useState(false);
 
   const [darkMode, setDarkMode] = useState(() => new URLSearchParams(window.location.search).get('darkMode') === 'true');
@@ -810,11 +810,11 @@ const Index = () => {
     }
   };
 
-  const handleCityDataLoad = (rawData: Array<{ ward?: string; ward_name?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
+  const handleCityDataLoad = (rawData: Array<{ ward?: string; ward_name?: string; state?: string; value: number | string }>, title?: string, naInfo?: NAInfo) => {
     const data: CityWardData[] = rawData
       .filter(row => row.value !== '' && row.value !== 'NA')
       .map(row => ({
-        ward: row.ward || row.ward_name || '',
+        ward: row.ward || row.ward_name || row.state || '',
         value: row.value
       }));
 
@@ -2258,6 +2258,9 @@ POST /api/v1/districts/map
                 <FileUpload
                   onDataLoad={handleCityDataLoad}
                   mode="states"
+                  demoDataPath={getCityCsvUrls(selectedCityDataset).demo}
+                  templateCsvPath={getCityCsvUrls(selectedCityDataset).template}
+                  googleSheetLink={getCityCsvUrls(selectedCityDataset).template}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
@@ -2270,6 +2273,7 @@ POST /api/v1/districts/map
                     hideValues={cityHideValues}
                     onHideStateNamesChange={setCityHideNames}
                     onHideValuesChange={setCityHideValues}
+                    namesLabel="Hide ward names"
                     colorBarSettings={cityColorBarSettings}
                     onColorBarSettingsChange={setCityColorBarSettings}
                     darkMode={darkMode}
