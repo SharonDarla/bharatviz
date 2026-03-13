@@ -70,6 +70,15 @@ export async function processStateData(
   geojsonPath: string,
   fuzzyThreshold: number
 ): Promise<ProcessedData<StateData>> {
+  if (!geojsonPath) {
+    const validData = data.filter(d => {
+      const isNA = typeof d.value === 'string' && d.value === '' ||
+                   typeof d.value === 'number' && (isNaN(d.value) || !isFinite(d.value));
+      return !isNA;
+    });
+    return { matched: validData, naInfo: { states: [], count: 0 } };
+  }
+
   const geojson = await fetchGeoJSON(geojsonPath);
 
   const validStates: string[] = [];

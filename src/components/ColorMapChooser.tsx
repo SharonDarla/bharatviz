@@ -26,6 +26,7 @@ interface ColorMapChooserProps {
   hideValues?: boolean;
   onHideStateNamesChange?: (hide: boolean) => void;
   onHideValuesChange?: (hide: boolean) => void;
+  namesLabel?: string;
   showStateBoundaries?: boolean;
   onShowStateBoundariesChange?: (show: boolean) => void;
   hideDistrictNames?: boolean;
@@ -64,7 +65,7 @@ const colorScales: { [key: string]: { name: string; type: 'sequential' | 'diverg
   puor: { name: 'Purple-Orange', type: 'diverging' },
 };
 
-export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange, dataType = 'numerical', categories = [], categoryColors = {}, onCategoryColorChange, darkMode = false }) => {
+export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale, onScaleChange, invertColors, onInvertColorsChange, hideStateNames, hideValues, onHideStateNamesChange, onHideValuesChange, showStateBoundaries, onShowStateBoundariesChange, hideDistrictNames, onHideDistrictNamesChange, hideDistrictValues, onHideDistrictValuesChange, colorBarSettings, onColorBarSettingsChange, dataType = 'numerical', categories = [], categoryColors = {}, onCategoryColorChange, darkMode = false, namesLabel }) => {
   const sequentialScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'sequential');
   const divergingScales = Object.entries(colorScales).filter(([_, scale]) => scale.type === 'diverging');
 
@@ -297,7 +298,7 @@ export const ColorMapChooser: React.FC<ColorMapChooserProps> = ({ selectedScale,
               checked={hideStateNames}
               onChange={e => onHideStateNamesChange(e.target.checked)}
             />
-            Hide state names
+            {namesLabel || 'Hide state names'}
           </label>
         )}
         {hideValues !== undefined && onHideValuesChange && (
