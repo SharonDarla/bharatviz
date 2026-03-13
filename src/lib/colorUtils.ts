@@ -33,6 +33,7 @@ export function isColorDark(color: string): boolean {
 }
 
 export function roundToSignificantDigits(num: number, digits: number = 2): string {
+  if (isNaN(num) || !isFinite(num)) return '';
   if (num === 0) return '0';
   
   // Handle integers and simple decimals without scientific notation
