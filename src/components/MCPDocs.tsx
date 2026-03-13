@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Terminal, Server, Plug, Code2, Palette, Map } from 'lucide-react';
+import { Copy, Check, Terminal, Server, Plug, Code2, Palette, Map, Link2 } from 'lucide-react';
 
 interface MCPDocsProps {
   darkMode?: boolean;
@@ -195,6 +195,7 @@ npm run build`;
           Connect BharatViz to Claude, Codex, or any MCP-compatible AI assistant to generate
           India maps through natural language. The MCP server exposes 6 tools for listing maps,
           querying boundaries, and rendering high-quality choropleth images.
+          City ward maps for 130+ cities are available via the web UI.
         </p>
       </div>
 
@@ -207,7 +208,7 @@ npm run build`;
 
         <div className={cardClass}>
           <h4 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : ''}`}>
-            1. Add to your AI assistant (Recommended — no install needed)
+            1. Add to your AI assistant (Recommended - no install needed)
           </h4>
           <p className={`${textClass} mb-3`}>
             Use the hosted MCP server at <code className={`font-mono text-sm ${darkMode ? 'text-green-300' : 'text-green-700'}`}>https://bharatviz.saketlab.org/api/mcp</code>. No cloning or building required.
@@ -262,6 +263,7 @@ npm run build`;
             <li>"Create a dark mode map of literacy rates using the viridis color scale"</li>
             <li>"What maps are available for the 1971 Census boundaries?"</li>
             <li>"Give me a CSV template for LGD district boundaries"</li>
+            <li>"Show ward-level data for Mumbai" (via web UI - 130+ cities available)</li>
           </ul>
         </div>
       </div>
@@ -316,6 +318,67 @@ npm run build`;
             Single-state district map
           </h4>
           <CodeBlock code={exampleDistrictsCall} darkMode={darkMode} />
+        </div>
+      </div>
+
+      {/* Shareable URLs */}
+      <div className="space-y-4">
+        <h3 className={`text-xl ${headingClass} flex items-center gap-2`}>
+          <Link2 className="h-5 w-5" />
+          Shareable URLs
+        </h3>
+
+        <div className={cardClass}>
+          <p className={`${textClass} mb-3`}>
+            Every view in BharatViz is fully RESTful - all settings are persisted in the URL so you can bookmark, share, or embed any configuration.
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className={`w-full border-collapse border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <thead>
+                <tr>
+                  <th className={`${tableHeaderClass} border`}>Parameter</th>
+                  <th className={`${tableHeaderClass} border`}>Applies to</th>
+                  <th className={`${tableHeaderClass} border`}>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { param: 'colorScale', tabs: 'All map tabs', desc: 'Color scale name (e.g. viridis, spectral, blues)' },
+                  { param: 'invertColors', tabs: 'All map tabs', desc: 'Invert color scale (true/false)' },
+                  { param: 'hideNames', tabs: 'States, State-Districts, Cities', desc: 'Hide region labels (true/false)' },
+                  { param: 'hideValues', tabs: 'States, State-Districts, Cities', desc: 'Hide data values (true/false)' },
+                  { param: 'darkMode', tabs: 'All tabs', desc: 'Enable dark mode (true/false)' },
+                  { param: 'mapType', tabs: 'Districts, State-Districts', desc: 'Boundary set (e.g. LGD, census-2011-districts)' },
+                  { param: 'showStateBoundaries', tabs: 'Districts', desc: 'Show state boundary outlines (true/false, default true)' },
+                  { param: 'selectedState', tabs: 'State-Districts', desc: 'State to display (e.g. Maharashtra)' },
+                  { param: 'city', tabs: 'Cities', desc: 'City name (e.g. Mumbai, Delhi)' },
+                  { param: 'dataset', tabs: 'Cities', desc: 'City dataset ID (e.g. mumbai, delhi)' },
+                  { param: 'dataUrl', tabs: 'States, Districts', desc: 'Load CSV data from a URL on page load' },
+                ].map((row) => (
+                  <tr key={row.param}>
+                    <td className={`${tableCellClass} border font-mono text-xs`}>
+                      <span className={badgeClass}>{row.param}</span>
+                    </td>
+                    <td className={`${tableCellClass} border text-xs`}>{row.tabs}</td>
+                    <td className={`${tableCellClass} border`}>{row.desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <p className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>Examples:</p>
+            <CodeBlock code={`# Mumbai wards with viridis color scale in dark mode
+https://bharatviz.saketlab.org/cities?city=Mumbai&dataset=mumbai&colorScale=viridis&darkMode=true
+
+# Maharashtra districts with Census 2011 boundaries
+https://bharatviz.saketlab.org/state-districts?selectedState=Maharashtra&mapType=census-2011-districts
+
+# Load external CSV data into district view
+https://bharatviz.saketlab.org/districts?dataUrl=https://example.com/data.csv&colorScale=blues`} darkMode={darkMode} />
+          </div>
         </div>
       </div>
 

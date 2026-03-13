@@ -8,6 +8,7 @@ import { DiscreteLegend } from '@/lib/discreteLegend';
 import { CategoricalLegend } from '@/lib/categoricalLegend';
 import { GeoJSON } from 'geojson';
 import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
+import { svgToHighDpiBlob } from '@/lib/exportUtils';
 import { 
   BLACK_TEXT_STATES, 
   ABBREVIATED_STATES, 
@@ -50,6 +51,7 @@ export interface IndiaMapRef {
   exportPNG: () => void;
   exportSVG: () => void;
   exportPDF: () => void;
+  copyToClipboard: () => void;
   downloadCSVTemplate: () => void;
   getSVGElement: () => SVGSVGElement | null;
 }
@@ -93,47 +95,32 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     }
   }, [dataTitle]);
 
+  const getMapDimensions = () => ({
+    width: isMobile ? 350 : 800,
+    height: isMobile ? 350 : 800,
+  });
+
   const exportPNG = () => {
     if (!svgRef.current) return;
-    
-    const svg = svgRef.current;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
+    const { width, height } = getMapDimensions();
+    svgToHighDpiBlob(svgRef.current, { width, height }).then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bharatviz-states-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  };
 
-    const dpiScale = 300 / 96;
-    const originalWidth = isMobile ? 350 : 800;
-    const originalHeight = isMobile ? 350 : 800;
-
-    canvas.width = originalWidth * dpiScale;
-    canvas.height = originalHeight * dpiScale;
-
-    img.onload = () => {
-      if (ctx) {
-        ctx.scale(dpiScale, dpiScale);
-
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, originalWidth, originalHeight);
-
-        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `bharatviz-states-${Date.now()}.png`;
-            a.click();
-            URL.revokeObjectURL(url);
-          }
-        });
-      }
-    };
-    
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-    img.src = url;
+  const copyToClipboard = () => {
+    if (!svgRef.current) return;
+    const { width, height } = getMapDimensions();
+    svgToHighDpiBlob(svgRef.current, { width, height }).then((blob) => {
+      navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]).catch((err) => console.error('Failed to copy to clipboard:', err));
+    });
   };
 
   const exportSVG = () => {
@@ -570,6 +557,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
     exportPNG,
     exportSVG,
     exportPDF,
+    copyToClipboard,
     downloadCSVTemplate,
     getSVGElement: () => svgRef.current,
   }));

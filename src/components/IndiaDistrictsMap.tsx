@@ -13,6 +13,7 @@ import { DiscreteLegend } from '@/lib/discreteLegend';
 import { CategoricalLegend } from '@/lib/categoricalLegend';
 import { createRotationCalculator } from '@/lib/rotationUtils';
 import { DataType, CategoryColorMapping, getCategoryColor, getUniqueCategories } from '@/lib/categoricalUtils';
+import { svgToHighDpiBlob } from '@/lib/exportUtils';
 
 import polylabel from "@mapbox/polylabel";
 
@@ -88,6 +89,7 @@ export interface IndiaDistrictsMapRef {
   exportPNG: () => void;
   exportSVG: () => void;
   exportPDF: () => void;
+  copyToClipboard: () => void;
   downloadCSVTemplate: () => void;
 }
 
@@ -1045,48 +1047,32 @@ const maxValue = valueDomain ? valueDomain[1] : (numericValues.length > 0 ? Math
     });
   };
 
+  const getMapDimensions = () => ({
+    width: isMobile ? 350 : 800,
+    height: isMobile ? 440 : selectedState ? 1100 : 890,
+  });
+
   const exportPNG = () => {
     if (!svgRef.current) return;
-    
-    const svg = svgRef.current;
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    
-    // High DPI settings for 300 DPI output
-    const dpiScale = 300 / 96; // 300 DPI vs standard 96 DPI
-    const originalWidth = isMobile ? 350 : 800;
-    const originalHeight = isMobile ? 440 : selectedState ? 1100 : 890;
-    
-    canvas.width = originalWidth * dpiScale;
-    canvas.height = originalHeight * dpiScale;
-    
-    img.onload = () => {
-      if (ctx) {
-        // Scale the context to match the DPI
-        ctx.scale(dpiScale, dpiScale);
-        
-        // Fill background with white
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, originalWidth, originalHeight);
-        
-        // Draw the image at original size (context scaling handles the DPI)
-        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-        
-        canvas.toBlob((blob) => {
-          if (blob) {
-            saveAs(blob, `bharatviz-districts-${Date.now()}.png`);
-          }
-        });
-      }
-    };
-    
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    const { width, height } = getMapDimensions();
+    svgToHighDpiBlob(svgRef.current, { width, height }).then((blob) => {
+      saveAs(blob, `bharatviz-districts-${Date.now()}.png`);
+    });
+  };
+
+  const copyToClipboard = () => {
+    if (!svgRef.current) return;
+    const { width, height } = getMapDimensions();
+    svgToHighDpiBlob(svgRef.current, { width, height }).then((blob) => {
+      navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]).catch((err) => console.error('Failed to copy to clipboard:', err));
+    });
   };
 
   useImperativeHandle(ref, () => ({
     exportPNG,
+    copyToClipboard,
     exportSVG: () => {
       if (!svgRef.current) return;
       
