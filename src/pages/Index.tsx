@@ -947,7 +947,6 @@ const Index = () => {
 
   /**
    * Multi-year states export helpers
-   *
    * For multi-year state maps we want a single combined image/PDF/SVG
    * instead of one file per map.
    */
@@ -2113,93 +2112,93 @@ const Index = () => {
                     <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
                       <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>Python</h3>
                       <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-{`# Install dependencies
-pip install requests pillow pandas
-
-# Download client
-wget -q https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.py
-
-# Use in your code
-from bharatviz import BharatViz
-
-bv = BharatViz()
-# States map
-data = [{"state": "Maharashtra", "value": 75.8}]
-bv.generate_map(data, title="My Map", show=True)
-
-# Districts map (LGD)
-dist_data = [{"state_name": "Telangana", "district_name": "Adilabad", "value": 45.2}]
-bv.generate_districts_map(dist_data, map_type="LGD", show=True)
-
-# Districts map (NFHS5)
-bv.generate_districts_map(dist_data, map_type="NFHS5", show=True)`}
-                      </pre>
-                    </div>
-
-                    <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>R</h3>
-                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-{`# Install dependencies
-install.packages(c("R6", "httr", "jsonlite", "base64enc", "png"))
-
-# Source client
-source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
-
-# Use in your code
-library(R6)
-bv <- BharatViz$new()
-# States map
-data <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
-result <- bv$generate_map(data, title = "My Map")
-bv$show_map(result)
-
-# Districts map (LGD)
-dist_data <- data.frame(state_name = "Telangana", district_name = "Adilabad", value = 45.2)
-result_lgd <- bv$generate_districts_map(dist_data, map_type = "LGD")
-bv$show_map(result_lgd)
-
-# Districts map (NFHS5)
-result_nfhs5 <- bv$generate_districts_map(dist_data, map_type = "NFHS5")
-bv$show_map(result_nfhs5)`}
-                      </pre>
-                    </div>
-
-                    <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
-                      <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>R: Side-by-side maps (high resolution)</h3>
-                      <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-{`library(R6)
-library(grid)
-library(gridExtra)
-
-source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
-
-bv <- BharatViz$new()
-
-# Generate two maps
-data1 <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
-data2 <- data.frame(state = c("Maharashtra", "Kerala"), value = c(45.2, 62.1))
-
-map1 <- bv$generate_map(data1, title = "Metric A", color_scale = "blues")
-map2 <- bv$generate_map(data2, title = "Metric B", color_scale = "reds")
-
-# Get raster grobs (preserves resolution)
-grob1 <- bv$get_grob(map1)
-grob2 <- bv$get_grob(map2)
-
-# Display side by side
-grid.arrange(grob1, grob2, ncol = 2)
-
-# Save as high-res PNG (300 DPI)
-png("comparison.png", width = 16, height = 8, units = "in", res = 300)
-grid.arrange(grob1, grob2, ncol = 2)
-dev.off()
-
-# Save as PDF
-pdf("comparison.pdf", width = 16, height = 8)
-grid.arrange(grob1, grob2, ncol = 2)
-dev.off()`}
-                      </pre>
-                    </div>
+  {`# Install dependencies
+  pip install requests pillow pandas
+  
+  # Download client
+  wget -q https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.py
+  
+  # Use in your code
+  from bharatviz import BharatViz
+  
+  bv = BharatViz()
+  # States map
+  data = [{"state": "Maharashtra", "value": 75.8}]
+  bv.generate_map(data, title="My Map", show=True)
+  
+  # Districts map (LGD)
+  dist_data = [{"state_name": "Telangana", "district_name": "Adilabad", "value": 45.2}]
+  bv.generate_districts_map(dist_data, map_type="LGD", show=True)
+  
+  # Districts map (NFHS5)
+  bv.generate_districts_map(dist_data, map_type="NFHS5", show=True)`}
+                        </pre>
+                      </div>
+  
+                      <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
+                        <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>R</h3>
+                        <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+  {`# Install dependencies
+  install.packages(c("R6", "httr", "jsonlite", "base64enc", "png"))
+  
+  # Source client
+  source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
+  
+  # Use in your code
+  library(R6)
+  bv <- BharatViz$new()
+  # States map
+  data <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
+  result <- bv$generate_map(data, title = "My Map")
+  bv$show_map(result)
+  
+  # Districts map (LGD)
+  dist_data <- data.frame(state_name = "Telangana", district_name = "Adilabad", value = 45.2)
+  result_lgd <- bv$generate_districts_map(dist_data, map_type = "LGD")
+  bv$show_map(result_lgd)
+  
+  # Districts map (NFHS5)
+  result_nfhs5 <- bv$generate_districts_map(dist_data, map_type = "NFHS5")
+  bv$show_map(result_nfhs5)`}
+                        </pre>
+                      </div>
+  
+                      <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
+                        <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>R: Side-by-side maps (high resolution)</h3>
+                        <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+  {`library(R6)
+  library(grid)
+  library(gridExtra)
+  
+  source("https://raw.githubusercontent.com/saketlab/bharatviz/refs/heads/main/server/examples/bharatviz.R")
+  
+  bv <- BharatViz$new()
+  
+  # Generate two maps
+  data1 <- data.frame(state = c("Maharashtra", "Kerala"), value = c(75.8, 85.5))
+  data2 <- data.frame(state = c("Maharashtra", "Kerala"), value = c(45.2, 62.1))
+  
+  map1 <- bv$generate_map(data1, title = "Metric A", color_scale = "blues")
+  map2 <- bv$generate_map(data2, title = "Metric B", color_scale = "reds")
+  
+  # Get raster grobs (preserves resolution)
+  grob1 <- bv$get_grob(map1)
+  grob2 <- bv$get_grob(map2)
+  
+  # Display side by side
+  grid.arrange(grob1, grob2, ncol = 2)
+  
+  # Save as high-res PNG (300 DPI)
+  png("comparison.png", width = 16, height = 8, units = "in", res = 300)
+  grid.arrange(grob1, grob2, ncol = 2)
+  dev.off()
+  
+  # Save as PDF
+  pdf("comparison.pdf", width = 16, height = 8)
+  grid.arrange(grob1, grob2, ncol = 2)
+  dev.off()`}
+                        </pre>
+                      </div>
 
                     <div className={`p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : ''}`}>
                       <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : ''}`}>Direct API reference</h3>
@@ -2540,5 +2539,4 @@ POST /api/v1/districts/map
     </div>
   );
 };
-
 export default Index;
