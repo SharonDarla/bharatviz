@@ -1,0 +1,518 @@
+{
+  "agra": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/36cd559ecc512409474809f6a8aae22c2d73ba8e/agra_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ddd5814e8104f973b6c342d3249e4f0fcda7c945/agra_template.csv"
+  },
+  "ahmedabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1e962a33f30eb414af5f6172cc4e3ab47257cb86/ahmedabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/cc3108b99d4fcf8006cb5973ec32791e739beba2/ahmedabad_template.csv"
+  },
+  "ajmer": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/76a97ce07d95023fc77ee888456d9ec3cf4a032c/ajmer_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a81bc326c4b30c84477c8582082cebb16f302caa/ajmer_template.csv"
+  },
+  "alappuzha": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4edace39002297c44d66c141290b4ac61db299c3/alappuzha_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1d15b703da995df801d3be5c54d1964f56142cf1/alappuzha_template.csv"
+  },
+  "aligarh": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d234f65cc30b05acbf288965ea7bc27182794307/aligarh_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/43e6e572317dd1af48d4ea36ca42aa150e52331d/aligarh_template.csv"
+  },
+  "alwar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/12e2e975f2cc59f935fc57d46d913963e326ce5d/alwar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/67efdae237718d74e795efa5e5f93250e4a89186/alwar_template.csv"
+  },
+  "ambala": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/cbb5e8939c017b9ef468e831691812a6409ea0cc/ambala_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d4071db257dbba48a37d228b9959f24a905b1499/ambala_template.csv"
+  },
+  "ambarnath": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4ae1e701b31b646b5769f275cac0a06a17a0fef7/ambarnath_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/bf6708db1c18e1b8af03091d19bb3de46116ec91/ambarnath_template.csv"
+  },
+  "amritsar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d189ae01339e557077bd3c67521850af9976cf6c/amritsar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/3dacfed261715b7d48c6869dd8841e24079c4dd8/amritsar_template.csv"
+  },
+  "aurangabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e1fbce6cfb2b58293fad1b7dc34f2ca5beb45984/aurangabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/fa3805eaba8f7c67da87a0e0c5e7d36ea110b596/aurangabad_template.csv"
+  },
+  "ayodhya": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/558f479c16ad2290c0eb0dbbce7da29f7fcaa4a8/ayodhya_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b9b997a6c5e9fb21e9a15ab08137f13f60452e1f/ayodhya_template.csv"
+  },
+  "bangalore": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/39375e57af096ce3da95abccf1100a8e56613332/bangalore_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a042581df1bfef532183818d6755ba477f117f23/bangalore_template.csv"
+  },
+  "bangalore_old_wards": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/9c6584f6cfd6f5a616c827494d6263cdce4c05aa/bangalore_old_wards_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/87510665c9a0294a6d97f84b597cd0162e4f4f75/bangalore_old_wards_template.csv"
+  },
+  "bareilly": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5bfabc12972b59be463a1b4250c94fdb7d1eb29d/bareilly_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c71943de34e2823226559409f708b962042fe5bf/bareilly_template.csv"
+  },
+  "belagavi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/25c66e6c263d54e171525f812da4ec70452943f5/belagavi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1b3f2498d7e8dbb2882be1eb78e42fcf1ee0e271/belagavi_template.csv"
+  },
+  "bharatpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a5e137559a5a18b54aa1e0e29a10f275b41dd2ee/bharatpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/451bd597e0ac51ef64342e3a0eb5d53a128a7705/bharatpur_template.csv"
+  },
+  "bhavnagar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/3a06bcfc18592edfe3bccc3272f06d1de79ece32/bhavnagar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2f208a32c594cc2fd503851b1bd0c1f646b8fd82/bhavnagar_template.csv"
+  },
+  "bhilai": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/edc1835df454881fa4e00bb7686679aa5f840739/bhilai_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e59f10ce172e626aabc54083f45d96d1d54d031c/bhilai_template.csv"
+  },
+  "bhilwara": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/26b79799be86f6ce5305d77df56d9905ec458294/bhilwara_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/df069625bc361f0ef4ea4276ca7e0725425d8457/bhilwara_template.csv"
+  },
+  "bhopal": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/95fe5847617b7c689609b8741b26ccc129e26f6a/bhopal_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f3d59b8e797b7d200e8c08e0e9f514929c4c7d30/bhopal_template.csv"
+  },
+  "bhubaneswar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e23fead657b52aaa2cacd2251879dd8efba7e87b/bhubaneswar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/730a7875d7b9d89b2a75fc08b10a6ff60838fe9b/bhubaneswar_template.csv"
+  },
+  "bidhannagar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/932dba846fa36b391bfbd656b2762819ef8940a7/bidhannagar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ddfb532727a381b0be282d37e17dc17f11bda49b/bidhannagar_template.csv"
+  },
+  "bikaner": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f253fc7defa221ee339f3109939ca6304a4f8d54/bikaner_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/29f16fd547f06955bfdf4a9c172fbdc91208aa29/bikaner_template.csv"
+  },
+  "bilaspur_cg": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a95a7b0fab47308e93ca986178feff3384690730/bilaspur_cg_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/22416eb271da56c20b7f65232b056b93614a2396/bilaspur_cg_template.csv"
+  },
+  "bodh_gaya": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/af8663f6ca41485995d90f8dae010e70ef299248/bodh_gaya_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/bc95341b63e1b20fc574168e782db807c21b2819/bodh_gaya_template.csv"
+  },
+  "burdwan": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/6eec3038776d8b42973eecbdf39ac82ac6b34aa6/burdwan_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b09132ec23c484293508017cd568c777d04edcac/burdwan_template.csv"
+  },
+  "chandigarh": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d9b2653da25ca8449545bdb33888072a2889b253/chandigarh_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/6b778894acb7f94ffd70caf85caffa269d0d2190/chandigarh_template.csv"
+  },
+  "chennai": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b88d259f7a5f7c1f2f963411598e611730f4b1b1/chennai_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/0775c8a17a5043f2d9cf22813868a8567b5e94f7/chennai_template.csv"
+  },
+  "coimbatore": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/30796bb2773a0547167b26c21c55e0a80599bdbb/coimbatore_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e7c8f1da099f9b67b67448cfe2733ddda082e63c/coimbatore_template.csv"
+  },
+  "cuttack": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/47d1e864c7818bcb1b9b9776ff33114f1703e4fa/cuttack_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c4d82bb19f0a2acafc14836ded394d0db90e229c/cuttack_template.csv"
+  },
+  "dehradun": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4459cdf6900f93dd9d7d18a11f8d83943f5cf670/dehradun_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/16cec2b9453c1467b4b330f17859d9685cb382ed/dehradun_template.csv"
+  },
+  "delhi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2bba5a07ba2b629cf8c9c5a8e5ea139586fa59dd/delhi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/56e196d2d0976147e1292342700b7c31546aa595/delhi_template.csv"
+  },
+  "dhanbad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f0f61152f125c274c4b3c6bfcc2c0b6eb14724e9/dhanbad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ece2f35e6bd21f4aaa950d9ff05c286c779241e1/dhanbad_template.csv"
+  },
+  "durg": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/0a5edb4d148a9331e0e43d2dad253455b625a378/durg_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/6ee6cacd5fc8d51ed0952ac066e62ba2336fec36/durg_template.csv"
+  },
+  "durgapur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/19222ec1d5f427f6a32d36bc0a2e942697da2bce/durgapur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5a558ff9c664723ef72ab39f0956c550be9e62b8/durgapur_template.csv"
+  },
+  "english_bazar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/7fe9bd31125bb303e1c43c5ed8013a0ab3f80e9c/english_bazar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d43d6e30f78b5e72700d2564674f5a0447fc3e11/english_bazar_template.csv"
+  },
+  "erode": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4ca67b17275a75c33e6fa2385659be90858ed085/erode_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/8f053a0c8dcf1b0336dad7d170f2b2b0aac4bb78/erode_template.csv"
+  },
+  "faridabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f13f2a863421172135173b97713eb526d079530c/faridabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a116fad97c0025f68cbd41428d7e2b7ab214d36a/faridabad_template.csv"
+  },
+  "firozabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/37accd328bbad31a0851c8aa208ef32b05f71874/firozabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/419b5fd082b70d21d7e2187d8e4e686a2de9aa1d/firozabad_template.csv"
+  },
+  "gandhinagar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/14a1d11dc504519c69fa50eebafc09adeaf3dc53/gandhinagar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1407d04840652e08240d60641b6b4ca7087a5cf7/gandhinagar_template.csv"
+  },
+  "ganganagar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/98f5ba08f3036501cb549942da14227c166dec80/ganganagar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/451bd597e0ac51ef64342e3a0eb5d53a128a7705/ganganagar_template.csv"
+  },
+  "ghaziabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/3bd167f8c64efeae06ef2a6e15cea68188451bc2/ghaziabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b0a843df0d92f6f571389943899c0643f2f715ac/ghaziabad_template.csv"
+  },
+  "gorakhpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a324334475bcdd650de1e1ea6ae764de620754de/gorakhpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1cecd4a145d638decc3bea753f1cc7f7ca0d0b38/gorakhpur_template.csv"
+  },
+  "guntur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f3704a53b6a7070a2a17b34619ec51a2f4252dd8/guntur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5c35b0d6aa8606d78162f98055c5e60d51fb141a/guntur_template.csv"
+  },
+  "gwalior": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/36ab3eceb17fe1ce9f52f60b7f41420e5c771ed5/gwalior_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ccd59df96d192d2027f30cb122065dbbc4061b60/gwalior_template.csv"
+  },
+  "haldia": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/31e648ef37383548ab9af963a3e558e498f5d85b/haldia_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d5c0f32645e5ee57a9ade07aaad6855d0c8dd51c/haldia_template.csv"
+  },
+  "haldwani": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/bdcbd01f99f7b66712996a814ded9e1069fd9efb/haldwani_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/625e0c3286f7973fd5bc20d1aeba2d91c351301f/haldwani_template.csv"
+  },
+  "hisar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/40f1b1d9af6490233c7a283fea8ae081f7ad767d/hisar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/8caa8a04ea57cc7f36ea95bc957cc546f72b61c5/hisar_template.csv"
+  },
+  "hubli_dharwad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/996e7fa295069b1c69a7217428d34c5ecd73555c/hubli_dharwad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/acf3124460b3ff5a5a1e7d95d40d2ef47c008628/hubli_dharwad_template.csv"
+  },
+  "hyderabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e2c81423978d68f6cebef903ab5a443b5699da13/hyderabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2790c0ea16409fc7b9526c3dd7c08e72fd152a05/hyderabad_template.csv"
+  },
+  "indore": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a56e5f844b705f4530ee13e2cc90cc5c0dda0658/indore_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2fd0b4660acdaed7cedfa0a1703d39e7e350875c/indore_template.csv"
+  },
+  "jabalpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/adad0c6b05e15918b64e893f1190b34e68eb07a4/jabalpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e5c53f8a132b4b9b95c7dea16dd5a8a6f6ce5dfe/jabalpur_template.csv"
+  },
+  "jaipur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/80ca456d64a396ccbd3ac58a26b786f63f23362d/jaipur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a73aebd246e8ba938ca1fec69b263141be363a72/jaipur_template.csv"
+  },
+  "jalandhar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/7468bccb43a9c2747e89d356f08eafc8aeabbe0c/jalandhar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c2f95d280ea1bc2727213df358409dbb83fbb036/jalandhar_template.csv"
+  },
+  "jammu": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d154cfd3f1e630e6005684e4b717544262fac913/jammu_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/399dac22b4b119d889e2457785f6fb39f9a99d1f/jammu_template.csv"
+  },
+  "jamnagar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b28228aefd06d199bcb1ce2b28125ed5895999d1/jamnagar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/52ee9fa82bf81a96884b0ff7768f5a47397fae95/jamnagar_template.csv"
+  },
+  "jamshedpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/3385a4ca0e47c2fe8490727dec85825e06aa9df9/jamshedpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/bfd1ca982e34410709fe5e4cf8d5ec9c707e3966/jamshedpur_template.csv"
+  },
+  "jhansi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5142f1d34b1750fbf39262a17cc198a7ae39a961/jhansi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/43b4aa3e1c03afea577c29912a8ba95ea34d9a8a/jhansi_template.csv"
+  },
+  "jodhpur_north": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/25fa721d5ab2a80ded220890c1753b559b39bac4/jodhpur_north_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/91f92847ddee94a1ebe3ffc1a8143f20d85ae539/jodhpur_north_template.csv"
+  },
+  "jodhpur_south": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4a415779beaca96b9ec718e5de85d332d6e6901b/jodhpur_south_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/70ddaa91f6df2d98996db854a8fd6562d0c70ae6/jodhpur_south_template.csv"
+  },
+  "junagadh": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a15a6e923515159440916b0471524ef97a8f7926/junagadh_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/cabe94238c12729d991ca467c5b71e5b9d8c43a3/junagadh_template.csv"
+  },
+  "kakinada": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/da9acea605f446813a6ef02f3e6b098f7c8ae09a/kakinada_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ad29d18e457f4408cb9d06f6014f2913c07ea431/kakinada_template.csv"
+  },
+  "kalyan_dombivali": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/74954d7595cdde16cc75ccab87e66b312f2dc1e9/kalyan_dombivali_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/9176d4c8e0fb0cf9577a4dfddad12c617476fb80/kalyan_dombivali_template.csv"
+  },
+  "kanpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/3cb1a29d8c1dbbf2879a4c29e048f10d46f1d101/kanpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4a138c75f701d730fc091ec2cb8fb8f6b5c69469/kanpur_template.csv"
+  },
+  "karnal": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d911eafb47f2aefadcd8b3421d92d746b3f3758f/karnal_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4c66d93b97a5fa49b3d37677f896bbbcffa28af0/karnal_template.csv"
+  },
+  "katihar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/28cb8c22ef889d621e026d51a00eb9f2fec09767/katihar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/879853c7e738791de9a94fd752eea601d2d89827/katihar_template.csv"
+  },
+  "khammam": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/47ec5f78ce0c5960dcc45dbbe0ef3421bfd9bba5/khammam_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/daff847d49d9acc345e18d227b1e7fc74ad07050/khammam_template.csv"
+  },
+  "kharagpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/98f61289d4550aa4dcddf5576bd0bc14de9565e2/kharagpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b09132ec23c484293508017cd568c777d04edcac/kharagpur_template.csv"
+  },
+  "kishangarh": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/bb5a1193ca9562f2aa8ea5ac776097f634b59c12/kishangarh_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/879853c7e738791de9a94fd752eea601d2d89827/kishangarh_template.csv"
+  },
+  "kochi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a04097642d61612b13634741f1fbdb159c3b82f2/kochi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f98f8b2d73764c8e6e83cba06762962f59ec194a/kochi_template.csv"
+  },
+  "kolkata": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/eab75fc966826bb57dd654fd0b42feff53dfe1e9/kolkata_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/66cf7cc6456454b3147fd3f6fb8fb9926e3e4df0/kolkata_template.csv"
+  },
+  "kollam": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a87bccde23ae78d7e454fc7877b8043359881aaf/kollam_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a1c359b8b8e5f1a0dc1fa90735379aa8f616aa76/kollam_template.csv"
+  },
+  "korba": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e60f0fd67efd7f6b72d7e3a05571c989fe111459/korba_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a510c97de9ce4194a0e3a9331366be3b83f6beef/korba_template.csv"
+  },
+  "kota_north": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/aef2aa9d03c3b524acd799c522b8944922ecd422/kota_north_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/df069625bc361f0ef4ea4276ca7e0725425d8457/kota_north_template.csv"
+  },
+  "kota_south": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b6119e70b86de38732abcce4a590d65956666b33/kota_south_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/250f6796442efecb689c693a117e9b84b234de2d/kota_south_template.csv"
+  },
+  "kozhikode": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f46e40ff78f23ac7d9f8cd763cc8664a333f49f1/kozhikode_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b5da6fc5b9e694e34f77c767344285ba055d0666/kozhikode_template.csv"
+  },
+  "kurnool": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/0eb09b233850484388455e08bb2ce847b7ab3dc4/kurnool_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d403902e3040e77f45d4e44cce26f7405f5fc1b2/kurnool_template.csv"
+  },
+  "loni": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/55853d8436ccd7c3807b8bbb6b15e1900da78562/loni_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4646f3b2d147cd1d487df5c705f65d1317002631/loni_template.csv"
+  },
+  "lucknow": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/cc0d85355ed5bf2413540352a05e7305bc9175a4/lucknow_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5396e746340aa033c3c2eecb0f93c00f23ecdefb/lucknow_template.csv"
+  },
+  "ludhiana": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a72bfaa1addd940887a1fb3d3f3a69af211c491c/ludhiana_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/68f892276e6ccd9f2a4a87bb80c17f2638b93bd2/ludhiana_template.csv"
+  },
+  "madurai": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a075effe1c7c4976cfc79cf0d1904170ea149683/madurai_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/71a2ba8eaa8ebb9ee6a90e806f761ecdcbacecbc/madurai_template.csv"
+  },
+  "mangalore": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e0b097130c7c9149a6dffa633a391d4b92a656e8/mangalore_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/6d87e763336caeaf2e2f76e98a373a505c9702cd/mangalore_template.csv"
+  },
+  "mathura": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/88dbccc8c371a77cdc31f561cb85166a5812bc51/mathura_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/801a1b50b4a3e1f3f1e81872839b8ba45d7526dc/mathura_template.csv"
+  },
+  "meerut": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/efb5cdc10ed435fd98dac97688bb8d0034a3b5f8/meerut_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/058788ca44af8c9b60d0a02dccf6bebdf8904163/meerut_template.csv"
+  },
+  "mira_bhayandar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/206f6231c842ca7287cd00ecefcb660cd90a605b/mira_bhayandar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/513f52374d48d826d57b77b6ee169a6fbc1bee7c/mira_bhayandar_template.csv"
+  },
+  "mmr": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/41eb80d7ed3a29b82e54bb716ca24d0136b81133/mmr_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b630dc5dc71a38bf703ce02450a300e2672d4b99/mmr_template.csv"
+  },
+  "moradabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/607dacbedc5c26f4edb2eab2766e0355c82de7a9/moradabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/df069625bc361f0ef4ea4276ca7e0725425d8457/moradabad_template.csv"
+  },
+  "mumbai": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2e0c044dec0103468c4be9a5e3682e84fc010a52/mumbai_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/604e52d22ea803016661f6b154bf993be6b24f99/mumbai_template.csv"
+  },
+  "mumbai_v2": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c7f3eefe4ad57de77aa83410ab2db38a14e6164b/mumbai_v2_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b5af70f57513321b33b3373248c9fd935460f95f/mumbai_v2_template.csv"
+  },
+  "mysuru": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b0b400b562a90546d1b6d7ee1ade2b56c230850d/mysuru_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d257facdbad4d62c50379e47d1fde72d53a42995/mysuru_template.csv"
+  },
+  "nagercoil": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2a521307f4d4e347df9c3ebdbb185bc11cc1bf3e/nagercoil_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/373492c43ef20e86b1e0b98d51b6e96b1c4992c7/nagercoil_template.csv"
+  },
+  "nagpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/dbf75eb63fbd20ff50b15de0a37d66144aa85f33/nagpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5d8111860dc613ff079fcb58e033ee1a346ba7bb/nagpur_template.csv"
+  },
+  "nellore": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/73ffdb84704ea0bb7cd5b418413658a7187dc04d/nellore_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/490d9bb2bfabde7731a18fe5ae179dfe85a603d7/nellore_template.csv"
+  },
+  "nizamabad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b3ff7623017e34d01a79285f40ac9d879624fb2e/nizamabad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/daff847d49d9acc345e18d227b1e7fc74ad07050/nizamabad_template.csv"
+  },
+  "nmmc": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4cf4bd696bb9b38d34551add607ad9c2df68dde3/nmmc_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f292e0292b3726dfea6c444b36a6b6d8eb7afc90/nmmc_template.csv"
+  },
+  "palakkad": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/312296e085cd2f21770a6038ce76e1e7c5dada13/palakkad_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5779c8ae0ed32797bb1242707249de6630de4443/palakkad_template.csv"
+  },
+  "panipat": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b037a0f93254ba7f3a02b5c955ab146007334da7/panipat_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/374edcee9d5012da0e0455bd5ceb1d4de9425c93/panipat_template.csv"
+  },
+  "patiala": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/574b8d0446363fcdaeda15170a85c57cbf944b8e/patiala_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/daff847d49d9acc345e18d227b1e7fc74ad07050/patiala_template.csv"
+  },
+  "patna": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d5ea5808ba8f3cc0c3517ef3eb54c0442e0afd34/patna_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1c759cf4642c9ddd3f03fd844494e26b692c43cc/patna_template.csv"
+  },
+  "pcmc": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c5891625996384c4047a1b10e80f8ae1da066ab0/pcmc_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/aa14bb508805108a29fbe951d9e3fba23eba94f3/pcmc_template.csv"
+  },
+  "prayagraj": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2a066cb8822bcf6b08a289ca07d4bf35ce13c3b0/prayagraj_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/9078d94f39c773d5f7686fe9262649f42a754368/prayagraj_template.csv"
+  },
+  "pune": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a20845809a2d5d68c28b6442fa349bcfe529a427/pune_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/6fd24b88123a54ad1cb890125df1a3f9d44d1746/pune_template.csv"
+  },
+  "purnia": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c0accb4738dd6d8c48f4bc860c72394f195c5575/purnia_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ea5c3af670dfe70adfbb04759e3c72eb0ecfb2ad/purnia_template.csv"
+  },
+  "raiganj": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/db8f7837e4fd8e8ca6abbb74f083373a9b9f5f3a/raiganj_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/9f107d34255249f60852aa9365fa80dc275993de/raiganj_template.csv"
+  },
+  "raipur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/f5747cb60e42730318600104f271811533bdf761/raipur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e3f1e1502eaa1cf343af74471c1fbf91c777a1c1/raipur_template.csv"
+  },
+  "rajahmundry": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/1842dbbd0a7e31ad25d65e099df922e85c366a1e/rajahmundry_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ad29d18e457f4408cb9d06f6014f2913c07ea431/rajahmundry_template.csv"
+  },
+  "rajkot": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a8d899913f96e7c506e9d2dd058ffc5511e6b97f/rajkot_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ab4eee3b44974c48691949eb697c3469ecc8949b/rajkot_template.csv"
+  },
+  "ranchi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/93145be2aedc46a647c9ebfa0df71a245eab6158/ranchi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c38b1163d103dca090ffce98ad49a4fb210b0afe/ranchi_template.csv"
+  },
+  "rohtak": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ac5fffd17716828e05afa331ddc6c3ad8e5d0731/rohtak_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/85ccde9953c9595beff16da1871c8ada4dda66da/rohtak_template.csv"
+  },
+  "rourkela": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/fb52e37da907f93af52ef01653e2367640407dc0/rourkela_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ea036e9d142023f5da652e2144ec20a3de1a45d7/rourkela_template.csv"
+  },
+  "salem": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b8c573b2fed46f831a7b8e442413ebc70fa220c9/salem_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/e20332b975323312141b8157a815f17e82ed031b/salem_template.csv"
+  },
+  "sambalpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ab3901b11cd0da6d00354501f4b51e6313da19d1/sambalpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d03bb5253b0d80870da06d313d22b9097b93ba32/sambalpur_template.csv"
+  },
+  "shahjahanpur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ba5fbc1bd9a1550c071fec99cf8ecff6445edf3e/shahjahanpur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a513c5d58aa0700ce2fda6f0e5b053758f5e481c/shahjahanpur_template.csv"
+  },
+  "shimla": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/0eec87cc5539ef2a614e3e996f91fdfef0e3deca/shimla_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/fca91eb83b8ee2d2b8e75f7991b35a63696e550c/shimla_template.csv"
+  },
+  "sikar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/c433d3035a979944502d0df35a16730e90579ecf/sikar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/aab8351ede1cf32a10e601e9d0ed6d61aa5a7b57/sikar_template.csv"
+  },
+  "surat": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/09da72f20d88bf3a69a52700a5b6e49d9fd77c2c/surat_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/970d6119d746cf753bd5a00d6b95bad44c9fe11b/surat_template.csv"
+  },
+  "thane": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/6ec802765935c99d00c43c49e99ac3722cdc1a5e/thane_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/241b930b4bc3a15980563934c962843e1edc5972/thane_template.csv"
+  },
+  "thiruvananthapuram": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4bb92ee24a6b98d97319961494a4449dd74ab382/thiruvananthapuram_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/8fa416af699a7441de6d53f8350cea1fb757f869/thiruvananthapuram_template.csv"
+  },
+  "thoothukudi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/fdae0b9c2487d4b1b088f815f20d8fcf57d3e503/thoothukudi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/7aef91735b96ca96ea4d812cc38626f289e71c18/thoothukudi_template.csv"
+  },
+  "thrissur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/eaed36f2f4eb53290a485bbce440d8501c48eca1/thrissur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/ece2f35e6bd21f4aaa950d9ff05c286c779241e1/thrissur_template.csv"
+  },
+  "tirupati": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/b7f1a356bcd4a29f397263b99a69c945cde15895/tirupati_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/2565defe606899a13366f8015fb5247c3b7d0ffb/tirupati_template.csv"
+  },
+  "udaipur": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/0a3d198f2cdc2856d6a0b83308f122c4ac7f3c80/udaipur_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/63cbc7803914a5c1912348b8de35e1044c746dba/udaipur_template.csv"
+  },
+  "ujjain": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/144dbfe9d7ac38959b3e925b36cb8f58b241678a/ujjain_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/d16e479f4f40d1dd1e2659f7ea9430f3a7b38c68/ujjain_template.csv"
+  },
+  "vadodara": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/bc3732451a14a5782cf7fe66e154fac5e0bc2d98/vadodara_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5aaefda41efb36f8bbbcfb981bb32984b96a20e4/vadodara_template.csv"
+  },
+  "varanasi": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/620ea3fe25fd8263382d4aaee6fad784882b19d0/varanasi_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/5d90e2edb50b421cc2fb958090dd2172f26c868c/varanasi_template.csv"
+  },
+  "vasai_virar": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/70ec366c6ed68d2e0f1f3ca5b3e714542a3fe450/vasai_virar_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/3d0894bdf94837cd5ebd2c890adc4930bbec61d8/vasai_virar_template.csv"
+  },
+  "vellore": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/987872583878ad4b2c543af868a739eb8069591c/vellore_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a8359c8c520907731d71a1e5954d9e30a14902e0/vellore_template.csv"
+  },
+  "vijayawada": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/8073f365e620d163afaf5b43503e68f0d0f92ae2/vijayawada_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/a73aebd246e8ba938ca1fec69b263141be363a72/vijayawada_template.csv"
+  },
+  "visakhapatnam": {
+    "demo": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/4a336f44db72adda05c15419d464d66aa93f9da4/visakhapatnam_demo.csv",
+    "template": "https://gist.githubusercontent.com/saketkc/a57f5cb33a95929a389898f770b9e2a4/raw/8aa2b9b589cca42dbe62355572a663885e507da1/visakhapatnam_template.csv"
+  }
+}
