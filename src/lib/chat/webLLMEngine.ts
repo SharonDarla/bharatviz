@@ -22,6 +22,10 @@ function extractMentionedStates(query: string, availableStates: string[]): strin
   return mentioned;
 }
 
+function stripThinkTags(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trimStart();
+}
+
 export class WebLLMEngine {
   private engine: webllm.MLCEngine | null = null;
   private isInitializing = false;
@@ -120,7 +124,8 @@ export class WebLLMEngine {
         max_tokens: 512,
       });
 
-      const answer = completion.choices[0].message.content || "No response generated";
+      const raw = completion.choices[0].message.content || "No response generated";
+      const answer = stripThinkTags(raw);
       const suggestions = this.generateSuggestions(context, userQuery);
 
       const processingTime = performance.now() - startTime;
@@ -194,11 +199,45 @@ export class WebLLMEngine {
         stream: true
       });
 
+      let insideThink = false;
+      let pendingBuffer = '';
+
       for await (const chunk of asyncChunkGenerator) {
         const delta = chunk.choices[0]?.delta?.content || "";
-        if (delta) {
-          onChunk(delta);
+        if (!delta) continue;
+
+        pendingBuffer += delta;
+
+        while (pendingBuffer.length > 0) {
+          if (insideThink) {
+            const closeIdx = pendingBuffer.indexOf('</think>');
+            if (closeIdx === -1) {
+              pendingBuffer = '';
+              break;
+            }
+            pendingBuffer = pendingBuffer.slice(closeIdx + 8);
+            insideThink = false;
+          } else {
+            const openIdx = pendingBuffer.indexOf('<think>');
+            if (openIdx === -1) {
+              if (pendingBuffer.length > 7) {
+                const safe = pendingBuffer.slice(0, -7);
+                if (safe) onChunk(safe);
+                pendingBuffer = pendingBuffer.slice(-7);
+              }
+              break;
+            }
+            if (openIdx > 0) {
+              onChunk(pendingBuffer.slice(0, openIdx));
+            }
+            pendingBuffer = pendingBuffer.slice(openIdx + 7);
+            insideThink = true;
+          }
         }
+      }
+
+      if (pendingBuffer && !insideThink) {
+        onChunk(pendingBuffer.trimStart());
       }
 
       if (onComplete) {
