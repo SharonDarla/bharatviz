@@ -23,6 +23,7 @@ import MCPDocs from '@/components/MCPDocs';
 import { DistrictStats } from '@/components/DistrictStats';
 import { Github, Moon, Sun, Check, ChevronsUpDown } from 'lucide-react';
 import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
+import { STATES_CITATION, NSSO_CITATION, getDistrictsCitationInfo, getCityCitationInfo } from '@/lib/citations';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { buildDynamicContext } from '@/lib/chat/contextBuilder';
 import { DATA_FILES, MAP_DIMENSIONS } from '@/lib/constants';
@@ -1473,6 +1474,7 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl="/India_LGD_states.geojson"
                     geojsonDownloadName="India_LGD_states.geojson"
+                    citationInfo={STATES_CITATION}
                   />
                 </div>
               </div>
@@ -1541,6 +1543,7 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl={getDistrictMapConfig(selectedDistrictMapType)?.geojsonPath}
                     geojsonDownloadName={`India_${selectedDistrictMapType}_districts.geojson`}
+                    citationInfo={getDistrictsCitationInfo(selectedDistrictMapType, getDistrictMapConfig(selectedDistrictMapType)?.displayName)}
                   />
                 </div>
               </div>
@@ -1628,6 +1631,7 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl={getDistrictMapConfig('NSSO')?.geojsonPath}
                     geojsonDownloadName="India_NSSO_regions.geojson"
+                    citationInfo={NSSO_CITATION}
                   />
                 </div>
               </div>
@@ -1705,6 +1709,7 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl={getStateGeoJSONUrl(stateGistMapping, selectedStateMapType, selectedStateForMap)}
                     geojsonDownloadName={`${selectedStateForMap}-${selectedStateMapType}-districts.geojson`}
+                    citationInfo={getDistrictsCitationInfo(selectedStateMapType, `${selectedStateForMap} Districts (${getDistrictMapConfig(selectedStateMapType)?.displayName})`)}
                   />
                 </div>
               </div>
@@ -2153,6 +2158,7 @@ POST /api/v1/districts/map
                     darkMode={darkMode}
                     geojsonDownloadUrl={currentCityDataset?.geojsonPath}
                     geojsonDownloadName={`${selectedCityDataset}.geojson`}
+                    citationInfo={currentCityDataset ? getCityCitationInfo(currentCityDataset) : undefined}
                   />
                 </div>
               </div>
