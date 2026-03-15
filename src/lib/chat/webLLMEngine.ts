@@ -26,11 +26,17 @@ function stripThinkTags(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trimStart();
 }
 
+function isKVCacheError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('filledKVCacheLength') || msg.includes('KVCache');
+}
+
 export class WebLLMEngine {
   private engine: webllm.MLCEngine | null = null;
   private isInitializing = false;
   private isReady = false;
   private selectedModel: string;
+  private recovering = false;
 
   constructor(modelId: string = "Qwen3-4B-q4f16_1-MLC") {
     this.selectedModel = modelId;
@@ -80,6 +86,27 @@ export class WebLLMEngine {
       throw new Error(`WebLLM initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       this.isInitializing = false;
+    }
+  }
+
+  private async recoverFromKVCacheError(): Promise<boolean> {
+    if (this.recovering) return false;
+    this.recovering = true;
+    try {
+      console.warn('KV cache corrupted, reloading engine...');
+      if (this.engine) {
+        try { await this.engine.unload(); } catch (_) {}
+      }
+      this.isReady = false;
+      this.engine = await webllm.CreateMLCEngine(this.selectedModel, { logLevel: "WARN" });
+      this.isReady = true;
+      console.log('Engine reloaded after KV cache recovery');
+      return true;
+    } catch (e) {
+      console.error('KV cache recovery failed:', e);
+      return false;
+    } finally {
+      this.recovering = false;
     }
   }
 
@@ -140,6 +167,9 @@ export class WebLLMEngine {
       };
 
     } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.query(userQuery, context);
+      }
       console.error("WebLLM query error:", error);
       return {
         answer: `❌ Error processing query: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -249,6 +279,9 @@ export class WebLLMEngine {
       }
 
     } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.streamQuery(userQuery, context, onChunk, onComplete);
+      }
       console.error("WebLLM streaming error:", error);
       onChunk(`\n\n❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       if (onComplete) {
@@ -281,6 +314,9 @@ export class WebLLMEngine {
       await this.engine.resetChat();
       return questions.slice(0, 4);
     } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.generateDataQuestions(context);
+      }
       console.error("Failed to generate data questions:", error);
       try { await this.engine?.resetChat(); } catch (_) {}
       return [];
