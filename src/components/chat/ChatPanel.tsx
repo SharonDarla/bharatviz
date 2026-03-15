@@ -7,9 +7,11 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MessageSquare, X, Send, Settings, RotateCcw, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, RotateCcw, Loader2, ChevronDown, Check } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { WebLLMEngine, type InitProgress } from '@/lib/chat/webLLMEngine';
 import { getStarterQuestions } from '@/lib/chat/promptBuilder';
+import { AVAILABLE_MODELS, getModelInfo, MODEL_GROUPS } from '@/lib/chat/models';
 import { ModelSelector } from './ModelSelector';
 import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import type { DynamicChatContext, ChatMessage, MapAction } from '@/lib/chat/types';
@@ -29,6 +31,8 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingText, setLoadingText] = useState('');
   const [modelReady, setModelReady] = useState(false);
+  const [currentModelId, setCurrentModelId] = useState<string | null>(null);
+  const [modelPopoverOpen, setModelPopoverOpen] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -44,6 +48,11 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const starterQuestions = useMemo(() => getStarterQuestions(context), [context]);
+  const currentModelName = useMemo(() => currentModelId ? getModelInfo(currentModelId)?.name || currentModelId : null, [currentModelId]);
+  const groupedModels = useMemo(() => MODEL_GROUPS.map(group => ({
+    ...group,
+    models: AVAILABLE_MODELS.filter(m => group.filter(m))
+  })), []);
 
   const contextFingerprint = context
     ? `${context.currentView.tab}:${context.currentView.mapType}:${context.userData.metricName || ''}:${context.userData.count}`
@@ -102,6 +111,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
       });
 
       engineRef.current = engine;
+      setCurrentModelId(modelId);
       setModelReady(true);
       setIsModelLoading(false);
 
@@ -261,16 +271,28 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
     }
   };
 
-  const handleChangeModel = async () => {
+  const handleChangeModel = async (newModelId?: string) => {
+    // Guard against rapid clicks during model switch
+    if (isModelLoading) return;
+
     if (engineRef.current) {
       await engineRef.current.unload();
       engineRef.current = null;
     }
     setModelReady(false);
-    setShowModelSelector(true);
+    setCurrentModelId(null);
     setMessages([]);
     setLoadingProgress(0);
     setLoadingText('');
+    setModelPopoverOpen(false);
+
+    if (newModelId) {
+      // Direct switch — skip the full model selector, go straight to loading
+      handleModelSelect(newModelId);
+    } else {
+      // Go back to the full model selector screen
+      setShowModelSelector(true);
+    }
   };
 
   if (!isOpen) {
@@ -288,30 +310,67 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   return (
     <div className="fixed inset-x-0 bottom-0 sm:bottom-6 sm:right-6 sm:left-auto sm:w-[420px] h-[600px] sm:h-[700px] bg-background border sm:rounded-lg shadow-2xl flex flex-col overflow-hidden z-50">
       <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-card">
-        <div>
-          <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
-            Map Assistant
-          </h3>
-          {context && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {context.currentView.selectedState
-                ? `${context.currentView.selectedState} districts`
-                : `${context.currentView.tab} • ${context.currentView.mapType}`}
-              {context.userData.hasData && ` • ${context.userData.count} entities`}
-            </p>
+        <div className="min-w-0 flex-1">
+          {modelReady && currentModelId ? (
+            <>
+              <Popover open={modelPopoverOpen} onOpenChange={setModelPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 text-sm sm:text-base font-semibold hover:text-primary transition-colors">
+                    <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                    <span className="truncate">{currentModelName}</span>
+                    <ChevronDown className="h-3 w-3 flex-shrink-0 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 max-h-80 overflow-y-auto p-1" align="start" sideOffset={8}>
+                  {groupedModels.map(group => (
+                    <div key={group.label}>
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{group.label}</div>
+                      {group.models.map(model => (
+                        <button
+                          key={model.id}
+                          className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={() => {
+                            if (model.id !== currentModelId) {
+                              handleChangeModel(model.id);
+                            } else {
+                              setModelPopoverOpen(false);
+                            }
+                          }}
+                        >
+                          <div className="flex flex-col items-start min-w-0">
+                            <span className="truncate">{model.name}</span>
+                            <span className="text-xs text-muted-foreground">{model.size} · {model.speed}</span>
+                          </div>
+                          {model.id === currentModelId && (
+                            <Check className="h-4 w-4 flex-shrink-0 text-primary" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </PopoverContent>
+              </Popover>
+              {context && (
+                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                  {context.currentView.selectedState
+                    ? `${context.currentView.selectedState} districts`
+                    : `${context.currentView.tab} • ${context.currentView.mapType}`}
+                  {context.userData.hasData && ` • ${context.userData.count} entities`}
+                </p>
+              )}
+            </>
+          ) : (
+            <h3 className="text-sm sm:text-base font-semibold flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
+              Map Assistant
+            </h3>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {modelReady && (
-            <>
-              <Button variant="ghost" size="icon" onClick={handleChangeModel} title="Change model">
-                <Settings className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={handleReset} title="Clear chat">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </>
+            <Button variant="ghost" size="icon" onClick={handleReset} title="Clear chat">
+              <RotateCcw className="h-4 w-4" />
+            </Button>
           )}
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />

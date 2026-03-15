@@ -234,6 +234,13 @@ export function getModelInfo(modelId: string): ModelInfo | undefined {
   return AVAILABLE_MODELS.find(m => m.id === modelId);
 }
 
+export const MODEL_GROUPS: Array<{ label: string; filter: (m: ModelInfo) => boolean }> = [
+  { label: 'Large (7-9B)', filter: m => m.speed === 'Slow' },
+  { label: 'Medium (3-4B)', filter: m => m.speed === 'Medium' },
+  { label: 'Small (1-2B)', filter: m => m.speed === 'Fast' },
+  { label: 'Tiny (<1B)', filter: m => m.speed === 'Very Fast' || m.speed === 'Fastest' },
+];
+
 export function getRecommendedModel(): ModelInfo {
   if (isMobileDevice()) {
     return AVAILABLE_MODELS.find(m => m.id === "Qwen2.5-1.5B-Instruct-q4f16_1-MLC") || AVAILABLE_MODELS[0];
