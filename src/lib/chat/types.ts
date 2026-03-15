@@ -1,10 +1,6 @@
-/**
- * Type definitions for BharatViz Chat Interface
- */
-
 export type Region = 'North' | 'South' | 'East' | 'West' | 'Northeast' | 'Central';
 
-export type MapTab = 'states' | 'districts' | 'state-districts';
+export type MapTab = 'states' | 'districts' | 'state-districts' | 'regions' | 'cities';
 
 export interface CurrentView {
   tab: MapTab;
@@ -29,6 +25,7 @@ export interface GeoMetadata {
     districtCount: number;
     districts: string[];
   };
+  featureProperties?: Array<Record<string, unknown>>;
 }
 
 export interface DataStats {

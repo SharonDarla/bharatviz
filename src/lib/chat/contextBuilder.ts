@@ -1,8 +1,3 @@
-/**
- * Dynamic Context Builder for Chat Interface
- * Rebuilds context whenever user changes tabs, uploads data, or switches maps
- */
-
 import area from '@turf/area';
 import { mean, median, standardDeviation, quantile, min, max } from 'simple-statistics';
 import type {
@@ -24,14 +19,11 @@ interface BuildContextParams {
   mapType: string;
   data: DataPoint[];
   geoJsonPath: string;
-  metricName?: string;  // The column name from CSV (e.g., "Literacy Rate", "GDP")
+  metricName?: string;
   previousContext?: PreviousContext;
   conversationHistory?: ConversationMessage[];
 }
 
-/**
- * Build dynamic context from current application state
- */
 export async function buildDynamicContext(
   params: BuildContextParams
 ): Promise<DynamicChatContext> {
@@ -46,48 +38,17 @@ export async function buildDynamicContext(
     conversationHistory = []
   } = params;
 
-  console.log('Building chat context with params:', {
-    activeTab,
-    selectedState,
-    mapType,
-    dataLength: data.length,
-    geoJsonPath,
-    metricName
-  });
-
-  // Load GeoJSON for current map
   const geoJson = await fetchGeoJSON(geoJsonPath);
-
-  // Build hierarchy from GeoJSON
   const hierarchy = buildHierarchyFromGeoJSON(geoJson, activeTab);
-
-  // Normalize data format
   const normalizedData = normalizeData(data);
-
-  // Determine expected entities based on view
   const expectedEntities = getExpectedEntities(hierarchy, activeTab, selectedState);
-
-  // Detect missing values
-  const { missingEntities, missingPercentage } = detectMissingData(
-    normalizedData,
-    expectedEntities
-  );
-
-  // Calculate statistics
+  const { missingEntities, missingPercentage } = detectMissingData(normalizedData, expectedEntities);
   const stats = calculateStatistics(normalizedData);
-
-  // Build regional stats
   const regionalStats = buildRegionalStats(normalizedData, hierarchy, activeTab);
-
-  // Build hierarchical stats (ONLY for district views, never for states view)
   const hierarchicalStats = (activeTab === 'districts' || activeTab === 'state-districts')
     ? buildHierarchicalStats(normalizedData, hierarchy)
     : undefined;
-
-  // Get rankings
   const { top10, bottom10 } = getRankings(normalizedData);
-
-  // Get all data with non-null values
   const allData = normalizedData
     .filter(d => d.value !== null && d.value !== undefined && !isNaN(d.value))
     .map(d => ({
@@ -118,12 +79,13 @@ export async function buildDynamicContext(
             districtCount: hierarchy.hierarchy[selectedState]?.districts.length || 0,
             districts: hierarchy.hierarchy[selectedState]?.districts || []
           }
-        : undefined
+        : undefined,
+      featureProperties: extractFeatureProperties(geoJson, activeTab),
     },
 
     userData: {
       hasData: data.length > 0,
-      dataType: activeTab === 'states' ? 'state' : 'district',
+      dataType: (activeTab === 'states' || activeTab === 'regions') ? 'state' : 'district',
       metricName,
       count: normalizedData.filter(d => d.value !== null).length,
       totalExpected: expectedEntities.length,
@@ -142,9 +104,6 @@ export async function buildDynamicContext(
   };
 }
 
-/**
- * Fetch GeoJSON from path
- */
 async function fetchGeoJSON(path: string): Promise<GeoJSON.FeatureCollection> {
   try {
     const response = await fetch(path);
@@ -158,9 +117,6 @@ async function fetchGeoJSON(path: string): Promise<GeoJSON.FeatureCollection> {
   }
 }
 
-/**
- * Build hierarchy from GeoJSON
- */
 function buildHierarchyFromGeoJSON(
   geoJson: GeoJSON.FeatureCollection,
   type: MapTab
@@ -168,10 +124,28 @@ function buildHierarchyFromGeoJSON(
   const hierarchy: Record<string, StateHierarchy> = {};
   const stateList: string[] = [];
 
+  if (type === 'cities') {
+    const wardNames: string[] = [];
+    for (const feature of geoJson.features) {
+      const props = feature.properties || {};
+      const wardName = props.ward_name || props.WARD_NAME || `Ward ${props.ward_number || props.wardcode || wardNames.length + 1}`;
+      if (!wardNames.includes(wardName)) {
+        wardNames.push(wardName);
+      }
+    }
+    hierarchy['City'] = {
+      districts: wardNames,
+      region: 'Central' as Region,
+      area_sqkm: 0
+    };
+    stateList.push('City');
+    return { hierarchy, stateList };
+  }
+
   for (const feature of geoJson.features) {
     const properties = feature.properties || {};
     const stateName = properties.st_nm || properties.state_name || properties.ST_NM || properties.STATE_NAME;
-    const districtName = properties.district || properties.DISTRICT || properties.district_name || properties.dtname || properties.DTNAME;
+    const districtName = properties.district || properties.DISTRICT || properties.district_name || properties.dtname || properties.DTNAME || properties.nss_region;
 
     if (type === 'states') {
       if (stateName && !stateList.includes(stateName)) {
@@ -183,7 +157,6 @@ function buildHierarchyFromGeoJSON(
         };
       }
     } else {
-      // District level
       if (stateName && districtName) {
         if (!hierarchy[stateName]) {
           hierarchy[stateName] = {
@@ -205,39 +178,27 @@ function buildHierarchyFromGeoJSON(
   return { hierarchy, stateList };
 }
 
-/**
- * Classify state into region
- */
 export function classifyRegion(stateName: string): Region {
   const normalized = stateName.toLowerCase().trim();
 
-  // North
   const north = ['punjab', 'haryana', 'himachal pradesh', 'jammu', 'kashmir', 'ladakh', 'uttarakhand', 'delhi', 'chandigarh'];
   if (north.some(s => normalized.includes(s))) return 'North';
 
-  // South
   const south = ['kerala', 'tamil nadu', 'karnataka', 'andhra pradesh', 'telangana', 'puducherry', 'pondicherry'];
   if (south.some(s => normalized.includes(s))) return 'South';
 
-  // East
   const east = ['west bengal', 'odisha', 'orissa', 'bihar', 'jharkhand'];
   if (east.some(s => normalized.includes(s))) return 'East';
 
-  // West
   const west = ['maharashtra', 'gujarat', 'rajasthan', 'goa', 'daman', 'diu', 'dadra', 'nagar haveli'];
   if (west.some(s => normalized.includes(s))) return 'West';
 
-  // Northeast
   const northeast = ['assam', 'meghalaya', 'manipur', 'mizoram', 'nagaland', 'tripura', 'arunachal pradesh', 'sikkim'];
   if (northeast.some(s => normalized.includes(s))) return 'Northeast';
 
-  // Default to Central
   return 'Central';
 }
 
-/**
- * Normalize data format
- */
 function normalizeData(data: DataPoint[]): Array<{ name: string; value: number | null; state?: string }> {
   return data.map(item => ({
     name: (item.name || item.district || item.state || '').trim(),
@@ -246,9 +207,6 @@ function normalizeData(data: DataPoint[]): Array<{ name: string; value: number |
   }));
 }
 
-/**
- * Get expected entities based on current view
- */
 function getExpectedEntities(
   hierarchy: { hierarchy: Record<string, StateHierarchy>; stateList: string[] },
   type: MapTab,
@@ -258,15 +216,13 @@ function getExpectedEntities(
     return hierarchy.stateList;
   } else if (type === 'state-districts' && selectedState) {
     return hierarchy.hierarchy[selectedState]?.districts || [];
+  } else if (type === 'cities') {
+    return hierarchy.hierarchy['City']?.districts || [];
   } else {
-    // All districts
     return Object.values(hierarchy.hierarchy).flatMap(s => s.districts);
   }
 }
 
-/**
- * Detect missing data
- */
 function detectMissingData(
   data: Array<{ name: string; value: number | null }>,
   expectedEntities: string[]
@@ -286,9 +242,6 @@ function detectMissingData(
   return { missingEntities, missingPercentage };
 }
 
-/**
- * Calculate statistics from data
- */
 function calculateStatistics(
   data: Array<{ name: string; value: number | null }>
 ): DataStats | null {
@@ -311,9 +264,6 @@ function calculateStatistics(
   };
 }
 
-/**
- * Build regional statistics
- */
 function buildRegionalStats(
   data: Array<{ name: string; value: number | null; state?: string }>,
   hierarchy: { hierarchy: Record<string, StateHierarchy>; stateList: string[] },
@@ -348,7 +298,7 @@ function buildRegionalStats(
       regionalStats[region] = {
         count: values.length,
         dataCount: values.length,
-        missingCount: 0, // TODO: Calculate based on expected
+        missingCount: 0,
         mean: mean(values),
         min: min(values),
         max: max(values)
@@ -359,9 +309,6 @@ function buildRegionalStats(
   return regionalStats;
 }
 
-/**
- * Build hierarchical statistics (state-level aggregations of district data)
- */
 function buildHierarchicalStats(
   data: Array<{ name: string; value: number | null; state?: string }>,
   hierarchy: { hierarchy: Record<string, StateHierarchy>; stateList: string[] }
@@ -394,9 +341,6 @@ function buildHierarchicalStats(
   return hierarchicalStats;
 }
 
-/**
- * Get top and bottom rankings
- */
 function getRankings(
   data: Array<{ name: string; value: number | null; state?: string }>
 ): { top10: Array<{ name: string; value: number }>; bottom10: Array<{ name: string; value: number }> } {
@@ -412,4 +356,15 @@ function getRankings(
     top10: sorted.slice(0, 10),
     bottom10: sorted.slice(-10).reverse()
   };
+}
+
+function extractFeatureProperties(
+  geoJson: GeoJSON.FeatureCollection,
+  type: MapTab
+): Array<Record<string, unknown>> | undefined {
+  if (type !== 'cities' && geoJson.features.length > 100) {
+    return undefined;
+  }
+
+  return geoJson.features.map(f => ({ ...(f.properties || {}) }));
 }

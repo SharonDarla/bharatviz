@@ -62,7 +62,7 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
           <AlertDescription>
             <strong>Mobile Device Detected</strong>
             <p className="mt-1 text-sm">
-              We recommend Qwen 2.5 1.5B for mobile devices - it's compact, fast to download, and runs efficiently on mobile hardware.
+              We recommend a small model (1.5B or less) for mobile devices. Qwen 2.5 1.5B offers the best balance of quality and speed on mobile hardware.
             </p>
           </AlertDescription>
         </Alert>
@@ -111,7 +111,7 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
         <AlertDescription>
           <p className="font-semibold mb-2 text-sm sm:text-base">What happens when you select a model?</p>
           <ul className="text-xs sm:text-sm space-y-1 list-disc list-inside">
-            <li>The model will be downloaded once (0.8-2.4 GB depending on choice)</li>
+            <li>The model will be downloaded once (0.4-6.4 GB depending on choice)</li>
             <li>Download is cached in your browser for future use</li>
             <li>Everything runs locally - no data sent to external servers</li>
             <li>You can change models later from the chat settings</li>

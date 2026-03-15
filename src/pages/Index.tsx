@@ -667,6 +667,27 @@ const Index = () => {
             state: d.state,
             value: normalizeValue(d.value),
           }));
+        } else if (activeTab === 'regions') {
+          const config = getDistrictMapConfig('NSSO');
+          geoJsonPath = config.geojsonPath;
+          currentMapType = 'NSSO';
+          metricName = districtDataTitle || undefined;
+          data = districtMapData.map(d => ({
+            name: d.district,
+            state: d.state,
+            value: normalizeValue(d.value),
+          }));
+        } else if (activeTab === 'cities' && cityMapData.length > 0) {
+          const dataset = getCityDataset(selectedCityDataset);
+          if (dataset) {
+            geoJsonPath = dataset.geojsonPath;
+            currentMapType = `${dataset.displayName} (${dataset.label})`;
+            metricName = cityDataTitle || undefined;
+            data = cityMapData.map(d => ({
+              name: d.ward,
+              value: normalizeValue(d.value),
+            }));
+          }
         }
 
         const prevContext = prevContextRef.current;
@@ -685,9 +706,9 @@ const Index = () => {
         if (geoJsonPath && data.length > 0) {
           try {
             const context = await buildDynamicContext({
-              activeTab: activeTab as 'states' | 'districts' | 'state-districts',
+              activeTab: activeTab as 'states' | 'districts' | 'state-districts' | 'regions' | 'cities',
               selectedState: activeTab === 'state-districts' ? selectedStateForMap : undefined,
-              mapType: activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType,
+              mapType: currentMapType,
               data,
               geoJsonPath,
               metricName,
@@ -725,6 +746,10 @@ const Index = () => {
     stateDataTitle,
     districtDataTitle,
     stateDistrictDataTitle,
+    cityMapData,
+    cityDataTitle,
+    selectedCity,
+    selectedCityDataset,
   ]);
 
   const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {

@@ -3,12 +3,13 @@
  * Main chat interface with model loading, message history, and input
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MessageSquare, X, Send, Settings, RotateCcw, Loader2 } from 'lucide-react';
 import { WebLLMEngine, type InitProgress } from '@/lib/chat/webLLMEngine';
+import { getStarterQuestions } from '@/lib/chat/promptBuilder';
 import { ModelSelector } from './ModelSelector';
 import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import type { DynamicChatContext, ChatMessage, MapAction } from '@/lib/chat/types';
@@ -39,6 +40,8 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   const engineRef = useRef<WebLLMEngine | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const starterQuestions = useMemo(() => getStarterQuestions(context), [context]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -86,7 +89,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
       setIsModelLoading(false);
 
       // Add welcome message
-      addSystemMessage('AI assistant ready! Ask me anything about your map data.');
+      addSystemMessage('AI assistant ready! Ask me about patterns in your map data.');
 
     } catch (error) {
       console.error('Failed to load model:', error);
@@ -319,21 +322,27 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
             {messages.length === 0 && context && (
               <Alert>
                 <AlertDescription>
-                  <p className="font-semibold mb-1">👋 Hi! I'm your map assistant.</p>
-                  <p className="text-sm">
+                  <p className="font-semibold mb-1">Map Assistant</p>
+                  <p className="text-sm mb-2">
                     {context.userData.hasData
-                      ? `You have ${context.userData.count} entities with data. Try asking:`
+                      ? `${context.userData.count} entities loaded. Try asking:`
                       : 'Upload data to get started, or ask about geographic information.'}
                   </p>
-                  {context.userData.hasData && (
-                    <ul className="text-sm mt-2 space-y-1">
-                      <li>• "What are the top 5?"</li>
-                      <li>• "Compare regional averages"</li>
-                      <li>• "Where are the hotspots?"</li>
-                      {context.userData.missingEntities.length > 0 && (
-                        <li>• "Which entities are missing data?"</li>
-                      )}
-                    </ul>
+                  {starterQuestions.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {starterQuestions.map((q, i) => (
+                        <button
+                          key={i}
+                          className="text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground transition-colors text-left"
+                          onClick={() => {
+                            setInput(q);
+                            inputRef.current?.focus();
+                          }}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </AlertDescription>
               </Alert>
