@@ -261,6 +261,18 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
     }
   };
 
+  const handleChangeModel = async () => {
+    if (engineRef.current) {
+      await engineRef.current.unload();
+      engineRef.current = null;
+    }
+    setModelReady(false);
+    setShowModelSelector(true);
+    setMessages([]);
+    setLoadingProgress(0);
+    setLoadingText('');
+  };
+
   if (!isOpen) {
     return (
       <Button
@@ -292,9 +304,14 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
         </div>
         <div className="flex items-center gap-2">
           {modelReady && (
-            <Button variant="ghost" size="icon" onClick={handleReset} title="Clear chat">
-              <RotateCcw className="h-4 w-4" />
-            </Button>
+            <>
+              <Button variant="ghost" size="icon" onClick={handleChangeModel} title="Change model">
+                <Settings className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={handleReset} title="Clear chat">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </>
           )}
           <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
             <X className="h-4 w-4" />
@@ -373,10 +390,10 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
               <ChatMessageComponent key={msg.id} message={msg} />
             ))}
 
-            {toolStatus && (
+            {isGenerating && !streamingContent && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground px-2 py-1">
                 <Loader2 className="h-3 w-3 animate-spin" />
-                {toolStatus}
+                {toolStatus || 'Thinking...'}
               </div>
             )}
 
