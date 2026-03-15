@@ -39,6 +39,8 @@ function isToolCallParseError(error: unknown): boolean {
   return msg.includes('is not valid JSON') || msg.includes('parsing outputMessage');
 }
 
+const TOOL_TRIGGER_PATTERNS = /\b(moran|lisa|cluster|hotspot|coldspot|spatial|autocorrelation|gi\*|getis|compare.*(region|north|south|east|west)|top\s+\d+|bottom\s+\d+|rank|summary\s+stat|descriptive\s+stat)\b/i;
+
 async function streamWithThinkTagStripping(
   chunks: AsyncIterable<webllm.ChatCompletionChunk>,
   onChunk: (text: string) => void
@@ -359,9 +361,9 @@ export class WebLLMEngine {
       messages.push({ role: "user", content: userQuery });
 
       // Step 1: Non-streaming call with tools
-      // The model may fail to produce valid tool-call JSON (even Hermes models
-      // sometimes respond with plain text). Catch parse errors and fall back
-      // to a regular streaming query with the full data prompt.
+      // Use "required" when the query clearly needs a tool (spatial/ranking keywords),
+      // otherwise "auto" to let the model decide for conversational queries.
+      const forceTools = TOOL_TRIGGER_PATTERNS.test(userQuery);
       let completion: webllm.ChatCompletion;
       try {
         completion = await this.engine.chat.completions.create({
@@ -369,7 +371,7 @@ export class WebLLMEngine {
           temperature: 0,
           max_tokens: 512,
           tools: toolDefinitions as webllm.ChatCompletionTool[],
-          tool_choice: "auto"
+          tool_choice: forceTools ? "required" : "auto"
         });
       } catch (toolCallError) {
         if (isToolCallParseError(toolCallError)) {

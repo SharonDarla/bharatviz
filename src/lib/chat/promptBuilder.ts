@@ -103,17 +103,21 @@ function buildToolDataSection(userData: UserData): string {
   }
 
   s += `
-The full dataset is already loaded and accessible through your tools. You do NOT need the raw data — just call the tool and it will compute the answer from the loaded data.
+You MUST use your tools to answer data questions. Each tool already has the complete dataset AND geographic boundaries loaded internally. You do not need to provide any data — just call the tool and it returns computed results.
 
-Available tools:
-- summarize_data: Get mean, median, SD, min, max, quartiles. Can filter by region or state.
-- rank_entities: Get top/bottom N entities by value.
-- compare_regions: Compare means across North/South/East/West/Northeast/Central regions.
-- spatial_autocorrelation: Global Moran's I — test for spatial clustering.
-- local_spatial_clusters: LISA — identify High-High, Low-Low clusters and outliers.
-- hotspot_analysis: Getis-Ord Gi* — find statistically significant hotspots and coldspots.
+Tools:
+- summarize_data: summary stats (mean, median, SD, min, max, quartiles). Optional: filter by region or state.
+- rank_entities: top or bottom N entities by value.
+- compare_regions: compare means across geographic regions.
+- spatial_autocorrelation: computes Global Moran's I with spatial weights from the loaded GeoJSON boundaries.
+- local_spatial_clusters: runs LISA analysis using the loaded GeoJSON boundaries. Returns cluster classifications.
+- hotspot_analysis: computes Getis-Ord Gi* using the loaded GeoJSON boundaries. Returns hotspot/coldspot z-scores.
 
-IMPORTANT: When the user asks a data question, ALWAYS call the appropriate tool. The tool has access to the complete dataset. Never say you don't have the data — you do, through the tools.
+CRITICAL RULES:
+1. NEVER say "I don't have the data" or "I need spatial data" — the tools have everything.
+2. ALWAYS call the tool first, then explain the results.
+3. For spatial questions (clustering, Moran's I, LISA, hotspots), the tool loads GeoJSON boundaries automatically.
+4. Call tools with no arguments to use defaults, or pass optional filters.
 `;
 
   return s;
