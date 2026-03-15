@@ -39,7 +39,18 @@ function isToolCallParseError(error: unknown): boolean {
   return msg.includes('is not valid JSON') || msg.includes('parsing outputMessage');
 }
 
-const TOOL_TRIGGER_PATTERNS = /\b(moran|lisa|cluster|hotspot|coldspot|spatial|autocorrelation|gi\*|getis|compare.*(region|north|south|east|west)|top\s+\d+|bottom\s+\d+|rank|summary\s+stat|descriptive\s+stat)\b/i;
+const TOOL_TRIGGER_PATTERNS = /\b(morans?|lisa|cluster|hotspot|coldspot|spatial|autocorrelation|gi\*|getis|compare.*(region|north|south|east|west)|top\s+\d+|bottom\s+\d+|rank|summary\s+stat|descriptive\s+stat)\b/i;
+
+function inferToolFromQuery(query: string): string | null {
+  const q = query.toLowerCase();
+  if (/\blisa\b/.test(q) || /\blocal.*(cluster|spatial|indicator)/i.test(q)) return 'local_spatial_clusters';
+  if (/\bhotspot|coldspot|gi\*|getis/i.test(q)) return 'hotspot_analysis';
+  if (/\bmorans?|spatial\s*auto|autocorrelation/i.test(q)) return 'spatial_autocorrelation';
+  if (/\bcompare.*(region|north|south|east|west)/i.test(q)) return 'compare_regions';
+  if (/\b(top|bottom|rank)\b/i.test(q)) return 'rank_entities';
+  if (/\bsummar|descriptive/i.test(q)) return 'summarize_data';
+  return null;
+}
 
 async function streamWithThinkTagStripping(
   chunks: AsyncIterable<webllm.ChatCompletionChunk>,
@@ -310,12 +321,6 @@ export class WebLLMEngine {
     }
   }
 
-  /**
-   * Query with tool-calling support.
-   * 1. Non-streaming call with tools → check for tool_calls
-   * 2. If tool_calls: execute tools, then streaming final response
-   * 3. If no tool_calls: stream the text directly
-   */
   async queryWithTools(
     userQuery: string,
     context: DynamicChatContext,
@@ -331,7 +336,6 @@ export class WebLLMEngine {
       throw new Error("context structure is invalid");
     }
 
-    // Fall back to regular streaming if no data or model doesn't support tool calling
     if (!context.userData.hasData || !this.supportsToolCalling) {
       return this.streamQuery(userQuery, context, onChunk, onComplete);
     }
@@ -360,9 +364,6 @@ export class WebLLMEngine {
 
       messages.push({ role: "user", content: userQuery });
 
-      // Step 1: Non-streaming call with tools
-      // Use "required" when the query clearly needs a tool (spatial/ranking keywords),
-      // otherwise "auto" to let the model decide for conversational queries.
       const forceTools = TOOL_TRIGGER_PATTERNS.test(userQuery);
       let completion: webllm.ChatCompletion;
       try {
@@ -375,7 +376,11 @@ export class WebLLMEngine {
         });
       } catch (toolCallError) {
         if (isToolCallParseError(toolCallError)) {
-          console.warn('Model produced invalid tool-call output, falling back to streaming');
+          console.warn('Model produced invalid tool-call output, attempting auto-dispatch');
+          const inferredTool = inferToolFromQuery(userQuery);
+          if (inferredTool) {
+            return this.autoDispatchTool(inferredTool, userQuery, context, messages, onChunk, onToolStatus, onComplete);
+          }
           return this.streamQuery(userQuery, context, onChunk, onComplete);
         }
         throw toolCallError;
@@ -385,7 +390,6 @@ export class WebLLMEngine {
       const toolCalls = choice.message.tool_calls;
 
       if (toolCalls && toolCalls.length > 0) {
-        // Step 2: Execute tools
         messages.push({
           role: "assistant",
           content: choice.message.content || null,
@@ -418,7 +422,6 @@ export class WebLLMEngine {
           onToolStatus(null);
         }
 
-        // Step 3: Reset and stream final response with tool results
         await this.engine.resetChat();
 
         const asyncChunkGenerator = await this.engine.chat.completions.create({
@@ -429,13 +432,18 @@ export class WebLLMEngine {
         });
 
         await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
-      } else {
-        // No tool calls — emit the text directly, then stream if more needed
+      } else if (forceTools) {
+        const inferredTool = inferToolFromQuery(userQuery);
+        if (inferredTool) {
+          return this.autoDispatchTool(inferredTool, userQuery, context, messages, onChunk, onToolStatus, onComplete);
+        }
         const raw = choice.message.content || '';
         const answer = stripThinkTags(raw);
-        if (answer) {
-          onChunk(answer);
-        }
+        if (answer) onChunk(answer);
+      } else {
+        const raw = choice.message.content || '';
+        const answer = stripThinkTags(raw);
+        if (answer) onChunk(answer);
       }
 
       if (onComplete) {
@@ -452,6 +460,54 @@ export class WebLLMEngine {
         onComplete();
       }
     }
+  }
+
+  private async autoDispatchTool(
+    toolName: string,
+    userQuery: string,
+    context: DynamicChatContext,
+    messages: webllm.ChatCompletionMessageParam[],
+    onChunk: (chunk: string) => void,
+    onToolStatus?: (status: string | null) => void,
+    onComplete?: () => void
+  ): Promise<void> {
+    if (!this.engine) throw new Error("Engine not initialized");
+
+    if (onToolStatus) onToolStatus(getToolStatusMessage(toolName));
+
+    const result = await executeTool(toolName, {}, context);
+
+    if (onToolStatus) onToolStatus(null);
+
+    const syntheticCallId = `auto_${Date.now()}`;
+    messages.push({
+      role: "assistant",
+      content: null,
+      tool_calls: [{
+        id: syntheticCallId,
+        type: "function" as const,
+        function: { name: toolName, arguments: '{}' }
+      }]
+    } as webllm.ChatCompletionMessageParam);
+
+    messages.push({
+      role: "tool",
+      content: JSON.stringify(result.data),
+      tool_call_id: syntheticCallId
+    } as webllm.ChatCompletionMessageParam);
+
+    await this.engine.resetChat();
+
+    const asyncChunkGenerator = await this.engine.chat.completions.create({
+      messages,
+      temperature: 0,
+      max_tokens: 512,
+      stream: true
+    });
+
+    await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
+
+    if (onComplete) onComplete();
   }
 
   async generateDataQuestions(context: DynamicChatContext): Promise<string[]> {
