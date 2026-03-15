@@ -2,14 +2,22 @@ import type {
   DynamicChatContext,
   UserData,
   CurrentView,
+  RegionalStats,
+  HierarchicalStateStats,
+  DistrictData,
   StateHierarchy
 } from './types';
 
-export function buildSystemPrompt(context: DynamicChatContext): string {
+export interface BuildPromptOptions {
+  useTools?: boolean;
+}
+
+export function buildSystemPrompt(context: DynamicChatContext, options: BuildPromptOptions = {}): string {
   if (!context) {
     throw new Error('context is not defined');
   }
 
+  const { useTools = false } = options;
   const { currentView, geoMetadata, userData } = context;
   const metricLabel = userData.metricName || 'values';
 
@@ -23,7 +31,9 @@ View: ${getViewDescription(currentView.tab, currentView.selectedState, currentVi
   }
 
   if (userData.hasData) {
-    prompt += buildDataSection(userData, currentView, context);
+    prompt += useTools
+      ? buildToolDataSection(userData)
+      : buildDataSection(userData, currentView, context);
   } else {
     prompt += `\nNo data uploaded yet. Answer general questions about Indian states, districts, and geography.\n`;
   }
@@ -71,7 +81,7 @@ function getViewDescription(tab: string, selectedState?: string, mapType?: strin
   }
 }
 
-function buildDataSection(userData: UserData, currentView: CurrentView, context: DynamicChatContext): string {
+function buildToolDataSection(userData: UserData): string {
   const metricLabel = userData.metricName || 'values';
 
   let s = `\nMetric: ${metricLabel}
@@ -95,6 +105,85 @@ You have analysis tools available. Use them to answer questions about the data:
 
 ALWAYS call the appropriate tool before answering data questions. Do not guess values.
 `;
+
+  return s;
+}
+
+function buildDataSection(userData: UserData, currentView: CurrentView, context: DynamicChatContext): string {
+  const metricLabel = userData.metricName || 'values';
+
+  let s = `\nMetric: ${metricLabel}
+Coverage: ${userData.count}/${userData.totalExpected} (${(100 - userData.missingPercentage).toFixed(0)}%)
+`;
+
+  if (userData.missingEntities.length > 0 && userData.missingEntities.length <= 10) {
+    s += `Missing: ${userData.missingEntities.join(', ')}\n`;
+  } else if (userData.missingEntities.length > 10) {
+    s += `Missing: ${userData.missingEntities.length} entities\n`;
+  }
+
+  if (userData.stats) {
+    const st = userData.stats;
+    s += `Range: ${st.min.toFixed(2)}-${st.max.toFixed(2)} | Mean: ${st.mean.toFixed(2)} | Median: ${st.median.toFixed(2)} | StdDev: ${st.stdDev.toFixed(2)} | IQR: ${st.q25.toFixed(2)}-${st.q75.toFixed(2)}\n`;
+  }
+
+  if (userData.top10.length > 0) {
+    s += `\nHighest: ${userData.top10.slice(0, 5).map((d, i) => `${i + 1}. ${d.name} (${d.value.toFixed(2)})`).join(', ')}\n`;
+    s += `Lowest: ${userData.bottom10.slice(0, 5).map((d, i) => `${i + 1}. ${d.name} (${d.value.toFixed(2)})`).join(', ')}\n`;
+  }
+
+  if ((currentView.tab === 'states' || currentView.tab === 'regions' || currentView.tab === 'cities') && userData.allData && userData.allData.length > 0) {
+    const label = currentView.tab === 'states' ? 'All states' : currentView.tab === 'regions' ? 'All regions' : 'All wards';
+    s += `\n${label}:\n${userData.allData.map(d => `${d.name}: ${d.value.toFixed(2)}`).join(' | ')}\n`;
+  }
+
+  if (userData.regionalStats && Object.keys(userData.regionalStats).length > 0) {
+    s += `\nRegional means: ${Object.entries(userData.regionalStats)
+      .map(([region, stats]: [string, RegionalStats]) => `${region}=${stats.mean.toFixed(2)} (n=${stats.dataCount})`)
+      .join(', ')}\n`;
+  }
+
+  if (userData.hierarchicalStats && currentView.tab === 'state-districts' && currentView.selectedState) {
+    const stateStats = userData.hierarchicalStats[currentView.selectedState];
+    if (stateStats) {
+      s += `\n${currentView.selectedState}: ${stateStats.dataCount}/${stateStats.districtCount} districts, mean=${stateStats.mean?.toFixed(2) || 'N/A'}, range=${stateStats.min?.toFixed(2) || 'N/A'}-${stateStats.max?.toFixed(2) || 'N/A'}\n`;
+
+      if (stateStats.districts?.length > 0) {
+        const withData = stateStats.districts.filter(d => !d.missing);
+        if (withData.length > 0) {
+          s += `Districts: ${withData.map(d => `${d.name}=${d.value?.toFixed(2)}`).join(', ')}\n`;
+        }
+        const missing = stateStats.districts.filter(d => d.missing);
+        if (missing.length > 0 && missing.length <= 10) {
+          s += `Missing: ${missing.map(d => d.name).join(', ')}\n`;
+        }
+      }
+    }
+  }
+
+  if (userData.hierarchicalStats && currentView.tab === 'districts') {
+    const statesWithData = Object.entries(userData.hierarchicalStats)
+      .filter(([_, stats]: [string, HierarchicalStateStats]) => stats.dataCount > 0)
+      .sort((a, b) => b[1].dataCount - a[1].dataCount);
+
+    const mentionedStates = context.mentionedStates || [];
+
+    if (mentionedStates.length > 0) {
+      for (const [state, stats] of statesWithData) {
+        if (mentionedStates.includes(state)) {
+          const st = stats as HierarchicalStateStats;
+          const withData = st.districts.filter((d: DistrictData) => !d.missing);
+          s += `\n${state} (${st.dataCount}/${st.districtCount}): ${withData.map((d: DistrictData) => `${d.name}=${d.value?.toFixed(2)}`).join(', ')}\n`;
+        }
+      }
+    } else {
+      s += `\nState summaries: ${statesWithData.map(([state, stats]) => {
+        const st = stats as HierarchicalStateStats;
+        return `${state}: n=${st.dataCount}/${st.districtCount}, mean=${st.mean?.toFixed(2) || 'N/A'}`;
+      }).join(' | ')}\n`;
+      s += `(Ask about a specific state for district details.)\n`;
+    }
+  }
 
   return s;
 }

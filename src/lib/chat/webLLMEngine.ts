@@ -1,4 +1,5 @@
 import * as webllm from "@mlc-ai/web-llm";
+import { functionCallingModelIds } from "@mlc-ai/web-llm";
 import type { DynamicChatContext, ChatResponse, ConversationMessage } from './types';
 import { buildSystemPrompt, getStarterQuestions } from './promptBuilder';
 import { toolDefinitions, executeTool, getToolStatusMessage, clearSpatialCache } from './spatialTools';
@@ -85,8 +86,11 @@ export class WebLLMEngine {
   private selectedModel: string;
   private recovering = false;
 
+  private supportsToolCalling: boolean;
+
   constructor(modelId: string = "Qwen3-4B-q4f16_1-MLC") {
     this.selectedModel = modelId;
+    this.supportsToolCalling = functionCallingModelIds.includes(modelId);
   }
 
   async initialize(
@@ -319,8 +323,8 @@ export class WebLLMEngine {
       throw new Error("context structure is invalid");
     }
 
-    // If no data loaded, fall back to regular streaming (tools need data)
-    if (!context.userData.hasData) {
+    // Fall back to regular streaming if no data or model doesn't support tool calling
+    if (!context.userData.hasData || !this.supportsToolCalling) {
       return this.streamQuery(userQuery, context, onChunk, onComplete);
     }
 
@@ -330,7 +334,7 @@ export class WebLLMEngine {
 
       const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
       const contextWithMentions: DynamicChatContext = { ...context, mentionedStates };
-      const systemPrompt = buildSystemPrompt(contextWithMentions);
+      const systemPrompt = buildSystemPrompt(contextWithMentions, { useTools: true });
 
       const messages: webllm.ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt }
