@@ -1,6 +1,17 @@
 import type { ModelInfo } from './types';
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
+  // — Recommended —
+  {
+    id: "Qwen3-4B-q4f16_1-MLC",
+    name: "Qwen 3 4B",
+    size: "~3.4 GB",
+    speed: "Medium",
+    quality: "Very Good",
+    recommended: true,
+    description: "Best balance of quality and speed. Recommended for most users."
+  },
+
   // — Large (6+ GB VRAM, 7-9B params) —
   {
     id: "Qwen3-8B-q4f16_1-MLC",
@@ -68,15 +79,6 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
   },
 
   // — Medium (2-5 GB VRAM, 3-4B params) —
-  {
-    id: "Qwen3-4B-q4f16_1-MLC",
-    name: "Qwen 3 4B",
-    size: "~3.4 GB",
-    speed: "Medium",
-    quality: "Very Good",
-    recommended: true,
-    description: "Best balance of quality and speed. Recommended for most users."
-  },
   {
     id: "Phi-3.5-mini-instruct-q4f16_1-MLC",
     name: "Phi 3.5 Mini",
