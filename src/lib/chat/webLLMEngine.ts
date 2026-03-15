@@ -98,6 +98,8 @@ export class WebLLMEngine {
     const startTime = performance.now();
 
     try {
+      await this.engine.resetChat();
+
       const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
       const contextWithMentions: DynamicChatContext = { ...context, mentionedStates };
       const systemPrompt = buildSystemPrompt(contextWithMentions);
@@ -167,6 +169,8 @@ export class WebLLMEngine {
     }
 
     try {
+      await this.engine.resetChat();
+
       const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
 
       const contextWithMentions: DynamicChatContext = {
@@ -257,13 +261,14 @@ export class WebLLMEngine {
     if (!this.isReady || !this.engine) return [];
 
     try {
+      await this.engine.resetChat();
       const systemPrompt = buildSystemPrompt(context);
       const completion = await this.engine.chat.completions.create({
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: "Based on the data above, suggest exactly 4 short questions (max 12 words each) a user might ask. Output ONLY the questions, one per line, no numbering or bullets." }
+          { role: "user", content: "Suggest exactly 4 short questions (max 12 words each) a user might ask about this data. Output ONLY the questions, one per line, no numbering or bullets." }
         ],
-        temperature: 0,
+        temperature: 0.3,
         max_tokens: 200,
       });
 
@@ -271,12 +276,13 @@ export class WebLLMEngine {
       const questions = raw
         .split('\n')
         .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^[-•*]\s*/, '').trim())
-        .filter(l => l.length > 10 && l.length < 120 && l.includes('?'));
+        .filter(l => l.length > 10 && l.length < 120);
 
       await this.engine.resetChat();
       return questions.slice(0, 4);
     } catch (error) {
       console.error("Failed to generate data questions:", error);
+      try { await this.engine?.resetChat(); } catch (_) {}
       return [];
     }
   }

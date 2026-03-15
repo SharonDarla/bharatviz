@@ -44,14 +44,15 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
 
   const starterQuestions = useMemo(() => getStarterQuestions(context), [context]);
 
-  const contextFingerprint = context?.userData.hasData
-    ? `${context.currentView.tab}:${context.currentView.mapType}:${context.userData.metricName}:${context.userData.count}`
+  const contextFingerprint = context
+    ? `${context.currentView.tab}:${context.currentView.mapType}:${context.userData.metricName || ''}:${context.userData.count}`
     : null;
 
   useEffect(() => {
     if (!modelReady || !contextFingerprint || !engineRef.current || !context) return;
     let stale = false;
     const engine = engineRef.current;
+    setLlmQuestions([]);
     engine.generateDataQuestions(context).then(questions => {
       if (!stale && questions.length > 0) setLlmQuestions(questions);
     });
@@ -334,7 +335,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
                 </AlertDescription>
               </Alert>
             )}
-            {messages.length === 0 && context && (
+            {!messages.some(m => m.role === 'user') && context && (
               <Alert>
                 <AlertDescription>
                   <p className="font-semibold mb-1">Map Assistant</p>
