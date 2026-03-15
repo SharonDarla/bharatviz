@@ -81,21 +81,31 @@ function getViewDescription(tab: string, selectedState?: string, mapType?: strin
   }
 }
 
-function buildToolDataSection(userData: UserData): string {
+function buildDataPreamble(userData: UserData): string {
   const metricLabel = userData.metricName || 'values';
-
   let s = `\nMetric: ${metricLabel}
 Coverage: ${userData.count}/${userData.totalExpected} (${(100 - userData.missingPercentage).toFixed(0)}%)
 `;
-
   if (userData.missingEntities.length > 0 && userData.missingEntities.length <= 10) {
     s += `Missing: ${userData.missingEntities.join(', ')}\n`;
   } else if (userData.missingEntities.length > 10) {
     s += `Missing: ${userData.missingEntities.length} entities\n`;
   }
+  return s;
+}
+
+function buildToolDataSection(userData: UserData): string {
+  let s = buildDataPreamble(userData);
+
+  if (userData.stats) {
+    const st = userData.stats;
+    s += `Quick summary: min=${st.min.toFixed(2)}, max=${st.max.toFixed(2)}, mean=${st.mean.toFixed(2)}, median=${st.median.toFixed(2)}\n`;
+  }
 
   s += `
-You have analysis tools available. Use them to answer questions about the data:
+The full dataset is already loaded and accessible through your tools. You do NOT need the raw data — just call the tool and it will compute the answer from the loaded data.
+
+Available tools:
 - summarize_data: Get mean, median, SD, min, max, quartiles. Can filter by region or state.
 - rank_entities: Get top/bottom N entities by value.
 - compare_regions: Compare means across North/South/East/West/Northeast/Central regions.
@@ -103,24 +113,14 @@ You have analysis tools available. Use them to answer questions about the data:
 - local_spatial_clusters: LISA — identify High-High, Low-Low clusters and outliers.
 - hotspot_analysis: Getis-Ord Gi* — find statistically significant hotspots and coldspots.
 
-ALWAYS call the appropriate tool before answering data questions. Do not guess values.
+IMPORTANT: When the user asks a data question, ALWAYS call the appropriate tool. The tool has access to the complete dataset. Never say you don't have the data — you do, through the tools.
 `;
 
   return s;
 }
 
 function buildDataSection(userData: UserData, currentView: CurrentView, context: DynamicChatContext): string {
-  const metricLabel = userData.metricName || 'values';
-
-  let s = `\nMetric: ${metricLabel}
-Coverage: ${userData.count}/${userData.totalExpected} (${(100 - userData.missingPercentage).toFixed(0)}%)
-`;
-
-  if (userData.missingEntities.length > 0 && userData.missingEntities.length <= 10) {
-    s += `Missing: ${userData.missingEntities.join(', ')}\n`;
-  } else if (userData.missingEntities.length > 10) {
-    s += `Missing: ${userData.missingEntities.length} entities\n`;
-  }
+  let s = buildDataPreamble(userData);
 
   if (userData.stats) {
     const st = userData.stats;

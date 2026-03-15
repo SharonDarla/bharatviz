@@ -33,6 +33,12 @@ function isKVCacheError(error: unknown): boolean {
   return msg.includes('filledKVCacheLength') || msg.includes('KVCache');
 }
 
+function isToolCallParseError(error: unknown): boolean {
+  if (error instanceof SyntaxError) return true;
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('is not valid JSON') || msg.includes('parsing outputMessage');
+}
+
 async function streamWithThinkTagStripping(
   chunks: AsyncIterable<webllm.ChatCompletionChunk>,
   onChunk: (text: string) => void
@@ -353,13 +359,25 @@ export class WebLLMEngine {
       messages.push({ role: "user", content: userQuery });
 
       // Step 1: Non-streaming call with tools
-      const completion = await this.engine.chat.completions.create({
-        messages,
-        temperature: 0,
-        max_tokens: 512,
-        tools: toolDefinitions as webllm.ChatCompletionTool[],
-        tool_choice: "auto"
-      });
+      // The model may fail to produce valid tool-call JSON (even Hermes models
+      // sometimes respond with plain text). Catch parse errors and fall back
+      // to a regular streaming query with the full data prompt.
+      let completion: webllm.ChatCompletion;
+      try {
+        completion = await this.engine.chat.completions.create({
+          messages,
+          temperature: 0,
+          max_tokens: 512,
+          tools: toolDefinitions as webllm.ChatCompletionTool[],
+          tool_choice: "auto"
+        });
+      } catch (toolCallError) {
+        if (isToolCallParseError(toolCallError)) {
+          console.warn('Model produced invalid tool-call output, falling back to streaming');
+          return this.streamQuery(userQuery, context, onChunk, onComplete);
+        }
+        throw toolCallError;
+      }
 
       const choice = completion.choices[0];
       const toolCalls = choice.message.tool_calls;
