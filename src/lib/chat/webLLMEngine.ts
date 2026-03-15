@@ -253,6 +253,34 @@ export class WebLLMEngine {
     }
   }
 
+  async generateDataQuestions(context: DynamicChatContext): Promise<string[]> {
+    if (!this.isReady || !this.engine) return [];
+
+    try {
+      const systemPrompt = buildSystemPrompt(context);
+      const completion = await this.engine.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Based on the data above, suggest exactly 4 short questions (max 12 words each) a user might ask. Output ONLY the questions, one per line, no numbering or bullets." }
+        ],
+        temperature: 0,
+        max_tokens: 200,
+      });
+
+      const raw = stripThinkTags(completion.choices[0].message.content || '');
+      const questions = raw
+        .split('\n')
+        .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^[-•*]\s*/, '').trim())
+        .filter(l => l.length > 10 && l.length < 120 && l.includes('?'));
+
+      await this.engine.resetChat();
+      return questions.slice(0, 4);
+    } catch (error) {
+      console.error("Failed to generate data questions:", error);
+      return [];
+    }
+  }
+
   private generateSuggestions(context: DynamicChatContext, lastQuery: string): string[] {
     const questions = getStarterQuestions(context);
     const queryLower = lastQuery.toLowerCase();

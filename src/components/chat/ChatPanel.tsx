@@ -35,6 +35,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   const [input, setInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [llmQuestions, setLlmQuestions] = useState<string[]>([]);
 
   // Refs
   const engineRef = useRef<WebLLMEngine | null>(null);
@@ -42,6 +43,20 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const starterQuestions = useMemo(() => getStarterQuestions(context), [context]);
+
+  const contextFingerprint = context?.userData.hasData
+    ? `${context.currentView.tab}:${context.currentView.mapType}:${context.userData.metricName}:${context.userData.count}`
+    : null;
+
+  useEffect(() => {
+    if (!modelReady || !contextFingerprint || !engineRef.current || !context) return;
+    let stale = false;
+    const engine = engineRef.current;
+    engine.generateDataQuestions(context).then(questions => {
+      if (!stale && questions.length > 0) setLlmQuestions(questions);
+    });
+    return () => { stale = true; };
+  }, [contextFingerprint, modelReady]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -328,9 +343,9 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
                       ? `${context.userData.count} entities loaded. Try asking:`
                       : 'Upload data to get started, or ask about geographic information.'}
                   </p>
-                  {starterQuestions.length > 0 && (
+                  {(llmQuestions.length > 0 || starterQuestions.length > 0) && (
                     <div className="flex flex-wrap gap-2">
-                      {starterQuestions.map((q, i) => (
+                      {(llmQuestions.length > 0 ? llmQuestions : starterQuestions).map((q, i) => (
                         <button
                           key={i}
                           className="text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 text-muted-foreground transition-colors text-left"
