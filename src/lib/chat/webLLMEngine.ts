@@ -1,6 +1,7 @@
 import * as webllm from "@mlc-ai/web-llm";
 import type { DynamicChatContext, ChatResponse, ConversationMessage } from './types';
 import { buildSystemPrompt, getStarterQuestions } from './promptBuilder';
+import { toolDefinitions, executeTool, getToolStatusMessage, clearSpatialCache } from './spatialTools';
 
 export interface InitProgress {
   progress: number;
@@ -29,6 +30,52 @@ function stripThinkTags(text: string): string {
 function isKVCacheError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
   return msg.includes('filledKVCacheLength') || msg.includes('KVCache');
+}
+
+async function streamWithThinkTagStripping(
+  chunks: AsyncIterable<webllm.ChatCompletionChunk>,
+  onChunk: (text: string) => void
+): Promise<void> {
+  let insideThink = false;
+  let pendingBuffer = '';
+
+  for await (const chunk of chunks) {
+    const delta = chunk.choices[0]?.delta?.content || "";
+    if (!delta) continue;
+
+    pendingBuffer += delta;
+
+    while (pendingBuffer.length > 0) {
+      if (insideThink) {
+        const closeIdx = pendingBuffer.indexOf('</think>');
+        if (closeIdx === -1) {
+          pendingBuffer = '';
+          break;
+        }
+        pendingBuffer = pendingBuffer.slice(closeIdx + 8);
+        insideThink = false;
+      } else {
+        const openIdx = pendingBuffer.indexOf('<think>');
+        if (openIdx === -1) {
+          if (pendingBuffer.length > 7) {
+            const safe = pendingBuffer.slice(0, -7);
+            if (safe) onChunk(safe);
+            pendingBuffer = pendingBuffer.slice(-7);
+          }
+          break;
+        }
+        if (openIdx > 0) {
+          onChunk(pendingBuffer.slice(0, openIdx));
+        }
+        pendingBuffer = pendingBuffer.slice(openIdx + 7);
+        insideThink = true;
+      }
+    }
+  }
+
+  if (pendingBuffer && !insideThink) {
+    onChunk(pendingBuffer.trimStart());
+  }
 }
 
 export class WebLLMEngine {
@@ -233,46 +280,7 @@ export class WebLLMEngine {
         stream: true
       });
 
-      let insideThink = false;
-      let pendingBuffer = '';
-
-      for await (const chunk of asyncChunkGenerator) {
-        const delta = chunk.choices[0]?.delta?.content || "";
-        if (!delta) continue;
-
-        pendingBuffer += delta;
-
-        while (pendingBuffer.length > 0) {
-          if (insideThink) {
-            const closeIdx = pendingBuffer.indexOf('</think>');
-            if (closeIdx === -1) {
-              pendingBuffer = '';
-              break;
-            }
-            pendingBuffer = pendingBuffer.slice(closeIdx + 8);
-            insideThink = false;
-          } else {
-            const openIdx = pendingBuffer.indexOf('<think>');
-            if (openIdx === -1) {
-              if (pendingBuffer.length > 7) {
-                const safe = pendingBuffer.slice(0, -7);
-                if (safe) onChunk(safe);
-                pendingBuffer = pendingBuffer.slice(-7);
-              }
-              break;
-            }
-            if (openIdx > 0) {
-              onChunk(pendingBuffer.slice(0, openIdx));
-            }
-            pendingBuffer = pendingBuffer.slice(openIdx + 7);
-            insideThink = true;
-          }
-        }
-      }
-
-      if (pendingBuffer && !insideThink) {
-        onChunk(pendingBuffer.trimStart());
-      }
+      await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
 
       if (onComplete) {
         onComplete();
@@ -283,6 +291,138 @@ export class WebLLMEngine {
         return this.streamQuery(userQuery, context, onChunk, onComplete);
       }
       console.error("WebLLM streaming error:", error);
+      onChunk(`\n\n❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (onComplete) {
+        onComplete();
+      }
+    }
+  }
+
+  /**
+   * Query with tool-calling support.
+   * 1. Non-streaming call with tools → check for tool_calls
+   * 2. If tool_calls: execute tools, then streaming final response
+   * 3. If no tool_calls: stream the text directly
+   */
+  async queryWithTools(
+    userQuery: string,
+    context: DynamicChatContext,
+    onChunk: (chunk: string) => void,
+    onToolStatus?: (status: string | null) => void,
+    onComplete?: () => void
+  ): Promise<void> {
+    if (!this.isReady || !this.engine) {
+      throw new Error("WebLLM not initialized. Call initialize() first.");
+    }
+
+    if (!context?.currentView || !context?.geoMetadata || !context?.userData) {
+      throw new Error("context structure is invalid");
+    }
+
+    // If no data loaded, fall back to regular streaming (tools need data)
+    if (!context.userData.hasData) {
+      return this.streamQuery(userQuery, context, onChunk, onComplete);
+    }
+
+    try {
+      clearSpatialCache();
+      await this.engine.resetChat();
+
+      const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
+      const contextWithMentions: DynamicChatContext = { ...context, mentionedStates };
+      const systemPrompt = buildSystemPrompt(contextWithMentions);
+
+      const messages: webllm.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt }
+      ];
+
+      if (context.conversationHistory && context.conversationHistory.length > 0) {
+        const recentHistory = context.conversationHistory
+          .filter(msg => msg.role !== 'system')
+          .slice(-10);
+        messages.push(...recentHistory.map(msg => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content
+        })));
+      }
+
+      messages.push({ role: "user", content: userQuery });
+
+      // Step 1: Non-streaming call with tools
+      const completion = await this.engine.chat.completions.create({
+        messages,
+        temperature: 0,
+        max_tokens: 512,
+        tools: toolDefinitions as webllm.ChatCompletionTool[],
+        tool_choice: "auto"
+      });
+
+      const choice = completion.choices[0];
+      const toolCalls = choice.message.tool_calls;
+
+      if (toolCalls && toolCalls.length > 0) {
+        // Step 2: Execute tools
+        messages.push({
+          role: "assistant",
+          content: choice.message.content || null,
+          tool_calls: toolCalls
+        } as webllm.ChatCompletionMessageParam);
+
+        for (const toolCall of toolCalls) {
+          const toolName = toolCall.function.name;
+          let toolArgs: Record<string, unknown>;
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments || '{}');
+          } catch {
+            toolArgs = {};
+          }
+
+          if (onToolStatus) {
+            onToolStatus(getToolStatusMessage(toolName));
+          }
+
+          const result = await executeTool(toolName, toolArgs, context);
+
+          messages.push({
+            role: "tool",
+            content: JSON.stringify(result.data),
+            tool_call_id: toolCall.id
+          } as webllm.ChatCompletionMessageParam);
+        }
+
+        if (onToolStatus) {
+          onToolStatus(null);
+        }
+
+        // Step 3: Reset and stream final response with tool results
+        await this.engine.resetChat();
+
+        const asyncChunkGenerator = await this.engine.chat.completions.create({
+          messages,
+          temperature: 0,
+          max_tokens: 512,
+          stream: true
+        });
+
+        await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
+      } else {
+        // No tool calls — emit the text directly, then stream if more needed
+        const raw = choice.message.content || '';
+        const answer = stripThinkTags(raw);
+        if (answer) {
+          onChunk(answer);
+        }
+      }
+
+      if (onComplete) {
+        onComplete();
+      }
+
+    } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.queryWithTools(userQuery, context, onChunk, onToolStatus, onComplete);
+      }
+      console.error("WebLLM tool query error:", error);
       onChunk(`\n\n❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       if (onComplete) {
         onComplete();

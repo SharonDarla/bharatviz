@@ -96,6 +96,7 @@ export interface DynamicChatContext {
   conversationHistory: ConversationMessage[];
   previousContext?: PreviousContext;
   mentionedStates?: string[];  // States mentioned in the current query (for selective context)
+  geoJsonPath?: string;  // Path to GeoJSON file for spatial analysis tools
 }
 
 export interface ChatMessage {

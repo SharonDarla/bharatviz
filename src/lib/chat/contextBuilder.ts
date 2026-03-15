@@ -100,7 +100,8 @@ export async function buildDynamicContext(
     },
 
     conversationHistory,
-    previousContext
+    previousContext,
+    geoJsonPath
   };
 }
 

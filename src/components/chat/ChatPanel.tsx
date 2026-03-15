@@ -36,6 +36,7 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [llmQuestions, setLlmQuestions] = useState<string[]>([]);
+  const [toolStatus, setToolStatus] = useState<string | null>(null);
 
   // Refs
   const engineRef = useRef<WebLLMEngine | null>(null);
@@ -195,10 +196,10 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
           }))
       };
 
-      // Stream response
+      // Query with tool support (falls back to streaming if no data)
       let fullResponse = '';
 
-      await engineRef.current.streamQuery(
+      await engineRef.current.queryWithTools(
         input.trim(),
         updatedContext,
         (chunk) => {
@@ -214,10 +215,14 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
             )
           );
         },
+        (status) => {
+          setToolStatus(status);
+        },
         () => {
           // On complete
           setIsGenerating(false);
           setStreamingContent('');
+          setToolStatus(null);
         }
       );
 
@@ -367,6 +372,13 @@ export function ChatPanel({ context, onMapAction }: ChatPanelProps) {
             {messages.map(msg => (
               <ChatMessageComponent key={msg.id} message={msg} />
             ))}
+
+            {toolStatus && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground px-2 py-1">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {toolStatus}
+              </div>
+            )}
 
             <div ref={messagesEndRef} />
           </div>
