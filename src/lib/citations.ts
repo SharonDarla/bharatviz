@@ -127,6 +127,15 @@ const SOURCE_CITATIONS: Record<string, CitationOutput> = {
 }`,
     apa: 'ramSeraph. (2024). Indian City Ward Boundaries (harmonized from SBM data). https://github.com/ramSeraph/opendata',
   },
+  'LivingAtlas/ramSeraph': {
+    bibtex: `@misc{livingatlas_ramseraph,
+  author = {{ramSeraph}},
+  title  = {Indian City Ward Boundaries (from {ESRI} Living Atlas India)},
+  year   = {2025},
+  url    = {https://github.com/ramSeraph/indian_admin_boundaries}
+}`,
+    apa: 'ramSeraph. (2025). Indian City Ward Boundaries (from ESRI Living Atlas India). https://github.com/ramSeraph/indian_admin_boundaries',
+  },
   'WB_AMRUT/ramSeraph': {
     bibtex: `@misc{wb_amrut_ramseraph,
   author = {{ramSeraph}},
