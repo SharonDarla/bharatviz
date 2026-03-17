@@ -41,10 +41,11 @@ interface FileUploadProps {
   geojsonPath?: string;
   selectedState?: string; // Optional: for state-district tab, filter NAs by this state
   onMapTitleChange?: (title: string) => void;
+  onDemoUrlChange?: (dataUrl: string, title: string) => void;
   darkMode?: boolean;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, onMapTitleChange, darkMode = false }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, onMapTitleChange, onDemoUrlChange, darkMode = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
@@ -360,6 +361,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
         if (!response.ok) throw new Error('Failed to load demo data');
         csvText = await response.text();
         onMapTitleChange?.(showcase.demo.title);
+        onDemoUrlChange?.(showcase.demo.url, showcase.demo.title);
         setDemoInfo({ index: showcase.index, total: showcase.total });
       } else {
         const response = await fetch(demoDataPath!);

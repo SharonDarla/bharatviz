@@ -201,6 +201,44 @@ export function createMcpServer(): Server {
             required: ['mapId'],
           },
         },
+        {
+          name: 'list_demos',
+          description:
+            'Lists all available showcase demo datasets (NFHS-5 health indicators and IHME AMR estimates). ' +
+            'Returns demo IDs, titles, level (states/districts), and CSV URLs. ' +
+            'Use get_demo_url to generate a shareable BharatViz link for any demo.',
+          inputSchema: {
+            type: 'object' as const,
+            properties: {
+              level: {
+                type: 'string',
+                enum: ['states', 'districts'],
+                description: 'Optional filter by level. Omit to see all demos.',
+              },
+            },
+          },
+        },
+        {
+          name: 'get_demo_url',
+          description:
+            'Generates a shareable BharatViz URL for a given demo dataset. ' +
+            'The URL loads the demo data directly in the browser with the correct title. ' +
+            'Use list_demos first to see available demo IDs.',
+          inputSchema: {
+            type: 'object' as const,
+            properties: {
+              demoId: {
+                type: 'string',
+                description: 'Demo ID from list_demos (e.g. "states_01_csection_rate", "districts_01_child_stunting", "states_26_ihme_amr").',
+              },
+              baseUrl: {
+                type: 'string',
+                description: 'Base URL for BharatViz. Default: "https://bharatviz.com".',
+              },
+            },
+            required: ['demoId'],
+          },
+        },
       ],
     };
   });
@@ -305,6 +343,23 @@ export function createMcpServer(): Server {
           const csv = await mapService.getCsvTemplate(mapId);
           return {
             content: [{ type: 'text', text: csv }],
+          };
+        }
+
+        case 'list_demos': {
+          const level = args?.level as 'states' | 'districts' | undefined;
+          const demos = await mapService.listDemos(level);
+          return {
+            content: [{ type: 'text', text: JSON.stringify(demos, null, 2) }],
+          };
+        }
+
+        case 'get_demo_url': {
+          const demoId = args?.demoId as string;
+          if (!demoId) throw new Error('demoId is required');
+          const result = await mapService.getDemoUrl(demoId, args?.baseUrl as string | undefined);
+          return {
+            content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
           };
         }
 

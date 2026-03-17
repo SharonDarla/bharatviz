@@ -312,4 +312,43 @@ export class McpMapService {
 
     return result;
   }
+
+  /** Load showcase demo URLs JSON */
+  private async loadDemoUrls(): Promise<Record<string, { url: string; title: string }>> {
+    const jsonPath = join(__dirname, '../../src/lib/showcase-demo-urls.json');
+    const raw = await readFile(jsonPath, 'utf-8');
+    return JSON.parse(raw);
+  }
+
+  /** List all available showcase demo datasets */
+  async listDemos(level?: 'states' | 'districts'): Promise<Array<{ id: string; title: string; level: string; url: string }>> {
+    const demos = await this.loadDemoUrls();
+    return Object.entries(demos)
+      .filter(([key]) => !level || key.startsWith(level + '_'))
+      .map(([key, { url, title }]) => ({
+        id: key,
+        title,
+        level: key.startsWith('districts_') ? 'districts' : 'states',
+        url,
+      }));
+  }
+
+  /** Generate a shareable BharatViz URL for a given demo */
+  async getDemoUrl(demoId: string, baseUrl?: string): Promise<{ shareableUrl: string; title: string; csvUrl: string }> {
+    const demos = await this.loadDemoUrls();
+    const demo = demos[demoId];
+    if (!demo) {
+      const available = Object.keys(demos).join(', ');
+      throw new Error(`Unknown demo ID: "${demoId}". Available: ${available}`);
+    }
+    const base = (baseUrl || 'https://bharatviz.com').replace(/\/$/, '');
+    const params = new URLSearchParams();
+    params.set('dataUrl', demo.url);
+    params.set('title', demo.title);
+    return {
+      shareableUrl: `${base}/?${params.toString()}`,
+      title: demo.title,
+      csvUrl: demo.url,
+    };
+  }
 }

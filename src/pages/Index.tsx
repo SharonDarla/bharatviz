@@ -18,6 +18,8 @@ import { getCityList, getCityDataset, getCityDatasets, getCityCsvUrls, DEFAULT_C
 import { IndiaCityMap, type IndiaCityMapRef, type CityWardData } from '@/components/IndiaCityMap';
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
+import { fetchWithCorsFallback } from '@/lib/corsProxy';
+import showcaseDemoUrls from '@/lib/showcase-demo-urls.json';
 import Credits from '@/components/Credits';
 import MCPDocs from '@/components/MCPDocs';
 import { DistrictStats } from '@/components/DistrictStats';
@@ -156,6 +158,7 @@ const Index = () => {
   const cityMapRef = useRef<IndiaCityMapRef>(null);
 
   const hasReadInitialUrl = useRef<Set<string>>(new Set());
+  const skipDataUrlLoad = useRef(false);
   const selectedStateRef = useRef(selectedStateForMap);
   useEffect(() => { selectedStateRef.current = selectedStateForMap; }, [selectedStateForMap]);
 
@@ -474,20 +477,34 @@ const Index = () => {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const dataUrl = searchParams.get('dataUrl');
+    let dataUrl = searchParams.get('dataUrl');
+    let titleFromParams = searchParams.get('title') || '';
+
+    // Support ?demo=N — resolve to the Nth demo for the current tab level
+    const demoParam = searchParams.get('demo');
+    if (demoParam && !dataUrl) {
+      const demoIndex = parseInt(demoParam, 10);
+      if (!isNaN(demoIndex) && demoIndex >= 1) {
+        const tabFromPath = getTabFromPath(location.pathname);
+        const level = tabFromPath === 'districts' ? 'districts' : 'states';
+        const demos = Object.entries(showcaseDemoUrls as Record<string, { url: string; title: string }>)
+          .filter(([key]) => key.startsWith(level + '_'));
+        if (demoIndex <= demos.length) {
+          const [, demo] = demos[demoIndex - 1];
+          dataUrl = demo.url;
+          titleFromParams = demo.title;
+        }
+      }
+    }
 
     if (dataUrl) {
+      if (skipDataUrlLoad.current) {
+        skipDataUrlLoad.current = false;
+        return;
+      }
       const loadDataFromUrl = async () => {
         try {
-          const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          const apiBase = isDev ? 'http://localhost:3001' : `${window.location.protocol}//${window.location.hostname}`;
-          const proxyUrl = `${apiBase}/api/v1/proxy/csv?url=${encodeURIComponent(dataUrl)}`;
-          const response = await fetch(proxyUrl);
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch data: ${response.statusText}`);
-          }
-
+          const response = await fetchWithCorsFallback(dataUrl);
           const csvText = await response.text();
 
           Papa.parse(csvText, {
@@ -495,30 +512,59 @@ const Index = () => {
             skipEmptyLines: true,
             complete: (results) => {
               const data = results.data as Record<string, string>[];
+              const headers = results.meta.fields || [];
 
               const hasDistrict = data[0] && ('district_name' in data[0] || 'district' in data[0]);
               const colorScale = searchParams.get('colorScale') as ColorScale || 'spectral';
-              const title = searchParams.get('title') || '';
-              const legendTitle = searchParams.get('legendTitle') || 'Values';
+              const title = titleFromParams || searchParams.get('title') || '';
               const boundary = searchParams.get('boundary') || 'LGD';
               const showStateBoundaries = searchParams.get('showStateBoundaries') === 'true';
               const invertColors = searchParams.get('invertColors') === 'true';
 
-              if (hasDistrict) {
-                const districtData = data.map((row) => ({
-                  state: row.state_name || row.state || '',
-                  district: row.district_name || row.district || '',
-                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
-                }));
+              // Use last column as value (matches processUploadedData behavior),
+              // but fall back to explicit 'value' column if present
+              const valueColumns = hasDistrict ? headers.slice(2) : headers.slice(1);
+              const valueCol = valueColumns.includes('value') ? 'value' : valueColumns[valueColumns.length - 1];
+              const legendTitle = searchParams.get('legendTitle') || valueCol || 'Values';
 
-                setDistrictMapData(districtData);
-                setDistrictDataTitle(title);
+              const parseVal = (v: string): number | string => {
+                const trimmed = (v || '').trim();
+                if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return NaN;
+                const num = Number(trimmed);
+                return isNaN(num) ? trimmed : num;
+              };
+
+              if (hasDistrict) {
+                // Multi-column support for districts
+                if (valueColumns.length > 1) {
+                  const allSeries = valueColumns.map(col => ({
+                    key: col,
+                    title: col,
+                    data: data.filter(row => (row.state_name || row.state) && (row.district_name || row.district)).map(row => ({
+                      state: row.state_name || row.state || '',
+                      district: row.district_name || row.district || '',
+                      value: parseVal(row[col]),
+                    })),
+                  }));
+                  // Use the first series for initial display
+                  setDistrictMapData(allSeries[0].data);
+                  setDistrictDataTitle(allSeries[0].title);
+                } else {
+                  const districtData = data.map((row) => ({
+                    state: row.state_name || row.state || '',
+                    district: row.district_name || row.district || '',
+                    value: parseVal(row[valueCol]),
+                  }));
+                  setDistrictMapData(districtData);
+                  setDistrictDataTitle(legendTitle);
+                }
+
                 setDistrictColorScale(colorScale);
                 setDistrictInvertColors(invertColors);
                 setShowStateBoundaries(showStateBoundaries);
                 setSelectedDistrictMapType(boundary);
 
-                const values = districtData.map(d => d.value);
+                const values = (hasDistrict ? data : []).map(d => parseVal(d[valueCol]));
                 const dataType = detectDataType(values);
                 setDistrictDataType(dataType);
 
@@ -529,30 +575,44 @@ const Index = () => {
                   setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
                 }
 
-                handleTabChange('districts');
+                if (title) setDistrictMapTitle(title);
+                setActiveTab('districts');
               } else {
-                const stateData = data.map((row) => ({
-                  state: row.state_name || row.state || '',
-                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
-                }));
+                // Multi-column support for states
+                if (valueColumns.length > 1) {
+                  const allSeries = valueColumns.map(col => ({
+                    key: col,
+                    title: col,
+                    data: data.filter(row => row.state_name || row.state).map(row => ({
+                      state: row.state_name || row.state || '',
+                      value: parseVal(row[col]),
+                    })),
+                  }));
+                  handleStateMultiYearDataLoad(allSeries);
+                } else {
+                  const stateData = data.map((row) => ({
+                    state: row.state_name || row.state || '',
+                    value: parseVal(row[valueCol]),
+                  }));
+                  setStateMapData(stateData);
+                  setStateDataTitle(legendTitle);
 
-                setStateMapData(stateData);
-                setStateDataTitle(title);
-                setStateColorScale(colorScale);
-                setStateInvertColors(invertColors);
+                  const values = stateData.map(d => d.value);
+                  const dataType = detectDataType(values);
+                  setStateDataType(dataType);
 
-                const values = stateData.map(d => d.value);
-                const dataType = detectDataType(values);
-                setStateDataType(dataType);
-
-                if (dataType === 'categorical') {
-                  const categories = getUniqueCategories(values);
-                  const categoryColors = generateDefaultCategoryColors(categories);
-                  setStateCategoryColors(categoryColors);
-                  setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                  if (dataType === 'categorical') {
+                    const categories = getUniqueCategories(values);
+                    const categoryColors = generateDefaultCategoryColors(categories);
+                    setStateCategoryColors(categoryColors);
+                    setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                  }
                 }
 
-                handleTabChange('states');
+                setStateColorScale(colorScale);
+                setStateInvertColors(invertColors);
+                if (title) setStateMapTitle(title);
+                setActiveTab('states');
               }
             },
             error: (error) => {
@@ -771,6 +831,14 @@ const Index = () => {
       setStateCategoryColors(categoryColors);
       setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
     }
+  };
+
+  const handleDemoUrlChange = (dataUrl: string, title: string) => {
+    skipDataUrlLoad.current = true;
+    const params = new URLSearchParams();
+    params.set('dataUrl', dataUrl);
+    if (title) params.set('title', title);
+    navigate(buildUrl(params), { replace: true });
   };
 
   const handleStateMultiYearDataLoad = (series: MultiYearSeries[]) => {
@@ -1518,6 +1586,7 @@ const Index = () => {
                   mode="states"
                   geojsonPath="/India_LGD_states.geojson"
                   onMapTitleChange={setStateMapTitle}
+                  onDemoUrlChange={handleDemoUrlChange}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
@@ -1609,6 +1678,7 @@ const Index = () => {
                   googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
                   onMapTitleChange={setDistrictMapTitle}
+                  onDemoUrlChange={handleDemoUrlChange}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
