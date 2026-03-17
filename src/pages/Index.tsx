@@ -72,6 +72,7 @@ const Index = () => {
   const [stateHideNames, setStateHideNames] = useState(false);
   const [stateHideValues, setStateHideValues] = useState(false);
   const [stateDataTitle, setStateDataTitle] = useState<string>('');
+  const [stateMapTitle, setStateMapTitle] = useState<string>('');
   const [stateColorBarSettings, setStateColorBarSettings] = useState<ColorBarSettings>({
     isDiscrete: false,
     binCount: 5,
@@ -86,6 +87,7 @@ const Index = () => {
   const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
   const [districtInvertColors, setDistrictInvertColors] = useState(false);
   const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
+  const [districtMapTitle, setDistrictMapTitle] = useState<string>('');
   const [showStateBoundaries, setShowStateBoundaries] = useState(true);
   const [districtColorBarSettings, setDistrictColorBarSettings] = useState<ColorBarSettings>({
     isDiscrete: false,
@@ -1483,6 +1485,7 @@ const Index = () => {
                     hideStateNames={stateHideNames}
                     hideValues={stateHideValues}
                     dataTitle={stateDataTitle}
+                    mapTitle={stateMapTitle}
                     colorBarSettings={stateColorBarSettings}
                     dataType={stateDataType}
                     categoryColors={stateCategoryColors}
@@ -1514,6 +1517,7 @@ const Index = () => {
                   }}
                   mode="states"
                   geojsonPath="/India_LGD_states.geojson"
+                  onMapTitleChange={setStateMapTitle}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
@@ -1550,6 +1554,7 @@ const Index = () => {
                   colorScale={districtColorScale}
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
+                  mapTitle={districtMapTitle}
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType)?.geojsonPath}
@@ -1601,9 +1606,9 @@ const Index = () => {
                   onDataLoad={handleDistrictDataLoad}
                   mode="districts"
                   templateCsvPath={getDistrictMapConfig(selectedDistrictMapType).templateCsvPath}
-                  demoDataPath={getDistrictMapConfig(selectedDistrictMapType).demoDataPath}
                   googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
+                  onMapTitleChange={setDistrictMapTitle}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
@@ -1638,6 +1643,7 @@ const Index = () => {
                   colorScale={districtColorScale}
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
+                  mapTitle={districtMapTitle}
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
                   geojsonPath={getDistrictMapConfig('NSSO').geojsonPath}

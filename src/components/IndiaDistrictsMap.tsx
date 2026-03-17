@@ -81,6 +81,7 @@ interface IndiaDistrictsMapProps {
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
   naInfo?: NAInfo;
+  mapTitle?: string;
   darkMode?: boolean;
 }
 
@@ -154,6 +155,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
   dataType = 'numerical',
   categoryColors = {},
   naInfo,
+  mapTitle,
   darkMode = false
 }, ref) => {
   const [geojsonData, setGeojsonData] = useState<{ features: GeoJSONFeature[] } | null>(null);
@@ -206,6 +208,12 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
       setLegendTitle(dataTitle);
     }
   }, [dataTitle]);
+
+  useEffect(() => {
+    if (mapTitle !== undefined) {
+      setMainTitle(mapTitle || 'BharatViz');
+    }
+  }, [mapTitle]);
 
   useEffect(() => {
     if (selectedState) {

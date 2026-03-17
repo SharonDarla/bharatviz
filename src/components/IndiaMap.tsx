@@ -38,6 +38,7 @@ interface IndiaMapProps {
   hideStateNames?: boolean;
   hideValues?: boolean;
   dataTitle?: string;
+  mapTitle?: string;
   colorBarSettings?: ColorBarSettings;
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
@@ -54,7 +55,7 @@ export interface IndiaMapRef {
   getSVGElement: () => SVGSVGElement | null;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false }, ref) => {
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', mapTitle, colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
   const [renderingData, setRenderingData] = useState(false);
@@ -92,6 +93,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       setLegendTitle(dataTitle);
     }
   }, [dataTitle]);
+
+  useEffect(() => {
+    if (mapTitle !== undefined) {
+      setMainTitle(mapTitle || 'BharatViz');
+    }
+  }, [mapTitle]);
 
   const getMapDimensions = () => ({
     width: isMobile ? 350 : 800,
