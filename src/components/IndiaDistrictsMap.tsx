@@ -195,7 +195,7 @@ export const IndiaDistrictsMap = forwardRef<IndiaDistrictsMapRef, IndiaDistricts
 
   useEffect(() => {
     if (isMobile) {
-      setLegendPosition({ x: 10, y: 380 });
+      setLegendPosition({ x: 190, y: 10 });
     } else if (selectedState) {
       setLegendPosition({ x: 550, y: 100 });
     } else {
