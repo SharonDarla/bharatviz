@@ -470,30 +470,32 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
   };
 
   return (
-    <Card className={`p-6 border-dashed border-2 hover:border-primary/50 transition-colors ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : ''}`}>
+    <Card className={`p-3 sm:p-6 border-dashed border-2 hover:border-primary/50 transition-colors ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : ''}`}>
       <div className="text-center">
-        <Upload className={`mx-auto h-12 w-12 mb-4 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`} />
-        <h3 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : ''}`}>Upload Your Data</h3>
-        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
+        <Upload className={`mx-auto h-8 w-8 sm:h-12 sm:w-12 mb-2 sm:mb-4 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`} />
+        <h3 className={`text-base sm:text-lg font-medium mb-1 sm:mb-2 ${darkMode ? 'text-white' : ''}`}>Upload Your Data</h3>
+        <p className={`text-xs sm:text-sm mb-2 sm:mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
           {mode === 'districts'
             ? 'Upload a CSV, TSV, or gzipped (.gz) file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
             : 'Upload a CSV, TSV, or gzipped (.gz) file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
           }
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-row gap-2 sm:gap-3 justify-center">
           <Button
+            size="sm"
             onClick={handleUploadClick}
-            className={darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''}
+            className={`text-xs sm:text-sm ${darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''}`}
           >
             Choose File
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={handleLoadDemo}
             disabled={demoLoading}
-            className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
+            className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
           >
-            <Play className="h-4 w-4" />
+            <Play className="h-3 w-3 sm:h-4 sm:w-4" />
             {demoLoading ? 'Loading...' : 'Load Demo'}
           </Button>
         </div>

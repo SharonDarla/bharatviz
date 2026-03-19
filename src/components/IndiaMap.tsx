@@ -85,7 +85,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: -10, y: 160 } : DEFAULT_LEGEND_POSITION.STATES);
+    setLegendPosition(isMobile ? { x: 10, y: 295 } : DEFAULT_LEGEND_POSITION.STATES);
   }, [isMobile]);
 
   useEffect(() => {
@@ -102,7 +102,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
   const getMapDimensions = () => ({
     width: isMobile ? 350 : 800,
-    height: isMobile ? 350 : 800,
+    height: isMobile ? 390 : 800,
   });
 
   const exportPNG = () => {
@@ -1201,9 +1201,9 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         ref={svgRef}
         className="max-w-full h-auto"
         width={isMobile ? 350 : MAP_DIMENSIONS.STATES.width}
-        height={isMobile ? 350 : MAP_DIMENSIONS.STATES.height}
+        height={isMobile ? 390 : MAP_DIMENSIONS.STATES.height}
         style={{ userSelect: 'none', backgroundColor: darkMode ? '#000000' : '#ffffff' }}
-        viewBox={isMobile ? "0 0 350 350" : `0 0 ${MAP_DIMENSIONS.STATES.width} ${MAP_DIMENSIONS.STATES.height}`}
+        viewBox={isMobile ? "0 0 350 390" : `0 0 ${MAP_DIMENSIONS.STATES.width} ${MAP_DIMENSIONS.STATES.height}`}
       >
         {/* Legend overlay (React) */}
         {data.length > 0 && (
@@ -1413,7 +1413,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         {naInfo && naInfo.count > 0 && showNALegend && (
           <g
             className="na-legend"
-            transform={`translate(${isMobile ? 10 : 560}, ${isMobile ? 310 : 750})`}
+            transform={`translate(${isMobile ? 10 : 560}, ${isMobile ? 350 : 750})`}
           >
             {/* Background box */}
             <rect

@@ -1285,7 +1285,7 @@ const Index = () => {
 
   const seoContent = getSEOContent();
 
-  const tabTriggerClass = `rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
+  const tabTriggerClass = `rounded-lg border px-1.5 py-1 sm:border-2 sm:px-4 sm:py-3 font-semibold text-xs sm:text-base transition-all duration-200 ${
     darkMode
       ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
       : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
@@ -1364,16 +1364,17 @@ const Index = () => {
       </button>
 
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className={`text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3 ${darkMode ? 'text-white' : ''}`}>
-            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-8 sm:h-12 w-auto" />
-            <span>BharatViz - Fast choropleths for India</span>
+        <div className="text-center mb-3 sm:mb-8">
+          <h1 className={`text-lg sm:text-4xl font-bold mb-1 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3 ${darkMode ? 'text-white' : ''}`}>
+            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-6 sm:h-12 w-auto" />
+            <span>BharatViz</span>
+            <span className="hidden sm:inline">- Fast choropleths for India</span>
           </h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 bg-transparent p-0 h-auto">
+          <div className="mb-4 sm:mb-8">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-1 sm:gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
                 className={tabTriggerClass}
@@ -1433,7 +1434,7 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 {stateMultiYearSeries.length > 0 ? (
                   <div className="space-y-4">
                     {/* Multi-year grid layout */}
@@ -1575,7 +1576,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
                   onMultiDataLoad={(payload) => {
@@ -1616,7 +1617,7 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaDistrictsMap
                   ref={districtMapRef}
                   data={districtMapData}
@@ -1647,7 +1648,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
                   <Label htmlFor="district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
@@ -1706,7 +1707,7 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'regions' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaDistrictsMap
                   ref={districtMapRef}
                   data={districtMapData}
@@ -1737,7 +1738,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'}`}>
                   <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-black'}`}>NSSO Regions</h3>
                   <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-black'}`}>
@@ -1779,7 +1780,7 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'state-districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaDistrictsMap
                   ref={stateDistrictMapRef}
                   data={stateDistrictMapData}
@@ -1815,7 +1816,7 @@ const Index = () => {
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
                   <Label htmlFor="state-district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
@@ -2231,7 +2232,7 @@ POST /api/v1/districts/map
 
           <div className={`space-y-6 ${activeTab === 'cities' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaCityMap
                   ref={cityMapRef}
                   data={cityMapData}
@@ -2264,7 +2265,7 @@ POST /api/v1/districts/map
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
                   <Label htmlFor="city-select" className="text-sm font-medium mb-2 block">
                     City
