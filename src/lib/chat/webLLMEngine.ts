@@ -1,11 +1,8 @@
-/**
- * WebLLM Engine Integration
- * Handles model loading, initialization, and query execution
- */
-
 import * as webllm from "@mlc-ai/web-llm";
+import { functionCallingModelIds } from "@mlc-ai/web-llm";
 import type { DynamicChatContext, ChatResponse, ConversationMessage } from './types';
-import { buildSystemPrompt } from './promptBuilder';
+import { buildSystemPrompt, getStarterQuestions } from './promptBuilder';
+import { toolDefinitions, executeTool, getToolStatusMessage, clearSpatialCache } from './spatialTools';
 
 export interface InitProgress {
   progress: number;
@@ -13,17 +10,12 @@ export interface InitProgress {
   text: string;
 }
 
-/**
- * Extract state names mentioned in the user query
- * This allows us to provide targeted context instead of all data
- */
 function extractMentionedStates(query: string, availableStates: string[]): string[] {
   const queryLower = query.toLowerCase();
   const mentioned: string[] = [];
 
   for (const state of availableStates) {
     const stateLower = state.toLowerCase();
-    // Check for exact match or partial match (e.g., "UP" for "Uttar Pradesh")
     if (queryLower.includes(stateLower)) {
       mentioned.push(state);
     }
@@ -32,19 +24,94 @@ function extractMentionedStates(query: string, availableStates: string[]): strin
   return mentioned;
 }
 
+function stripThinkTags(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trimStart();
+}
+
+function isKVCacheError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('filledKVCacheLength') || msg.includes('KVCache');
+}
+
+function isToolCallParseError(error: unknown): boolean {
+  if (error instanceof SyntaxError) return true;
+  const msg = error instanceof Error ? error.message : String(error);
+  return msg.includes('is not valid JSON') || msg.includes('parsing outputMessage');
+}
+
+const TOOL_TRIGGER_PATTERNS = /\b(morans?|lisa|cluster|hotspot|coldspot|spatial|autocorrelation|gi\*|getis|compare.*(region|north|south|east|west)|top\s+\d+|bottom\s+\d+|rank|summary\s+stat|descriptive\s+stat)\b/i;
+
+function inferToolFromQuery(query: string): string | null {
+  const q = query.toLowerCase();
+  if (/\blisa\b/.test(q) || /\blocal.*(cluster|spatial|indicator)/i.test(q)) return 'local_spatial_clusters';
+  if (/\bhotspot|coldspot|gi\*|getis/i.test(q)) return 'hotspot_analysis';
+  if (/\bmorans?|spatial\s*auto|autocorrelation/i.test(q)) return 'spatial_autocorrelation';
+  if (/\bcompare.*(region|north|south|east|west)/i.test(q)) return 'compare_regions';
+  if (/\b(top|bottom|rank)\b/i.test(q)) return 'rank_entities';
+  if (/\bsummar|descriptive/i.test(q)) return 'summarize_data';
+  return null;
+}
+
+async function streamWithThinkTagStripping(
+  chunks: AsyncIterable<webllm.ChatCompletionChunk>,
+  onChunk: (text: string) => void
+): Promise<void> {
+  let insideThink = false;
+  let pendingBuffer = '';
+
+  for await (const chunk of chunks) {
+    const delta = chunk.choices[0]?.delta?.content || "";
+    if (!delta) continue;
+
+    pendingBuffer += delta;
+
+    while (pendingBuffer.length > 0) {
+      if (insideThink) {
+        const closeIdx = pendingBuffer.indexOf('</think>');
+        if (closeIdx === -1) {
+          pendingBuffer = '';
+          break;
+        }
+        pendingBuffer = pendingBuffer.slice(closeIdx + 8);
+        insideThink = false;
+      } else {
+        const openIdx = pendingBuffer.indexOf('<think>');
+        if (openIdx === -1) {
+          if (pendingBuffer.length > 7) {
+            const safe = pendingBuffer.slice(0, -7);
+            if (safe) onChunk(safe);
+            pendingBuffer = pendingBuffer.slice(-7);
+          }
+          break;
+        }
+        if (openIdx > 0) {
+          onChunk(pendingBuffer.slice(0, openIdx));
+        }
+        pendingBuffer = pendingBuffer.slice(openIdx + 7);
+        insideThink = true;
+      }
+    }
+  }
+
+  if (pendingBuffer && !insideThink) {
+    onChunk(pendingBuffer.trimStart());
+  }
+}
+
 export class WebLLMEngine {
   private engine: webllm.MLCEngine | null = null;
   private isInitializing = false;
   private isReady = false;
   private selectedModel: string;
+  private recovering = false;
 
-  constructor(modelId: string = "Llama-3.2-3B-Instruct-q4f16_1-MLC") {
+  private supportsToolCalling: boolean;
+
+  constructor(modelId: string = "Qwen3-4B-q4f16_1-MLC") {
     this.selectedModel = modelId;
+    this.supportsToolCalling = functionCallingModelIds.includes(modelId);
   }
 
-  /**
-   * Initialize the WebLLM engine with progress callback
-   */
   async initialize(
     onProgress?: (progress: InitProgress) => void
   ): Promise<void> {
@@ -54,7 +121,6 @@ export class WebLLMEngine {
     }
 
     if (this.isInitializing) {
-      // Wait for ongoing initialization
       while (this.isInitializing) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
@@ -93,9 +159,27 @@ export class WebLLMEngine {
     }
   }
 
-  /**
-   * Execute a query and return complete response
-   */
+  private async recoverFromKVCacheError(): Promise<boolean> {
+    if (this.recovering) return false;
+    this.recovering = true;
+    try {
+      console.warn('KV cache corrupted, reloading engine...');
+      if (this.engine) {
+        try { await this.engine.unload(); } catch (_) {}
+      }
+      this.isReady = false;
+      this.engine = await webllm.CreateMLCEngine(this.selectedModel, { logLevel: "WARN" });
+      this.isReady = true;
+      console.log('Engine reloaded after KV cache recovery');
+      return true;
+    } catch (e) {
+      console.error('KV cache recovery failed:', e);
+      return false;
+    } finally {
+      this.recovering = false;
+    }
+  }
+
   async query(
     userQuery: string,
     context: DynamicChatContext
@@ -111,23 +195,16 @@ export class WebLLMEngine {
     const startTime = performance.now();
 
     try {
-      // Extract states mentioned in the query for targeted context
-      const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
-      const contextWithMentions: DynamicChatContext = {
-        ...context,
-        mentionedStates
-      };
+      await this.engine.resetChat();
 
-      // Build system prompt from context
+      const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
+      const contextWithMentions: DynamicChatContext = { ...context, mentionedStates };
       const systemPrompt = buildSystemPrompt(contextWithMentions);
 
-      // Build messages array
       const messages: webllm.ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt }
       ];
 
-      // Add conversation history (last 5 exchanges = 10 messages)
-      // Filter out system messages - only the first system message is allowed
       if (context.conversationHistory && context.conversationHistory.length > 0) {
         const recentHistory = context.conversationHistory
           .filter(msg => msg.role !== 'system')
@@ -138,20 +215,16 @@ export class WebLLMEngine {
         })));
       }
 
-      // Add current query
       messages.push({ role: "user", content: userQuery });
 
-      // Generate completion
       const completion = await this.engine.chat.completions.create({
         messages,
-        temperature: 0.7,
+        temperature: 0,
         max_tokens: 512,
-        top_p: 0.9
       });
 
-      const answer = completion.choices[0].message.content || "No response generated";
-
-      // Generate context-aware suggestions
+      const raw = completion.choices[0].message.content || "No response generated";
+      const answer = stripThinkTags(raw);
       const suggestions = this.generateSuggestions(context, userQuery);
 
       const processingTime = performance.now() - startTime;
@@ -164,6 +237,9 @@ export class WebLLMEngine {
       };
 
     } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.query(userQuery, context);
+      }
       console.error("WebLLM query error:", error);
       return {
         answer: `❌ Error processing query: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -174,9 +250,6 @@ export class WebLLMEngine {
     }
   }
 
-  /**
-   * Execute a streaming query with token-by-token callback
-   */
   async streamQuery(
     userQuery: string,
     context: DynamicChatContext,
@@ -187,44 +260,30 @@ export class WebLLMEngine {
       throw new Error("WebLLM not initialized. Call initialize() first.");
     }
 
-    console.log('webLLMEngine streamQuery - received context:', {
-      contextExists: !!context,
-      hasCurrentView: !!context?.currentView,
-      hasGeoMetadata: !!context?.geoMetadata,
-      hasUserData: !!context?.userData,
-      contextKeys: context ? Object.keys(context) : []
-    });
-
     if (!context) {
-      console.error('webLLMEngine streamQuery - context is null/undefined');
       throw new Error("context is not defined");
     }
 
     if (!context.currentView || !context.geoMetadata || !context.userData) {
-      console.error('webLLMEngine streamQuery - context structure invalid:', context);
       throw new Error("context structure is invalid");
     }
 
     try {
-      console.log('webLLMEngine streamQuery - extracting mentioned states');
-      // Extract states mentioned in the query for targeted context
+      await this.engine.resetChat();
+
       const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
-      console.log('webLLMEngine streamQuery - mentioned states:', mentionedStates);
 
       const contextWithMentions: DynamicChatContext = {
         ...context,
         mentionedStates
       };
 
-      console.log('webLLMEngine streamQuery - building system prompt');
       const systemPrompt = buildSystemPrompt(contextWithMentions);
-      console.log('webLLMEngine streamQuery - system prompt built successfully, length:', systemPrompt.length);
 
       const messages: webllm.ChatCompletionMessageParam[] = [
         { role: "system", content: systemPrompt }
       ];
 
-      // Filter out system messages - only the first system message is allowed
       if (context.conversationHistory && context.conversationHistory.length > 0) {
         const recentHistory = context.conversationHistory
           .filter(msg => msg.role !== 'system')
@@ -239,24 +298,21 @@ export class WebLLMEngine {
 
       const asyncChunkGenerator = await this.engine.chat.completions.create({
         messages,
-        temperature: 0.7,
+        temperature: 0,
         max_tokens: 512,
-        top_p: 0.9,
         stream: true
       });
 
-      for await (const chunk of asyncChunkGenerator) {
-        const delta = chunk.choices[0]?.delta?.content || "";
-        if (delta) {
-          onChunk(delta);
-        }
-      }
+      await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
 
       if (onComplete) {
         onComplete();
       }
 
     } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.streamQuery(userQuery, context, onChunk, onComplete);
+      }
       console.error("WebLLM streaming error:", error);
       onChunk(`\n\n❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       if (onComplete) {
@@ -265,72 +321,240 @@ export class WebLLMEngine {
     }
   }
 
-  /**
-   * Generate context-aware follow-up suggestions
-   */
-  private generateSuggestions(context: DynamicChatContext, lastQuery: string): string[] {
-    const suggestions: string[] = [];
-    const { userData, currentView } = context;
+  async queryWithTools(
+    userQuery: string,
+    context: DynamicChatContext,
+    onChunk: (chunk: string) => void,
+    onToolStatus?: (status: string | null) => void,
+    onComplete?: () => void
+  ): Promise<void> {
+    if (!this.isReady || !this.engine) {
+      throw new Error("WebLLM not initialized. Call initialize() first.");
+    }
 
-    if (!userData.hasData) {
-      return [
-        "What geographic information is available?",
-        "Tell me about the current map boundaries",
-        "What can I ask once I upload data?"
+    if (!context?.currentView || !context?.geoMetadata || !context?.userData) {
+      throw new Error("context structure is invalid");
+    }
+
+    if (!context.userData.hasData || !this.supportsToolCalling) {
+      return this.streamQuery(userQuery, context, onChunk, onComplete);
+    }
+
+    try {
+      clearSpatialCache();
+      await this.engine.resetChat();
+
+      const mentionedStates = extractMentionedStates(userQuery, context.geoMetadata.stateList);
+      const contextWithMentions: DynamicChatContext = { ...context, mentionedStates };
+      const systemPrompt = buildSystemPrompt(contextWithMentions, { useTools: true });
+
+      const messages: webllm.ChatCompletionMessageParam[] = [
+        { role: "system", content: systemPrompt }
       ];
-    }
 
-    // State-specific district view suggestions
-    if (currentView.tab === 'state-districts' && currentView.selectedState) {
-      suggestions.push(`What is the median for districts in ${currentView.selectedState}?`);
-
-      if (userData.missingEntities.length > 0) {
-        suggestions.push(`Which districts in ${currentView.selectedState} are missing data?`);
+      if (context.conversationHistory && context.conversationHistory.length > 0) {
+        const recentHistory = context.conversationHistory
+          .filter(msg => msg.role !== 'system')
+          .slice(-10);
+        messages.push(...recentHistory.map(msg => ({
+          role: msg.role as "user" | "assistant",
+          content: msg.content
+        })));
       }
 
-      suggestions.push(`Compare ${currentView.selectedState} with neighboring states`);
-    }
+      messages.push({ role: "user", content: userQuery });
 
-    // Missing data suggestions
-    if (userData.missingEntities.length > 0 && !lastQuery.toLowerCase().includes('missing')) {
-      suggestions.push("Which entities are missing data?");
-    }
+      const forceTools = TOOL_TRIGGER_PATTERNS.test(userQuery);
+      let completion: webllm.ChatCompletion;
+      try {
+        completion = await this.engine.chat.completions.create({
+          messages,
+          temperature: 0,
+          max_tokens: 512,
+          tools: toolDefinitions as webllm.ChatCompletionTool[],
+          tool_choice: forceTools ? "required" : "auto"
+        });
+      } catch (toolCallError) {
+        if (isToolCallParseError(toolCallError)) {
+          console.warn('Model produced invalid tool-call output, attempting auto-dispatch');
+          const inferredTool = inferToolFromQuery(userQuery);
+          if (inferredTool) {
+            return this.autoDispatchTool(inferredTool, userQuery, context, messages, onChunk, onToolStatus, onComplete);
+          }
+          return this.streamQuery(userQuery, context, onChunk, onComplete);
+        }
+        throw toolCallError;
+      }
 
-    // Regional comparison suggestions
-    if (userData.regionalStats && Object.keys(userData.regionalStats).length > 1) {
-      if (!lastQuery.toLowerCase().includes('region')) {
-        suggestions.push("Compare regional averages");
+      const choice = completion.choices[0];
+      const toolCalls = choice.message.tool_calls;
+
+      if (toolCalls && toolCalls.length > 0) {
+        messages.push({
+          role: "assistant",
+          content: choice.message.content || null,
+          tool_calls: toolCalls
+        } as webllm.ChatCompletionMessageParam);
+
+        for (const toolCall of toolCalls) {
+          const toolName = toolCall.function.name;
+          let toolArgs: Record<string, unknown>;
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments || '{}');
+          } catch {
+            toolArgs = {};
+          }
+
+          if (onToolStatus) {
+            onToolStatus(getToolStatusMessage(toolName));
+          }
+
+          const result = await executeTool(toolName, toolArgs, context);
+
+          messages.push({
+            role: "tool",
+            content: JSON.stringify(result.data),
+            tool_call_id: toolCall.id
+          } as webllm.ChatCompletionMessageParam);
+        }
+
+        if (onToolStatus) {
+          onToolStatus(null);
+        }
+
+        await this.engine.resetChat();
+
+        const asyncChunkGenerator = await this.engine.chat.completions.create({
+          messages,
+          temperature: 0,
+          max_tokens: 512,
+          stream: true
+        });
+
+        await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
+      } else if (forceTools) {
+        const inferredTool = inferToolFromQuery(userQuery);
+        if (inferredTool) {
+          return this.autoDispatchTool(inferredTool, userQuery, context, messages, onChunk, onToolStatus, onComplete);
+        }
+        const raw = choice.message.content || '';
+        const answer = stripThinkTags(raw);
+        if (answer) onChunk(answer);
+      } else {
+        const raw = choice.message.content || '';
+        const answer = stripThinkTags(raw);
+        if (answer) onChunk(answer);
+      }
+
+      if (onComplete) {
+        onComplete();
+      }
+
+    } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.queryWithTools(userQuery, context, onChunk, onToolStatus, onComplete);
+      }
+      console.error("WebLLM tool query error:", error);
+      onChunk(`\n\n❌ Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      if (onComplete) {
+        onComplete();
       }
     }
-
-    // Pattern analysis suggestions
-    if (!lastQuery.toLowerCase().includes('hotspot')) {
-      suggestions.push("Where are the hotspots?");
-    }
-
-    if (!lastQuery.toLowerCase().includes('interpret') && !lastQuery.toLowerCase().includes('pattern')) {
-      suggestions.push("Help me interpret this pattern");
-    }
-
-    // Statistical suggestions
-    if (!lastQuery.toLowerCase().includes('outlier')) {
-      suggestions.push("Are there any outliers in the data?");
-    }
-
-    // Return up to 3 suggestions
-    return suggestions.slice(0, 3);
   }
 
-  /**
-   * Check if engine is initialized and ready
-   */
+  private async autoDispatchTool(
+    toolName: string,
+    userQuery: string,
+    context: DynamicChatContext,
+    messages: webllm.ChatCompletionMessageParam[],
+    onChunk: (chunk: string) => void,
+    onToolStatus?: (status: string | null) => void,
+    onComplete?: () => void
+  ): Promise<void> {
+    if (!this.engine) throw new Error("Engine not initialized");
+
+    if (onToolStatus) onToolStatus(getToolStatusMessage(toolName));
+
+    const result = await executeTool(toolName, {}, context);
+
+    if (onToolStatus) onToolStatus(null);
+
+    const syntheticCallId = `auto_${Date.now()}`;
+    messages.push({
+      role: "assistant",
+      content: null,
+      tool_calls: [{
+        id: syntheticCallId,
+        type: "function" as const,
+        function: { name: toolName, arguments: '{}' }
+      }]
+    } as webllm.ChatCompletionMessageParam);
+
+    messages.push({
+      role: "tool",
+      content: JSON.stringify(result.data),
+      tool_call_id: syntheticCallId
+    } as webllm.ChatCompletionMessageParam);
+
+    await this.engine.resetChat();
+
+    const asyncChunkGenerator = await this.engine.chat.completions.create({
+      messages,
+      temperature: 0,
+      max_tokens: 512,
+      stream: true
+    });
+
+    await streamWithThinkTagStripping(asyncChunkGenerator, onChunk);
+
+    if (onComplete) onComplete();
+  }
+
+  async generateDataQuestions(context: DynamicChatContext): Promise<string[]> {
+    if (!this.isReady || !this.engine) return [];
+
+    try {
+      await this.engine.resetChat();
+      const systemPrompt = buildSystemPrompt(context);
+      const completion = await this.engine.chat.completions.create({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Suggest exactly 4 short questions (max 12 words each) a user might ask about this data. Output ONLY the questions, one per line, no numbering or bullets." }
+        ],
+        temperature: 0.3,
+        max_tokens: 200,
+      });
+
+      const raw = stripThinkTags(completion.choices[0].message.content || '');
+      const questions = raw
+        .split('\n')
+        .map(l => l.replace(/^\d+[\.\)]\s*/, '').replace(/^[-•*]\s*/, '').trim())
+        .filter(l => l.length > 10 && l.length < 120);
+
+      await this.engine.resetChat();
+      return questions.slice(0, 4);
+    } catch (error) {
+      if (isKVCacheError(error) && await this.recoverFromKVCacheError()) {
+        return this.generateDataQuestions(context);
+      }
+      console.error("Failed to generate data questions:", error);
+      try { await this.engine?.resetChat(); } catch (_) {}
+      return [];
+    }
+  }
+
+  private generateSuggestions(context: DynamicChatContext, lastQuery: string): string[] {
+    const questions = getStarterQuestions(context);
+    const queryLower = lastQuery.toLowerCase();
+    return questions
+      .filter(q => !queryLower.includes(q.toLowerCase().slice(0, 20)))
+      .slice(0, 3);
+  }
+
   isInitialized(): boolean {
     return this.isReady;
   }
 
-  /**
-   * Reset chat history (clears conversation context)
-   */
   async resetChat(): Promise<void> {
     if (this.engine) {
       await this.engine.resetChat();
@@ -338,9 +562,6 @@ export class WebLLMEngine {
     }
   }
 
-  /**
-   * Get runtime statistics (tokens/sec, etc.)
-   */
   getRuntimeStats(): string {
     if (this.engine) {
       return this.engine.runtimeStatsText();
@@ -348,18 +569,12 @@ export class WebLLMEngine {
     return "Engine not initialized";
   }
 
-  /**
-   * Interrupt ongoing generation
-   */
   async interrupt(): Promise<void> {
     if (this.engine) {
       await this.engine.interruptGenerate();
     }
   }
 
-  /**
-   * Unload the model and free resources
-   */
   async unload(): Promise<void> {
     if (this.engine) {
       await this.engine.unload();
@@ -369,9 +584,6 @@ export class WebLLMEngine {
     }
   }
 
-  /**
-   * Get the selected model ID
-   */
   getModelId(): string {
     return this.selectedModel;
   }

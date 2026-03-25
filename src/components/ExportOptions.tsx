@@ -1,7 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Download, FileImage, FileText, FileSpreadsheet, MapIcon, ClipboardCopy, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Download, FileImage, FileText, FileSpreadsheet, MapIcon, ClipboardCopy, Check, Quote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { type CitationInfo, getCitation } from '@/lib/citations';
+
+function useCopyFeedback(duration = 2000) {
+  const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  const trigger = useCallback(() => {
+    setCopied(true);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), duration);
+  }, [duration]);
+
+  return { copied, trigger };
+}
 
 interface ExportOptionsProps {
   onExportPNG: () => void;
@@ -12,6 +28,7 @@ interface ExportOptionsProps {
   darkMode?: boolean;
   geojsonDownloadUrl?: string | null;
   geojsonDownloadName?: string;
+  citationInfo?: CitationInfo;
 }
 
 export const ExportOptions: React.FC<ExportOptionsProps> = ({
@@ -23,13 +40,10 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
   darkMode = false,
   geojsonDownloadUrl,
   geojsonDownloadName,
+  citationInfo,
 }) => {
-  const [copied, setCopied] = useState(false);
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    return () => { clearTimeout(copyTimerRef.current); };
-  }, []);
+  const copyFeedback = useCopyFeedback();
+  const citeFeedback = useCopyFeedback();
 
   const handleDownloadGeoJSON = () => {
     if (!geojsonDownloadUrl) return;
@@ -44,9 +58,13 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
   const handleCopy = () => {
     if (!onCopyToClipboard) return;
     onCopyToClipboard();
-    setCopied(true);
-    clearTimeout(copyTimerRef.current);
-    copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+    copyFeedback.trigger();
+  };
+
+  const handleCopyCitation = () => {
+    if (!citationInfo) return;
+    navigator.clipboard.writeText(getCitation(citationInfo));
+    citeFeedback.trigger();
   };
 
   return (
@@ -90,12 +108,12 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
           <Button
             onClick={handleCopy}
             disabled={disabled}
-            variant={copied ? "default" : "outline"}
+            variant={copyFeedback.copied ? "default" : "outline"}
             size="sm"
             className="flex items-center gap-2"
           >
-            {copied ? <Check className="h-4 w-4" /> : <ClipboardCopy className="h-4 w-4" />}
-            {copied ? 'Copied!' : 'Copy'}
+            {copyFeedback.copied ? <Check className="h-4 w-4" /> : <ClipboardCopy className="h-4 w-4" />}
+            {copyFeedback.copied ? 'Copied!' : 'Copy'}
           </Button>
         )}
         {geojsonDownloadUrl && (
@@ -107,6 +125,17 @@ export const ExportOptions: React.FC<ExportOptionsProps> = ({
           >
             <MapIcon className="h-4 w-4" />
             GeoJSON
+          </Button>
+        )}
+        {citationInfo && (
+          <Button
+            onClick={handleCopyCitation}
+            variant={citeFeedback.copied ? "default" : "outline"}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {citeFeedback.copied ? <Check className="h-4 w-4" /> : <Quote className="h-4 w-4" />}
+            {citeFeedback.copied ? 'Copied!' : 'Cite'}
           </Button>
         )}
       </div>

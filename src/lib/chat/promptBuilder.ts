@@ -1,8 +1,3 @@
-/**
- * System Prompt Builder for WebLLM
- * Injects dynamic context into LLM for every query
- */
-
 import type {
   DynamicChatContext,
   UserData,
@@ -10,309 +5,392 @@ import type {
   RegionalStats,
   HierarchicalStateStats,
   DistrictData,
-  PreviousContext
+  StateHierarchy
 } from './types';
 
-/**
- * Build system prompt with current context
- */
-export function buildSystemPrompt(context: DynamicChatContext): string {
-  console.log('promptBuilder - buildSystemPrompt called, context:', {
-    contextType: typeof context,
-    contextIsNull: context === null,
-    contextIsUndefined: context === undefined,
-    contextValue: context
-  });
+export interface BuildPromptOptions {
+  useTools?: boolean;
+}
 
-  // Defensive check: ensure context exists
+export function buildSystemPrompt(context: DynamicChatContext, options: BuildPromptOptions = {}): string {
   if (!context) {
-    console.error('promptBuilder - context check failed');
     throw new Error('context is not defined');
   }
 
-  console.log('promptBuilder - destructuring context properties');
+  const { useTools = false } = options;
   const { currentView, geoMetadata, userData } = context;
-  console.log('promptBuilder - destructured:', {
-    hasCurrentView: !!currentView,
-    hasGeoMetadata: !!geoMetadata,
-    hasUserData: !!userData
-  });
+  const metricLabel = userData.metricName || 'values';
 
-  let prompt = `You are a data analysis assistant for BharatViz, an interactive map visualization tool for India.
+  let prompt = `You are a data analyst for Indian geographic data on BharatViz.
 
-## Current Context
-
-**View:** ${getViewDescription(currentView.tab, currentView.selectedState)}
-**Map Type:** ${currentView.mapType} boundaries
+View: ${getViewDescription(currentView.tab, currentView.selectedState, currentView.mapType)} (${currentView.mapType} boundaries)
 `;
 
   if (currentView.selectedState && geoMetadata.selectedStateInfo) {
-    prompt += `**Selected State:** ${currentView.selectedState}
-**Districts in view:** ${geoMetadata.selectedStateInfo.districtCount}
-`;
+    prompt += `State: ${currentView.selectedState} (${geoMetadata.selectedStateInfo.districtCount} districts)\n`;
   }
 
   if (userData.hasData) {
-    prompt += buildUserDataSection(userData, currentView, context);
+    prompt += useTools
+      ? buildToolDataSection(userData)
+      : buildDataSection(userData, currentView, context);
   } else {
-    prompt += buildNoDataSection();
+    prompt += `\nNo data uploaded yet. Answer general questions about Indian states, districts, and geography.\n`;
+  }
+
+  if (geoMetadata.featureProperties && geoMetadata.featureProperties.length > 0) {
+    prompt += buildGeoSection(geoMetadata.featureProperties, currentView.tab);
+  }
+
+  // For district/state/region maps, include state→district listing from hierarchy
+  if (currentView.tab !== 'cities') {
+    prompt += buildHierarchySection(geoMetadata.hierarchy, currentView.tab, context.mentionedStates);
   }
 
   if (context.previousContext) {
-    prompt += buildPreviousContextSection(context.previousContext);
+    prompt += `\nPrevious map: ${context.previousContext.mapType}`;
+    if (context.previousContext.stats) {
+      const s = context.previousContext.stats;
+      prompt += ` (mean=${s.mean.toFixed(2)}, range=${s.min.toFixed(2)}-${s.max.toFixed(2)})`;
+    }
+    prompt += '\n';
   }
 
-  prompt += buildCapabilitiesSection();
-  prompt += buildGuidelinesSection();
+  prompt += `
+Rules:
+- Call the metric "${metricLabel}", never "data" or "values"
+- Lead with the key finding, then supporting numbers
+- 2-3 paragraphs max
+- Cite specific numbers from the data
+- Note missing data when it affects analysis
+- No causal claims, only patterns
+- ONLY use the data provided above. Do not fabricate numbers or make up statistics.${currentView.tab === 'states' ? '\n- STATE-LEVEL only. Never mention districts.' : ''}${currentView.tab === 'regions' ? '\n- REGION-LEVEL only. These are NSSO survey sampling regions.' : ''}${currentView.tab === 'cities' ? '\n- WARD-LEVEL only. This is city ward data, not state or district data.' : ''}
+`;
 
   return prompt;
 }
 
-function getViewDescription(tab: string, selectedState?: string): string {
+function getViewDescription(tab: string, selectedState?: string, mapType?: string): string {
   switch (tab) {
-    case 'states':
-      return 'State-level map of India';
-    case 'districts':
-      return 'All-India districts map';
-    case 'state-districts':
-      return `Districts in ${selectedState} state`;
-    default:
-      return 'Map view';
+    case 'states': return 'State-level map of India';
+    case 'districts': return 'All-India districts map';
+    case 'state-districts': return `Districts of ${selectedState}`;
+    case 'regions': return 'NSSO Regions map of India';
+    case 'cities': return `City ward map (${mapType || 'ward-level'})`;
+    default: return 'Map view';
   }
 }
 
-function buildUserDataSection(userData: UserData, currentView: CurrentView, context: DynamicChatContext): string {
-  // Use the actual metric name if provided, otherwise fall back to generic "values"
+function buildDataPreamble(userData: UserData): string {
   const metricLabel = userData.metricName || 'values';
-
-  let section = `
-## User's Data
-
-**Metric:** ${metricLabel}
-**Data Type:** ${userData.dataType}-level ${metricLabel}
-**Entities with data:** ${userData.count} out of ${userData.totalExpected} expected
-**Missing data:** ${userData.missingEntities.length} entities (${userData.missingPercentage.toFixed(1)}%)
-
-**IMPORTANT:** Always refer to the data as "${metricLabel}" in your responses, not as "data" or "values".
+  let s = `\nMetric: ${metricLabel}
+Coverage: ${userData.count}/${userData.totalExpected} (${(100 - userData.missingPercentage).toFixed(0)}%)
 `;
-
-  // Add explicit restriction for state-level views
-  if (currentView.tab === 'states') {
-    section += `
-**IMPORTANT:** This is STATE-LEVEL data only. Do NOT mention, infer, or reference any district names or district-level information. Only discuss states and state-level patterns.
-`;
-  }
-
   if (userData.missingEntities.length > 0 && userData.missingEntities.length <= 10) {
-    section += `**Missing entities:** ${userData.missingEntities.join(', ')}
-`;
+    s += `Missing: ${userData.missingEntities.join(', ')}\n`;
   } else if (userData.missingEntities.length > 10) {
-    section += `**Missing entities:** ${userData.missingEntities.slice(0, 10).join(', ')} and ${userData.missingEntities.length - 10} more
-`;
+    s += `Missing: ${userData.missingEntities.length} entities\n`;
   }
+  return s;
+}
+
+function buildToolDataSection(userData: UserData): string {
+  let s = buildDataPreamble(userData);
 
   if (userData.stats) {
-    section += `
-**Statistics:**
-- Range: ${userData.stats.min.toFixed(2)} to ${userData.stats.max.toFixed(2)}
-- Mean: ${userData.stats.mean.toFixed(2)}
-- Median: ${userData.stats.median.toFixed(2)}
-- Std Dev: ${userData.stats.stdDev.toFixed(2)}
-- Q25/Q75: ${userData.stats.q25.toFixed(2)} / ${userData.stats.q75.toFixed(2)}
+    const st = userData.stats;
+    s += `Quick summary: min=${st.min.toFixed(2)}, max=${st.max.toFixed(2)}, mean=${st.mean.toFixed(2)}, median=${st.median.toFixed(2)}\n`;
+  }
+
+  s += `
+You MUST use your tools to answer data questions. Each tool already has the complete dataset AND geographic boundaries loaded internally. You do not need to provide any data — just call the tool and it returns computed results.
+
+Tools:
+- summarize_data: summary stats (mean, median, SD, min, max, quartiles). Optional: filter by region or state.
+- rank_entities: top or bottom N entities by value.
+- compare_regions: compare means across geographic regions.
+- spatial_autocorrelation: computes Global Moran's I with spatial weights from the loaded GeoJSON boundaries.
+- local_spatial_clusters: runs LISA analysis using the loaded GeoJSON boundaries. Returns cluster classifications.
+- hotspot_analysis: computes Getis-Ord Gi* using the loaded GeoJSON boundaries. Returns hotspot/coldspot z-scores.
+
+CRITICAL RULES:
+1. NEVER say "I don't have the data" or "I need spatial data" — the tools have everything.
+2. ALWAYS call the tool first, then explain the results.
+3. For spatial questions (clustering, Moran's I, LISA, hotspots), the tool loads GeoJSON boundaries automatically.
+4. Call tools with no arguments to use defaults, or pass optional filters.
 `;
+
+  return s;
+}
+
+function buildDataSection(userData: UserData, currentView: CurrentView, context: DynamicChatContext): string {
+  let s = buildDataPreamble(userData);
+
+  if (userData.stats) {
+    const st = userData.stats;
+    s += `Range: ${st.min.toFixed(2)}-${st.max.toFixed(2)} | Mean: ${st.mean.toFixed(2)} | Median: ${st.median.toFixed(2)} | StdDev: ${st.stdDev.toFixed(2)} | IQR: ${st.q25.toFixed(2)}-${st.q75.toFixed(2)}\n`;
   }
 
   if (userData.top10.length > 0) {
-    section += `
-**Top 5:**
-${userData.top10.slice(0, 5).map((d: { name: string; value: number }, i: number) => `${i + 1}. ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
-
-**Bottom 5:**
-${userData.bottom10.slice(0, 5).map((d: { name: string; value: number }, i: number) => `${i + 1}. ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
-`;
+    s += `\nHighest: ${userData.top10.slice(0, 5).map((d, i) => `${i + 1}. ${d.name} (${d.value.toFixed(2)})`).join(', ')}\n`;
+    s += `Lowest: ${userData.bottom10.slice(0, 5).map((d, i) => `${i + 1}. ${d.name} (${d.value.toFixed(2)})`).join(', ')}\n`;
   }
 
-  // For state-level view, include all state values
-  if (currentView.tab === 'states' && userData.allData && userData.allData.length > 0) {
-    section += `
-**All states with data:**
-${userData.allData.map(d => `- ${d.name}: ${d.value.toFixed(2)}`).join('\n')}
-`;
+  if ((currentView.tab === 'states' || currentView.tab === 'regions' || currentView.tab === 'cities') && userData.allData && userData.allData.length > 0) {
+    const label = currentView.tab === 'states' ? 'All states' : currentView.tab === 'regions' ? 'All regions' : 'All wards';
+    s += `\n${label}:\n${userData.allData.map(d => `${d.name}: ${d.value.toFixed(2)}`).join(' | ')}\n`;
   }
 
   if (userData.regionalStats && Object.keys(userData.regionalStats).length > 0) {
-    section += `
-**Regional Averages:**
-${Object.entries(userData.regionalStats)
-  .map(([region, stats]: [string, RegionalStats]) =>
-    `- ${region}: ${stats.mean.toFixed(2)} (${stats.dataCount} entities with data)`
-  )
-  .join('\n')}
-`;
+    s += `\nRegional means: ${Object.entries(userData.regionalStats)
+      .map(([region, stats]: [string, RegionalStats]) => `${region}=${stats.mean.toFixed(2)} (n=${stats.dataCount})`)
+      .join(', ')}\n`;
   }
 
-  // Include detailed data for state-districts view
   if (userData.hierarchicalStats && currentView.tab === 'state-districts' && currentView.selectedState) {
-    const state = currentView.selectedState;
-    const stateStats = userData.hierarchicalStats[state];
+    const stateStats = userData.hierarchicalStats[currentView.selectedState];
     if (stateStats) {
-      section += `
-**${state} Districts:**
-- Total districts: ${stateStats.districtCount}
-- Districts with data: ${stateStats.dataCount}
-- Missing data: ${stateStats.missingCount} districts
-- Average: ${stateStats.mean?.toFixed(2) || 'N/A'}
-- Range: ${stateStats.min?.toFixed(2) || 'N/A'} to ${stateStats.max?.toFixed(2) || 'N/A'}
-`;
+      s += `\n${currentView.selectedState}: ${stateStats.dataCount}/${stateStats.districtCount} districts, mean=${stateStats.mean?.toFixed(2) || 'N/A'}, range=${stateStats.min?.toFixed(2) || 'N/A'}-${stateStats.max?.toFixed(2) || 'N/A'}\n`;
 
-      // Include actual district values
-      if (stateStats.districts && stateStats.districts.length > 0) {
-        const districtsWithData = stateStats.districts.filter(d => !d.missing);
-        const missingDistricts = stateStats.districts.filter(d => d.missing);
-
-        if (districtsWithData.length > 0) {
-          section += `
-**Districts with values:**
-${districtsWithData.map(d => `- ${d.name}: ${d.value?.toFixed(2)}`).join('\n')}
-`;
+      if (stateStats.districts?.length > 0) {
+        const withData = stateStats.districts.filter(d => !d.missing);
+        if (withData.length > 0) {
+          s += `Districts: ${withData.map(d => `${d.name}=${d.value?.toFixed(2)}`).join(', ')}\n`;
         }
-
-        if (missingDistricts.length > 0 && missingDistricts.length <= 10) {
-          section += `
-**Missing districts:** ${missingDistricts.map(d => d.name).join(', ')}
-`;
+        const missing = stateStats.districts.filter(d => d.missing);
+        if (missing.length > 0 && missing.length <= 10) {
+          s += `Missing: ${missing.map(d => d.name).join(', ')}\n`;
         }
       }
     }
   }
 
-  // Include hierarchical data for all-India district views
   if (userData.hierarchicalStats && currentView.tab === 'districts') {
     const statesWithData = Object.entries(userData.hierarchicalStats)
       .filter(([_, stats]: [string, HierarchicalStateStats]) => stats.dataCount > 0)
       .sort((a, b) => b[1].dataCount - a[1].dataCount);
 
-    // Check if specific states were mentioned in the query
     const mentionedStates = context.mentionedStates || [];
-    const shouldIncludeAllDetails = mentionedStates.length === 0;
 
     if (mentionedStates.length > 0) {
-      section += `
-**District Data for ${mentionedStates.join(', ')}:**
-`;
-      // Include detailed district data only for mentioned states
       for (const [state, stats] of statesWithData) {
         if (mentionedStates.includes(state)) {
-          const statsTyped = stats as HierarchicalStateStats;
-          const districtsWithData = statsTyped.districts.filter((d: DistrictData) => !d.missing);
-
-          section += `
-**${state}** (${statsTyped.dataCount}/${statsTyped.districtCount} districts with data):
-${districtsWithData.map((d: DistrictData) => `  - ${d.name}: ${d.value?.toFixed(2)}`).join('\n')}
-`;
+          const st = stats as HierarchicalStateStats;
+          const withData = st.districts.filter((d: DistrictData) => !d.missing);
+          s += `\n${state} (${st.dataCount}/${st.districtCount}): ${withData.map((d: DistrictData) => `${d.name}=${d.value?.toFixed(2)}`).join(', ')}\n`;
         }
       }
     } else {
-      // No specific states mentioned - only include state-level summaries
-      section += `
-**State-wise Summary:**
-${statesWithData.map(([state, stats]) => {
-  const s = stats as HierarchicalStateStats;
-  return `- ${state}: ${s.dataCount}/${s.districtCount} districts, Mean: ${s.mean?.toFixed(2) || 'N/A'}, Range: ${s.min?.toFixed(2)}-${s.max?.toFixed(2)}`;
-}).join('\n')}
+      s += `\nState summaries: ${statesWithData.map(([state, stats]) => {
+        const st = stats as HierarchicalStateStats;
+        return `${state}: n=${st.dataCount}/${st.districtCount}, mean=${st.mean?.toFixed(2) || 'N/A'}`;
+      }).join(' | ')}\n`;
+      s += `(Ask about a specific state for district details.)\n`;
+    }
+  }
 
-*Note: Ask about a specific state to see detailed district values.*
-`;
+  return s;
+}
+
+const SKIP_KEYS = new Set([
+  'gid', 'objectid', 'OBJECTID', 'Id', 'id', 'fid',
+  'Shape_Area', 'Shape_Leng', 'shape.STLength()', 'st_area(shape)', 'st_perimeter(shape)',
+  'AREA', 'PERIMETER', 'area', 'Area', 'AREA_SQ_KM', 'PERIM_KM',
+  'areai', 'bearingi', 'coordinate', 'latitudei', 'longitudei', 'lengthi',
+  'LAT', 'LON', 'xi', 'yi',
+  'typei', 'versioni', 'selectioni', 'selectionm', 'branchesi',
+  '@changeset', '@id', '@timestamp', '@uid', '@user', '@version',
+  'altitudeMode', 'begin', 'drawOrder', 'end', 'extrude', 'tessellate', 'timestamp', 'visibility',
+  'description', 'icon',
+  'polyno',
+]);
+
+const WARD_NAME_KEYS = ['ward_name', 'WARD_NAME', 'Ward_Name', 'Ward Name', 'wardname', 'KGISWardName', 'Name', 'Name1', 'name', 'NAME'];
+const WARD_NUM_KEYS = ['ward_number', 'Ward_No', 'Ward_No', 'WARD_NO', 'Ward_Number', 'Ward Num', 'ward_no', 'wardcode', 'KGISWardNo', 'KGISWardCode', 'wardnum', 'wardno', 'sno', 'WARD'];
+
+const GEO_SECTION_CHAR_BUDGET = 8000;
+
+const WARD_USED_KEYS = new Set<string>([...WARD_NAME_KEYS, ...WARD_NUM_KEYS]);
+
+function buildGeoSection(featureProperties: Array<Record<string, unknown>>, tab: string): string {
+  if (tab === 'cities') {
+    const totalWards = featureProperties.length;
+    const rows: string[] = [];
+    let charCount = 0;
+    let truncated = false;
+
+    for (const props of featureProperties) {
+      const wardName = firstVal(props, WARD_NAME_KEYS) ?? '';
+      const wardNum = firstVal(props, WARD_NUM_KEYS) ?? '';
+      const extras: string[] = [];
+      for (const [k, v] of Object.entries(props)) {
+        if (WARD_USED_KEYS.has(k) || SKIP_KEYS.has(k)) continue;
+        if (v === null || v === undefined || v === '' || v === 'Na' || v === 'na') continue;
+        extras.push(`${k}=${v}`);
+      }
+
+      let line = '';
+      if (wardNum) line += `#${wardNum}`;
+      if (wardName) line += (line ? ' ' : '') + String(wardName);
+      if (extras.length > 0) line += (line ? ' | ' : '') + extras.join(', ');
+
+      if (charCount + line.length > GEO_SECTION_CHAR_BUDGET) {
+        truncated = true;
+        break;
+      }
+      rows.push(line);
+      charCount += line.length + 1;
+    }
+
+    let section = `\nWard geography (${totalWards} wards):\n${rows.join('\n')}\n`;
+    if (truncated) {
+      section += `(${totalWards - rows.length} more wards not shown)\n`;
+    }
+    return section;
+  }
+
+  const names = featureProperties.map(props => {
+    const state = props.state_name || props.st_nm || props.ST_NM || '';
+    const entity = props.district_name || props.district || props.DISTRICT || props.nss_region || '';
+    const extra: string[] = [];
+    if (props.nss_region_code) extra.push(`code=${props.nss_region_code}`);
+    if (props.n_districts) extra.push(`${props.n_districts} districts`);
+    if (entity && state) {
+      const suffix = extra.length > 0 ? ` [${extra.join(', ')}]` : '';
+      return `${entity} (${state})${suffix}`;
+    }
+    return String(state || entity || '');
+  }).filter(Boolean);
+
+  if (names.length > 0) {
+    return `\nGeographic entities (${names.length}): ${names.join(', ')}\n`;
+  }
+  return '';
+}
+
+const HIERARCHY_CHAR_BUDGET = 6000;
+
+function buildHierarchySection(
+  hierarchy: Record<string, StateHierarchy>,
+  tab: string,
+  mentionedStates?: string[]
+): string {
+  const states = Object.entries(hierarchy).sort((a, b) => a[0].localeCompare(b[0]));
+  if (states.length === 0) return '';
+
+  if (tab === 'states') {
+    return `\nStates on this map (${states.length}): ${states.map(([s]) => s).join(', ')}\n`;
+  }
+
+  const entityLabel = tab === 'regions' ? 'regions' : 'districts';
+  const totalEntities = states.reduce((sum, [, s]) => sum + s.districts.length, 0);
+  let section = `\nMap contains ${states.length} states/UTs, ${totalEntities} ${entityLabel}:\n`;
+  let charCount = section.length;
+
+  if (mentionedStates && mentionedStates.length > 0) {
+    const mentionedSet = new Set(mentionedStates);
+    for (const [state, info] of states) {
+      if (!mentionedSet.has(state)) continue;
+      const line = `${state}: ${info.districts.join(', ')}\n`;
+      section += line;
+      charCount += line.length;
+    }
+    const rest = states.filter(([s]) => !mentionedSet.has(s));
+    if (rest.length > 0) {
+      const summaryLine = rest.map(([s, info]) => `${s} (${info.districts.length})`).join(', ');
+      if (charCount + summaryLine.length < HIERARCHY_CHAR_BUDGET) {
+        section += `Other states: ${summaryLine}\n`;
+      }
+    }
+  } else {
+    let addedCount = 0;
+    for (const [state, info] of states) {
+      const line = `${state} (${info.districts.length}): ${info.districts.join(', ')}\n`;
+      if (charCount + line.length > HIERARCHY_CHAR_BUDGET) {
+        const remaining = states.length - addedCount;
+        if (remaining > 0) {
+          section += `+ ${remaining} more states\n`;
+        }
+        break;
+      }
+      section += line;
+      charCount += line.length;
+      addedCount++;
     }
   }
 
   return section;
 }
 
-function buildNoDataSection(): string {
-  return `
-## No User Data
-
-User has not uploaded any data yet. You can only answer questions about:
-- Geographic information (areas, neighbors, regions)
-- Available entities in the current map
-- GeoJSON structure and metadata
-- General information about Indian states and districts
-`;
+function firstVal(props: Record<string, unknown>, keys: string[]): string | number | undefined {
+  for (const k of keys) {
+    const v = props[k];
+    if (v !== null && v !== undefined && v !== '' && v !== 'Na' && v !== 'na' && v !== 'N/A') {
+      return typeof v === 'number' ? v : String(v);
+    }
+  }
+  return undefined;
 }
 
-function buildPreviousContextSection(previousContext: PreviousContext): string {
-  return `
-## Previous Context (for comparison)
+export function getStarterQuestions(context: DynamicChatContext | null): string[] {
+  if (!context) return [];
+  const { userData, currentView } = context;
+  const metricLabel = userData.metricName || 'this metric';
 
-User switched from ${previousContext.mapType} map.
-${previousContext.stats ? `Previous stats: Mean=${previousContext.stats.mean.toFixed(2)}, Range=${previousContext.stats.min.toFixed(2)}-${previousContext.stats.max.toFixed(2)}` : ''}
+  const entityLabel = currentView.tab === 'states' ? 'states'
+    : currentView.tab === 'cities' ? 'wards'
+    : currentView.tab === 'regions' ? 'regions'
+    : 'districts';
 
-You can compare the current data with the previous map version if user asks.
-`;
+  if (!userData.hasData) {
+    return [
+      `What ${entityLabel} are available on this map?`,
+      `Tell me about the geographic coverage of this map`,
+    ];
+  }
+
+  const questions: string[] = [];
+  const top = userData.top10[0];
+  const bottom = userData.bottom10[0];
+
+  if (top && bottom) {
+    questions.push(`Why might ${top.name} have the highest ${metricLabel}?`);
+  }
+
+  if (userData.regionalStats && Object.keys(userData.regionalStats).length > 1) {
+    const regions = Object.entries(userData.regionalStats).sort((a, b) => b[1].mean - a[1].mean);
+    const highest = regions[0][0];
+    const lowest = regions[regions.length - 1][0];
+    questions.push(`Why is ${metricLabel} higher in ${highest} than ${lowest} India?`);
+  }
+
+  if (userData.stats) {
+    questions.push(`Are there outliers in the ${metricLabel} data?`);
+  }
+
+  if (userData.missingEntities.length > 0) {
+    questions.push(`Which ${entityLabel} are missing data?`);
+  }
+
+  if (currentView.tab === 'state-districts' && currentView.selectedState) {
+    questions.push(`What patterns do you see across ${currentView.selectedState}'s districts?`);
+  }
+
+  if (currentView.tab === 'cities') {
+    questions.push(`Which wards have the highest and lowest ${metricLabel}?`);
+  }
+
+  if (top && bottom && questions.length < 4) {
+    questions.push(`What's the spread between ${top.name} and ${bottom.name}?`);
+  }
+
+  if (questions.length < 4) {
+    questions.push(`Summarize the ${metricLabel} distribution`);
+  }
+
+  return questions.slice(0, 4);
 }
 
-function buildCapabilitiesSection(): string {
-  return `
-## Your Capabilities
-
-You can answer questions about:
-1. **Statistics:** Calculate and explain statistical measures (mean, median, percentiles, etc.)
-2. **Rankings:** Top N, bottom N, percentile ranks
-3. **Regional comparisons:** North vs South, East vs West, coastal vs inland, etc.
-4. **Hierarchical queries:** Districts within states, state-level aggregations
-5. **Missing data:** Identify and explain gaps in the dataset, impact on analysis
-6. **Patterns:** Identify hotspots, coldspots, clusters, spatial trends
-7. **Interpretations:** Explain what the data might indicate based on geography
-8. **Comparisons:** Compare across regions, states, or between map versions
-9. **Data quality:** Assess completeness, outliers, distribution characteristics
-`;
-}
-
-function buildGuidelinesSection(): string {
-  return `
-## Important Guidelines
-
-1. **Be concise:** Keep responses to 2-4 paragraphs maximum
-2. **Be data-driven:** Use the statistics and data provided in context
-3. **Acknowledge gaps:** Mention missing data when it affects your analysis
-4. **No speculation:** Don't make claims about causation without supporting evidence
-5. **Geographic awareness:** Consider Indian geography and regional characteristics
-6. **Hierarchical awareness:** For state-specific views, focus on that state's data
-7. **Suggest follow-ups:** Offer relevant follow-up questions when appropriate
-8. **Handle missing data gracefully:** Explain impact and suggest workarounds
-9. **Context-aware:** Adjust your analysis based on whether viewing states or districts
-10. **Comparative analysis:** When previous context exists, highlight changes
-
-## Specific Query Handling
-
-**For "median of districts in [state]":**
-- Use hierarchicalStats for that state
-- Account for missing districts
-- Explain if sample size is too small
-
-**For "which districts are missing":**
-- List from missingEntities
-- Group by state if helpful
-- Calculate percentage impact
-
-**For regional comparisons:**
-- Use regionalStats data
-- Compare means, ranges, and variations
-- Consider geographic/demographic factors
-
-**For interpretive questions:**
-- Base insights on data patterns
-- Consider geographic context
-- Acknowledge limitations
-- Suggest what might explain patterns (without claiming causation)
-
-Ready to assist with data analysis!`;
-}
-
-/**
- * Build a compact context string for token efficiency
- */
 export function buildCompactContext(context: DynamicChatContext): string {
   const { currentView, userData } = context;
 

@@ -18,11 +18,14 @@ import { getCityList, getCityDataset, getCityDatasets, getCityCsvUrls, DEFAULT_C
 import { IndiaCityMap, type IndiaCityMapRef, type CityWardData } from '@/components/IndiaCityMap';
 import { getUniqueStatesFromGeoJSON } from '@/lib/stateUtils';
 import { loadStateGistMapping, getAvailableStates, getStateGeoJSONUrl, type StateGistMapping } from '@/lib/stateGistMapping';
+import { fetchWithCorsFallback } from '@/lib/corsProxy';
+import showcaseDemoUrls from '@/lib/showcase-demo-urls.json';
 import Credits from '@/components/Credits';
 import MCPDocs from '@/components/MCPDocs';
 import { DistrictStats } from '@/components/DistrictStats';
 import { Github, Moon, Sun, Check, ChevronsUpDown } from 'lucide-react';
 import { type DataType, type CategoryColorMapping, detectDataType, getUniqueCategories, generateDefaultCategoryColors } from '@/lib/categoricalUtils';
+import { STATES_CITATION, NSSO_CITATION, getDistrictsCitationInfo, getCityCitationInfo } from '@/lib/citations';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { buildDynamicContext } from '@/lib/chat/contextBuilder';
 import { DATA_FILES, MAP_DIMENSIONS } from '@/lib/constants';
@@ -84,6 +87,7 @@ const Index = () => {
   const [stateHideNames, setStateHideNames] = useState(false);
   const [stateHideValues, setStateHideValues] = useState(false);
   const [stateDataTitle, setStateDataTitle] = useState<string>('');
+  const [stateMapTitle, setStateMapTitle] = useState<string>('');
   const [stateColorBarSettings, setStateColorBarSettings] = useState<ColorBarSettings>({
     isDiscrete: false,
     binCount: 5,
@@ -101,6 +105,7 @@ const Index = () => {
   const [districtColorScale, setDistrictColorScale] = useState<ColorScale>('spectral');
   const [districtInvertColors, setDistrictInvertColors] = useState(false);
   const [districtDataTitle, setDistrictDataTitle] = useState<string>('');
+  const [districtMapTitle, setDistrictMapTitle] = useState<string>('');
   const [showStateBoundaries, setShowStateBoundaries] = useState(true);
   const [districtColorBarSettings, setDistrictColorBarSettings] = useState<ColorBarSettings>({
     isDiscrete: false,
@@ -174,6 +179,7 @@ const Index = () => {
   const cityMapRef = useRef<IndiaCityMapRef>(null);
 
   const hasReadInitialUrl = useRef<Set<string>>(new Set());
+  const skipDataUrlLoad = useRef(false);
   const selectedStateRef = useRef(selectedStateForMap);
   useEffect(() => { selectedStateRef.current = selectedStateForMap; }, [selectedStateForMap]);
 
@@ -491,20 +497,34 @@ const Index = () => {
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
-    const dataUrl = searchParams.get('dataUrl');
+    let dataUrl = searchParams.get('dataUrl');
+    let titleFromParams = searchParams.get('title') || '';
+
+    // Support ?demo=N — resolve to the Nth demo for the current tab level
+    const demoParam = searchParams.get('demo');
+    if (demoParam && !dataUrl) {
+      const demoIndex = parseInt(demoParam, 10);
+      if (!isNaN(demoIndex) && demoIndex >= 1) {
+        const tabFromPath = getTabFromPath(location.pathname);
+        const level = tabFromPath === 'districts' ? 'districts' : 'states';
+        const demos = Object.entries(showcaseDemoUrls as Record<string, { url: string; title: string }>)
+          .filter(([key]) => key.startsWith(level + '_'));
+        if (demoIndex <= demos.length) {
+          const [, demo] = demos[demoIndex - 1];
+          dataUrl = demo.url;
+          titleFromParams = demo.title;
+        }
+      }
+    }
 
     if (dataUrl) {
+      if (skipDataUrlLoad.current) {
+        skipDataUrlLoad.current = false;
+        return;
+      }
       const loadDataFromUrl = async () => {
         try {
-          const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          const apiBase = isDev ? 'http://localhost:3001' : `${window.location.protocol}//${window.location.hostname}`;
-          const proxyUrl = `${apiBase}/api/v1/proxy/csv?url=${encodeURIComponent(dataUrl)}`;
-          const response = await fetch(proxyUrl);
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch data: ${response.statusText}`);
-          }
-
+          const response = await fetchWithCorsFallback(dataUrl);
           const csvText = await response.text();
 
           Papa.parse(csvText, {
@@ -512,30 +532,59 @@ const Index = () => {
             skipEmptyLines: true,
             complete: (results) => {
               const data = results.data as Record<string, string>[];
+              const headers = results.meta.fields || [];
 
               const hasDistrict = data[0] && ('district_name' in data[0] || 'district' in data[0]);
               const colorScale = searchParams.get('colorScale') as ColorScale || 'spectral';
-              const title = searchParams.get('title') || '';
-              const legendTitle = searchParams.get('legendTitle') || 'Values';
+              const title = titleFromParams || searchParams.get('title') || '';
               const boundary = searchParams.get('boundary') || 'LGD';
               const showStateBoundaries = searchParams.get('showStateBoundaries') === 'true';
               const invertColors = searchParams.get('invertColors') === 'true';
 
-              if (hasDistrict) {
-                const districtData = data.map((row) => ({
-                  state: row.state_name || row.state || '',
-                  district: row.district_name || row.district || '',
-                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
-                }));
+              // Use last column as value (matches processUploadedData behavior),
+              // but fall back to explicit 'value' column if present
+              const valueColumns = hasDistrict ? headers.slice(2) : headers.slice(1);
+              const valueCol = valueColumns.includes('value') ? 'value' : valueColumns[valueColumns.length - 1];
+              const legendTitle = searchParams.get('legendTitle') || valueCol || 'Values';
 
-                setDistrictMapData(districtData);
-                setDistrictDataTitle(title);
+              const parseVal = (v: string): number | string => {
+                const trimmed = (v || '').trim();
+                if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return NaN;
+                const num = Number(trimmed);
+                return isNaN(num) ? trimmed : num;
+              };
+
+              if (hasDistrict) {
+                // Multi-column support for districts
+                if (valueColumns.length > 1) {
+                  const allSeries = valueColumns.map(col => ({
+                    key: col,
+                    title: col,
+                    data: data.filter(row => (row.state_name || row.state) && (row.district_name || row.district)).map(row => ({
+                      state: row.state_name || row.state || '',
+                      district: row.district_name || row.district || '',
+                      value: parseVal(row[col]),
+                    })),
+                  }));
+                  // Use the first series for initial display
+                  setDistrictMapData(allSeries[0].data);
+                  setDistrictDataTitle(allSeries[0].title);
+                } else {
+                  const districtData = data.map((row) => ({
+                    state: row.state_name || row.state || '',
+                    district: row.district_name || row.district || '',
+                    value: parseVal(row[valueCol]),
+                  }));
+                  setDistrictMapData(districtData);
+                  setDistrictDataTitle(legendTitle);
+                }
+
                 setDistrictColorScale(colorScale);
                 setDistrictInvertColors(invertColors);
                 setShowStateBoundaries(showStateBoundaries);
                 setSelectedDistrictMapType(boundary);
 
-                const values = districtData.map(d => d.value);
+                const values = (hasDistrict ? data : []).map(d => parseVal(d[valueCol]));
                 const dataType = detectDataType(values);
                 setDistrictDataType(dataType);
 
@@ -546,30 +595,44 @@ const Index = () => {
                   setDistrictColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
                 }
 
-                handleTabChange('districts');
+                if (title) setDistrictMapTitle(title);
+                setActiveTab('districts');
               } else {
-                const stateData = data.map((row) => ({
-                  state: row.state_name || row.state || '',
-                  value: isNaN(Number(row.value)) ? row.value : Number(row.value),
-                }));
+                // Multi-column support for states
+                if (valueColumns.length > 1) {
+                  const allSeries = valueColumns.map(col => ({
+                    key: col,
+                    title: col,
+                    data: data.filter(row => row.state_name || row.state).map(row => ({
+                      state: row.state_name || row.state || '',
+                      value: parseVal(row[col]),
+                    })),
+                  }));
+                  handleStateMultiYearDataLoad(allSeries);
+                } else {
+                  const stateData = data.map((row) => ({
+                    state: row.state_name || row.state || '',
+                    value: parseVal(row[valueCol]),
+                  }));
+                  setStateMapData(stateData);
+                  setStateDataTitle(legendTitle);
 
-                setStateMapData(stateData);
-                setStateDataTitle(title);
-                setStateColorScale(colorScale);
-                setStateInvertColors(invertColors);
+                  const values = stateData.map(d => d.value);
+                  const dataType = detectDataType(values);
+                  setStateDataType(dataType);
 
-                const values = stateData.map(d => d.value);
-                const dataType = detectDataType(values);
-                setStateDataType(dataType);
-
-                if (dataType === 'categorical') {
-                  const categories = getUniqueCategories(values);
-                  const categoryColors = generateDefaultCategoryColors(categories);
-                  setStateCategoryColors(categoryColors);
-                  setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                  if (dataType === 'categorical') {
+                    const categories = getUniqueCategories(values);
+                    const categoryColors = generateDefaultCategoryColors(categories);
+                    setStateCategoryColors(categoryColors);
+                    setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
+                  }
                 }
 
-                handleTabChange('states');
+                setStateColorScale(colorScale);
+                setStateInvertColors(invertColors);
+                if (title) setStateMapTitle(title);
+                setActiveTab('states');
               }
             },
             error: (error) => {
@@ -686,6 +749,27 @@ const Index = () => {
             state: d.state,
             value: normalizeValue(d.value),
           }));
+        } else if (activeTab === 'regions') {
+          const config = getDistrictMapConfig('NSSO');
+          geoJsonPath = config.geojsonPath;
+          currentMapType = 'NSSO';
+          metricName = districtDataTitle || undefined;
+          data = districtMapData.map(d => ({
+            name: d.district,
+            state: d.state,
+            value: normalizeValue(d.value),
+          }));
+        } else if (activeTab === 'cities' && cityMapData.length > 0) {
+          const dataset = getCityDataset(selectedCityDataset);
+          if (dataset) {
+            geoJsonPath = dataset.geojsonPath;
+            currentMapType = `${dataset.displayName} (${dataset.label})`;
+            metricName = cityDataTitle || undefined;
+            data = cityMapData.map(d => ({
+              name: d.ward,
+              value: normalizeValue(d.value),
+            }));
+          }
         }
 
         const prevContext = prevContextRef.current;
@@ -704,9 +788,9 @@ const Index = () => {
         if (geoJsonPath && data.length > 0) {
           try {
             const context = await buildDynamicContext({
-              activeTab: activeTab as 'states' | 'districts' | 'state-districts',
+              activeTab: activeTab as 'states' | 'districts' | 'state-districts' | 'regions' | 'cities',
               selectedState: activeTab === 'state-districts' ? selectedStateForMap : undefined,
-              mapType: activeTab === 'districts' ? selectedDistrictMapType : selectedStateMapType,
+              mapType: currentMapType,
               data,
               geoJsonPath,
               metricName,
@@ -744,6 +828,10 @@ const Index = () => {
     stateDataTitle,
     districtDataTitle,
     stateDistrictDataTitle,
+    cityMapData,
+    cityDataTitle,
+    selectedCity,
+    selectedCityDataset,
   ]);
 
   const handleStateDataLoad = (data: StateMapData[], title?: string, naInfo?: NAInfo) => {
@@ -765,6 +853,15 @@ const Index = () => {
       setStateCategoryColors(categoryColors);
       setStateColorBarSettings(prev => ({ ...prev, isDiscrete: true }));
     }
+  };
+
+  
+  const handleDemoUrlChange = (dataUrl: string, title: string) => {
+    skipDataUrlLoad.current = true;
+    const params = new URLSearchParams();
+    params.set('dataUrl', dataUrl);
+    if (title) params.set('title', title);
+    navigate(buildUrl(params), { replace: true });
   };
 
   const handleStateMultiYearDataLoad = (series: MultiYearSeries[], wideFormat?: WideFormatMeta | null) => {
@@ -1268,7 +1365,7 @@ const Index = () => {
 
   const seoContent = getSEOContent();
 
-  const tabTriggerClass = `rounded-lg border-2 px-2 py-2 sm:px-4 sm:py-3 font-semibold text-sm sm:text-base transition-all duration-200 ${
+  const tabTriggerClass = `rounded-lg border px-1.5 py-1 sm:border-2 sm:px-4 sm:py-3 font-semibold text-xs sm:text-base transition-all duration-200 ${
     darkMode
       ? 'border-gray-600 bg-gray-800 text-gray-300 hover:border-blue-500 hover:text-blue-400 data-[state=active]:border-blue-500 data-[state=active]:text-blue-300 data-[state=active]:bg-blue-900'
       : 'border-gray-300 bg-white text-gray-600 hover:border-blue-400 hover:text-blue-700 data-[state=active]:border-blue-600 data-[state=active]:text-blue-900 data-[state=active]:bg-blue-50'
@@ -1347,16 +1444,17 @@ const Index = () => {
       </button>
 
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className={`text-2xl sm:text-4xl font-bold mb-2 sm:mb-4 flex items-center justify-center gap-3 ${darkMode ? 'text-white' : ''}`}>
-            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-8 sm:h-12 w-auto" />
-            <span>BharatViz - Fast choropleths for India</span>
+        <div className="text-center mb-3 sm:mb-8">
+          <h1 className={`text-lg sm:text-4xl font-bold mb-1 sm:mb-4 flex items-center justify-center gap-2 sm:gap-3 ${darkMode ? 'text-white' : ''}`}>
+            <img src="/bharatviz_favicon.png" alt="BharatViz Logo" className="h-6 sm:h-12 w-auto" />
+            <span>BharatViz</span>
+            <span className="hidden sm:inline">- Fast choropleths for India</span>
           </h1>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="mb-8">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-2 bg-transparent p-0 h-auto">
+          <div className="mb-4 sm:mb-8">
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-3 lg:grid-cols-9 gap-1 sm:gap-2 bg-transparent p-0 h-auto">
               <TabsTrigger
                 value="states"
                 className={tabTriggerClass}
@@ -1416,7 +1514,7 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'states' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 {stateMultiYearSeries.length > 0 ? (
                   <div className="space-y-4">
                     {stateWideFormatMeta && (
@@ -1603,6 +1701,7 @@ const Index = () => {
                     hideStateNames={stateHideNames}
                     hideValues={stateHideValues}
                     dataTitle={stateDataTitle}
+                    mapTitle={stateMapTitle}
                     colorBarSettings={stateColorBarSettings}
                     dataType={stateDataType}
                     categoryColors={stateCategoryColors}
@@ -1619,11 +1718,12 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl="/India_LGD_states.geojson"
                     geojsonDownloadName="India_LGD_states.geojson"
+                    citationInfo={STATES_CITATION}
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <FileUpload
                   onDataLoad={handleStateDataLoad}
                   onMultiDataLoad={(payload) => {
@@ -1633,6 +1733,8 @@ const Index = () => {
                   }}
                   mode="states"
                   geojsonPath="/India_LGD_states.geojson"
+                  onMapTitleChange={setStateMapTitle}
+                  onDemoUrlChange={handleDemoUrlChange}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
@@ -1662,13 +1764,14 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'districts' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaDistrictsMap
                   ref={districtMapRef}
                   data={districtMapData}
                   colorScale={districtColorScale}
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
+                  mapTitle={districtMapTitle}
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType)?.geojsonPath}
@@ -1687,11 +1790,12 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl={getDistrictMapConfig(selectedDistrictMapType)?.geojsonPath}
                     geojsonDownloadName={`India_${selectedDistrictMapType}_districts.geojson`}
+                    citationInfo={getDistrictsCitationInfo(selectedDistrictMapType, getDistrictMapConfig(selectedDistrictMapType)?.displayName)}
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
                   <Label htmlFor="district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
@@ -1719,9 +1823,10 @@ const Index = () => {
                   onDataLoad={handleDistrictDataLoad}
                   mode="districts"
                   templateCsvPath={getDistrictMapConfig(selectedDistrictMapType).templateCsvPath}
-                  demoDataPath={getDistrictMapConfig(selectedDistrictMapType).demoDataPath}
                   googleSheetLink={getDistrictMapConfig(selectedDistrictMapType).googleSheetLink}
                   geojsonPath={getDistrictMapConfig(selectedDistrictMapType).geojsonPath}
+                  onMapTitleChange={setDistrictMapTitle}
+                  onDemoUrlChange={handleDemoUrlChange}
                   darkMode={darkMode}
                 />
                 <div className="space-y-4 mt-6">
@@ -1749,13 +1854,14 @@ const Index = () => {
 
           <div className={`space-y-6 ${activeTab === 'regions' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaDistrictsMap
                   ref={districtMapRef}
                   data={districtMapData}
                   colorScale={districtColorScale}
                   invertColors={districtInvertColors}
                   dataTitle={districtDataTitle}
+                  mapTitle={districtMapTitle}
                   showStateBoundaries={showStateBoundaries}
                   colorBarSettings={districtColorBarSettings}
                   geojsonPath={getDistrictMapConfig('NSSO').geojsonPath}
@@ -1774,11 +1880,12 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl={getDistrictMapConfig('NSSO')?.geojsonPath}
                     geojsonDownloadName="India_NSSO_regions.geojson"
+                    citationInfo={NSSO_CITATION}
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200'}`}>
                   <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-black'}`}>NSSO Regions</h3>
                   <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-black'}`}>
@@ -1915,11 +2022,12 @@ const Index = () => {
                     darkMode={darkMode}
                     geojsonDownloadUrl={getStateGeoJSONUrl(stateGistMapping, selectedStateMapType, selectedStateForMap)}
                     geojsonDownloadName={`${selectedStateForMap}-${selectedStateMapType}-districts.geojson`}
+                    citationInfo={getDistrictsCitationInfo(selectedStateMapType, `${selectedStateForMap} Districts (${getDistrictMapConfig(selectedStateMapType)?.displayName})`)}
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
                   <Label htmlFor="state-district-map-type" className="text-sm font-medium mb-2 block">
                     District Map Type
@@ -2340,7 +2448,7 @@ POST /api/v1/districts/map
 
           <div className={`space-y-6 ${activeTab === 'cities' ? 'block' : 'hidden'}`}>
             <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 order-2 lg:order-2">
+              <div className="lg:col-span-2 order-1 lg:order-2">
                 <IndiaCityMap
                   ref={cityMapRef}
                   data={cityMapData}
@@ -2368,11 +2476,12 @@ POST /api/v1/districts/map
                     darkMode={darkMode}
                     geojsonDownloadUrl={currentCityDataset?.geojsonPath}
                     geojsonDownloadName={`${selectedCityDataset}.geojson`}
+                    citationInfo={currentCityDataset ? getCityCitationInfo(currentCityDataset) : undefined}
                   />
                 </div>
               </div>
 
-              <div className="lg:col-span-1 order-1 lg:order-1">
+              <div className="lg:col-span-1 order-2 lg:order-1">
                 <div className={`mb-4 p-4 border rounded-lg ${darkMode ? 'bg-[#1a1a1a] border-[#333]' : 'bg-card'}`}>
                   <Label htmlFor="city-select" className="text-sm font-medium mb-2 block">
                     City

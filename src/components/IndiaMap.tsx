@@ -38,6 +38,7 @@ interface IndiaMapProps {
   hideStateNames?: boolean;
   hideValues?: boolean;
   dataTitle?: string;
+  mapTitle?: string;
   colorBarSettings?: ColorBarSettings;
   dataType?: DataType;
   categoryColors?: CategoryColorMapping;
@@ -56,7 +57,8 @@ export interface IndiaMapRef {
   getSVGElement: () => SVGSVGElement | null;
 }
 
-export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false, valueDomain }, ref) => {
+
+export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorScale = 'spectral', invertColors = false, hideStateNames = false, hideValues = false, dataTitle = '', mapTitle, colorBarSettings, dataType = 'numerical', categoryColors = {}, naInfo, darkMode = false, valueDomain  }, ref) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [mapData, setMapData] = useState<GeoJSON.FeatureCollection | null>(null);
   const [renderingData, setRenderingData] = useState(false);
@@ -86,7 +88,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    setLegendPosition(isMobile ? { x: -10, y: 160 } : DEFAULT_LEGEND_POSITION.STATES);
+    setLegendPosition(isMobile ? { x: 190, y: 10 } : DEFAULT_LEGEND_POSITION.STATES);
   }, [isMobile]);
 
   useEffect(() => {
@@ -94,6 +96,12 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       setLegendTitle(dataTitle);
     }
   }, [dataTitle]);
+
+  useEffect(() => {
+    if (mapTitle !== undefined) {
+      setMainTitle(mapTitle || 'BharatViz');
+    }
+  }, [mapTitle]);
 
   const getMapDimensions = () => ({
     width: isMobile ? 350 : 800,
@@ -297,10 +305,8 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
 
 
       await svg2pdf(svgClone, pdf, {
-        xOffset: x,
-        yOffset: y,
-        scale: scale,
-        preserveAspectRatio: 'xMidYMid meet',
+        x,
+        y,
         width: finalWidth,
         height: finalHeight
       });
@@ -437,7 +443,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       ]);
       
       // Use html2canvas to render the SVG element
-      const canvas = await html2canvas(svgRef.current, {
+      const canvas = await html2canvas(svgRef.current as unknown as HTMLElement, {
         backgroundColor: '#ffffff',
         scale: 4, // High resolution
         useCORS: true,
@@ -703,7 +709,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
         const stateName = (d.properties.state_name || d.properties.NAME_1 || d.properties.name || d.properties.ST_NM)?.toLowerCase().trim();
         const value = dataMap.get(stateName);
 
-        if (value === undefined || isNaN(value)) {
+        if (typeof value !== 'number' || isNaN(value)) {
           return darkMode ? "#ffffff" : "#0f172a";
         }
 
@@ -1076,7 +1082,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
       });
     }
   };
-  const handleLegendMouseMove = useCallback((e: React.MouseEvent) => {
+  const handleLegendMouseMove = useCallback((e: MouseEvent) => {
     if (!dragging) return;
     const svgRect = svgRef.current?.getBoundingClientRect();
     if (svgRect) {
@@ -1091,7 +1097,7 @@ export const IndiaMap = forwardRef<IndiaMapRef, IndiaMapProps>(({ data, colorSca
   // Attach global mousemove/mouseup for drag
   useEffect(() => {
     if (!dragging) return;
-    const handleMove = (e: MouseEvent) => handleLegendMouseMove(e as React.MouseEvent<SVGElement>);
+    const handleMove = (e: MouseEvent) => handleLegendMouseMove(e);
     const handleUp = () => setDragging(false);
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleUp);

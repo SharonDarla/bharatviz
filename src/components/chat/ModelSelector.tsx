@@ -8,8 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { CheckCircle2, XCircle, Loader2, Smartphone } from 'lucide-react';
-import { AVAILABLE_MODELS, checkWebGPUSupport, getBrowserCompatibility, isMobileDevice } from '@/lib/chat/models';
+import { AVAILABLE_MODELS, MODEL_GROUPS, checkWebGPUSupport, getBrowserCompatibility, isMobileDevice, getRecommendedModel } from '@/lib/chat/models';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { ModelInfo } from '@/lib/chat/types';
 
 interface ModelSelectorProps {
@@ -21,6 +23,7 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
   const [webGPUSupported, setWebGPUSupported] = useState<boolean | null>(null);
   const [browserInfo, setBrowserInfo] = useState<ReturnType<typeof getBrowserCompatibility> | null>(null);
   const [checking, setChecking] = useState(true);
+  const isMobileViewport = useIsMobile();
 
   useEffect(() => {
     async function checkSupport() {
@@ -46,6 +49,7 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
   }
 
   const isMobile = isMobileDevice();
+  const recommended = getRecommendedModel();
 
   return (
     <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
@@ -62,7 +66,7 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
           <AlertDescription>
             <strong>Mobile Device Detected</strong>
             <p className="mt-1 text-sm">
-              We recommend Qwen 2.5 1.5B for mobile devices - it's compact, fast to download, and runs efficiently on mobile hardware.
+              We recommend a small model (1.5B or less) for mobile devices. Qwen 2.5 1.5B offers the best balance of quality and speed on mobile hardware.
             </p>
           </AlertDescription>
         </Alert>
@@ -96,22 +100,31 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
         </Alert>
       )}
 
-      <div className="space-y-4">
-        {AVAILABLE_MODELS.map((model) => (
-          <ModelCard
-            key={model.id}
-            model={model}
-            onSelect={() => onSelectModel(model.id)}
-            disabled={!webGPUSupported}
-          />
-        ))}
-      </div>
+      {/* Mobile: compact dropdown; Desktop: full cards */}
+      {isMobileViewport ? (
+        <MobileModelDropdown
+          onSelect={onSelectModel}
+          disabled={!webGPUSupported}
+          recommendedId={recommended.id}
+        />
+      ) : (
+        <div className="space-y-4">
+          {AVAILABLE_MODELS.map((model) => (
+            <ModelCard
+              key={model.id}
+              model={model}
+              onSelect={() => onSelectModel(model.id)}
+              disabled={!webGPUSupported}
+            />
+          ))}
+        </div>
+      )}
 
       <Alert>
         <AlertDescription>
           <p className="font-semibold mb-2 text-sm sm:text-base">What happens when you select a model?</p>
           <ul className="text-xs sm:text-sm space-y-1 list-disc list-inside">
-            <li>The model will be downloaded once (0.8-2.4 GB depending on choice)</li>
+            <li>The model will be downloaded once (0.4-6.4 GB depending on choice)</li>
             <li>Download is cached in your browser for future use</li>
             <li>Everything runs locally - no data sent to external servers</li>
             <li>You can change models later from the chat settings</li>
@@ -123,6 +136,71 @@ export function ModelSelector({ onSelectModel, onCancel }: ModelSelectorProps) {
         <Button variant="outline" onClick={onCancel} className="w-full">
           Cancel
         </Button>
+      )}
+    </div>
+  );
+}
+
+interface MobileModelDropdownProps {
+  onSelect: (modelId: string) => void;
+  disabled?: boolean;
+  recommendedId: string;
+}
+
+function MobileModelDropdown({ onSelect, disabled, recommendedId }: MobileModelDropdownProps) {
+  const [selectedId, setSelectedId] = useState(recommendedId);
+  const selectedModel = AVAILABLE_MODELS.find(m => m.id === selectedId);
+
+  return (
+    <div className="space-y-3">
+      <Select value={selectedId} onValueChange={setSelectedId} disabled={disabled}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select a model" />
+        </SelectTrigger>
+        <SelectContent>
+          {MODEL_GROUPS.map(group => {
+            const models = AVAILABLE_MODELS.filter(group.filter);
+            if (models.length === 0) return null;
+            return (
+              <SelectGroup key={group.label}>
+                <SelectLabel>{group.label}</SelectLabel>
+                {models.map(m => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name} — {m.size}
+                    {m.id === recommendedId ? ' *' : ''}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            );
+          })}
+        </SelectContent>
+      </Select>
+
+      {selectedModel && (
+        <Card className="border">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-sm">{selectedModel.name}</span>
+              {selectedModel.id === recommendedId && (
+                <Badge variant="default" className="text-xs py-0">Recommended</Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground mb-2">{selectedModel.description}</p>
+            <div className="flex gap-3 text-xs mb-3">
+              <span><strong>Size:</strong> {selectedModel.size}</span>
+              <span><strong>Speed:</strong> {selectedModel.speed}</span>
+              <span><strong>Quality:</strong> {selectedModel.quality}</span>
+            </div>
+            <Button
+              onClick={() => onSelect(selectedId)}
+              disabled={disabled}
+              size="sm"
+              className="w-full"
+            >
+              Download & Use {selectedModel.name}
+            </Button>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

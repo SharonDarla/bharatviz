@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import pako from 'pako';
 import { processStateData, processDistrictData } from '@/lib/dataProcessor';
 import { fetchWithCorsFallback, fetchAndDecompressGz } from '@/lib/corsProxy';
 import { extractNumericColumns, extractNumericColumnsDistricts, getDimensionColumnDistricts, getLongFormatDimensionValuePair } from '@/lib/csvUtils';
+import { getNextDemo } from '@/lib/showcaseDemos';
 
 interface NAInfo {
   states?: string[];
@@ -48,15 +49,21 @@ interface FileUploadProps {
   googleSheetLink?: string;
   geojsonPath?: string;
   selectedState?: string; // Optional: for state-district tab, filter NAs by this state
+  onMapTitleChange?: (title: string) => void;
+  onDemoUrlChange?: (dataUrl: string, title: string) => void;
   darkMode?: boolean;
 }
 
-export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, darkMode = false }) => {
+export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataLoad, mode = 'states', templateCsvPath, demoDataPath, googleSheetLink, geojsonPath, selectedState, onMapTitleChange, onDemoUrlChange, darkMode = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [loadingSheet, setLoadingSheet] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [fuzzyThreshold, setFuzzyThreshold] = useState<number>(0.4);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoInfo, setDemoInfo] = useState<{ index: number; total: number } | null>(null);
+
+  useEffect(() => { setDemoInfo(null); }, [mode]);
 
   // Helper function to decompress gzipped files
   const decompressGzip = async (file: File): Promise<string> => {
@@ -505,6 +512,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
     const file = event.target.files?.[0];
     if (!file) return;
 
+    onMapTitleChange?.('');
+
     // Check if file is gzipped
     const isGzipped = file.name.endsWith('.gz');
 
@@ -538,25 +547,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
   };
 
   const handleLoadDemo = async () => {
+    if (demoLoading) return;
+    setDemoLoading(true);
     try {
-      const demoFile = demoDataPath || (mode === 'districts' ? '/districts_demo.csv' : '/nfhs5_protein_consumption_eggs.csv');
-      const response = await fetch(demoFile);
-      if (!response.ok) {
-        throw new Error('Failed to load demo data');
+      let csvText: string;
+
+      // Use NFHS-5 showcase demos (cycled without repeats) unless a specific
+      // demoDataPath is provided (e.g. for city wards)
+      const showcase = !demoDataPath ? getNextDemo(mode) : null;
+
+      if (showcase) {
+        const response = await fetch(showcase.demo.url);
+        if (!response.ok) throw new Error('Failed to load demo data');
+        csvText = await response.text();
+        onMapTitleChange?.(showcase.demo.title);
+        onDemoUrlChange?.(showcase.demo.url, showcase.demo.title);
+        setDemoInfo({ index: showcase.index, total: showcase.total });
+      } else {
+        const response = await fetch(demoDataPath!);
+        if (!response.ok) throw new Error('Failed to load demo data');
+        csvText = await response.text();
       }
-      const csvText = await response.text();
 
       Papa.parse<Record<string, string>>(csvText, {
         header: true,
         complete: async (result) => {
           await processUploadedData(result);
+          setDemoLoading(false);
         },
-        error: () => {
-          alert('Error parsing demo file');
-        }
+        error: () => { alert('Error parsing demo file'); setDemoLoading(false); }
       });
     } catch (error) {
       alert('Error loading demo data');
+      setDemoLoading(false);
     }
   };
 
@@ -602,6 +625,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
   const handleLoadGoogleSheet = async () => {
     setSheetError(null);
     setLoadingSheet(true);
+    onMapTitleChange?.('');
 
     const urlType = detectUrlType(googleSheetUrl);
     let csvText: string;
@@ -646,32 +670,40 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onDataLoad, onMultiDataL
   };
 
   return (
-    <Card className={`p-6 border-dashed border-2 hover:border-primary/50 transition-colors ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : ''}`}>
+    <Card className={`p-3 sm:p-6 border-dashed border-2 hover:border-primary/50 transition-colors ${darkMode ? 'bg-[#1a1a1a] border-[#444]' : ''}`}>
       <div className="text-center">
-        <Upload className={`mx-auto h-12 w-12 mb-4 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`} />
-        <h3 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : ''}`}>Upload Your Data</h3>
-        <p className={`text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
+        <Upload className={`mx-auto h-8 w-8 sm:h-12 sm:w-12 mb-2 sm:mb-4 ${darkMode ? 'text-gray-400' : 'text-muted-foreground'}`} />
+        <h3 className={`text-base sm:text-lg font-medium mb-1 sm:mb-2 ${darkMode ? 'text-white' : ''}`}>Upload Your Data</h3>
+        <p className={`text-xs sm:text-sm mb-2 sm:mb-4 ${darkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
           {mode === 'districts'
             ? 'Upload a CSV, TSV, or gzipped (.gz) file with state, district, and value columns. The last column name becomes the color map title. Your data is never stored.'
             : 'Upload a CSV, TSV, or gzipped (.gz) file with state and value columns. The last column name becomes the color map title. Your data is never stored.'
           }
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-row gap-2 sm:gap-3 justify-center">
           <Button
+            size="sm"
             onClick={handleUploadClick}
-            className={darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''}
+            className={`text-xs sm:text-sm ${darkMode ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600' : ''}`}
           >
             Choose File
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={handleLoadDemo}
-            className={`flex items-center gap-2 ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
+            disabled={demoLoading}
+            className={`flex items-center gap-1 sm:gap-2 text-xs sm:text-sm ${darkMode ? 'bg-[#252525] border-[#555] text-gray-200 hover:bg-[#333] hover:border-[#666] hover:text-white' : ''}`}
           >
-            <Play className="h-4 w-4" />
-            Load Demo
+            <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+            {demoLoading ? 'Loading...' : 'Load Demo'}
           </Button>
         </div>
+        {demoInfo && !demoDataPath && (
+          <p className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            {demoInfo.index} of {demoInfo.total} NFHS-5 indicators — click again for more
+          </p>
+        )}
         <div className="flex justify-center mt-3">
           <Button
             variant="outline"
