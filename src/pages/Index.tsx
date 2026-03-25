@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Papa from 'papaparse';
@@ -192,7 +192,7 @@ const Index = () => {
     if (tabFromPath !== activeTab) {
       setActiveTab(tabFromPath);
     }
-  }, [location.pathname]);
+  }, [location.pathname, activeTab]);
 
   useEffect(() => {
     if (hasReadInitialUrl.current.has('states')) return;
@@ -216,16 +216,23 @@ const Index = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  const buildUrl = (params: URLSearchParams) => {
+  const buildUrl = useCallback((params: URLSearchParams) => {
     if (darkMode) params.set('darkMode', 'true'); else params.delete('darkMode');
     const search = params.toString();
     const currentPath = location.pathname === '/' ? '' : location.pathname;
     return `${currentPath}${search ? '?' + search : ''}`;
-  };
+  }, [darkMode, location.pathname]);
 
   useEffect(() => {
     if (!hasReadInitialUrl.current.has('states')) return;
     if (activeTab !== 'states') return;
+
+    const buildUrlLocal = (params: URLSearchParams) => {
+      if (darkMode) params.set('darkMode', 'true'); else params.delete('darkMode');
+      const search = params.toString();
+      const currentPath = location.pathname === '/' ? '' : location.pathname;
+      return `${currentPath}${search ? '?' + search : ''}`;
+    };
 
     const params = new URLSearchParams(location.search);
 
@@ -249,7 +256,7 @@ const Index = () => {
       params.delete('hideValues');
     }
 
-    const newUrl = buildUrl(params);
+    const newUrl = buildUrlLocal(params);
 
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
@@ -309,7 +316,7 @@ const Index = () => {
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, districtColorScale, districtInvertColors, selectedDistrictMapType, showStateBoundaries, darkMode, location.pathname, location.search, navigate]);
+  }, [activeTab, districtColorScale, districtInvertColors, selectedDistrictMapType, showStateBoundaries, darkMode, location.pathname, location.search, navigate, buildUrl]);
 
   useEffect(() => {
     if (hasReadInitialUrl.current.has('regions')) return;
@@ -346,7 +353,7 @@ const Index = () => {
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, districtColorScale, districtInvertColors, darkMode, location.pathname, location.search, navigate]);
+  }, [activeTab, districtColorScale, districtInvertColors, selectedDistrictMapType, showStateBoundaries, darkMode, location.pathname, location.search, navigate, buildUrl]);
 
   useEffect(() => {
     if (hasReadInitialUrl.current.has('state-districts')) return;
@@ -409,7 +416,7 @@ const Index = () => {
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, stateDistrictColorScale, stateDistrictInvertColors, stateDistrictHideNames, stateDistrictHideValues, selectedStateForMap, selectedStateMapType, darkMode, location.pathname, location.search, navigate]);
+  }, [activeTab, stateDistrictColorScale, stateDistrictInvertColors, stateDistrictHideNames, stateDistrictHideValues, selectedStateForMap, selectedStateMapType, darkMode, location.pathname, location.search, navigate, buildUrl]);
 
   useEffect(() => {
     if (hasReadInitialUrl.current.has('cities')) return;
@@ -493,7 +500,7 @@ const Index = () => {
     if (location.pathname + location.search !== newUrl) {
       navigate(newUrl, { replace: true });
     }
-  }, [activeTab, darkMode, location.pathname, location.search, navigate]);
+  }, [activeTab, darkMode, location.pathname, location.search, navigate, buildUrl]);
 
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
